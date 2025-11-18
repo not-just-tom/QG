@@ -1,0 +1,322 @@
+import jax
+import jax.numpy as jnp
+from functools import cached_property, partial
+from jax import tree_util
+
+from .finite_difference import diff_bounded, order_reversed
+from .pytree import PytreeNode
+
+diff = partial(diff_bounded, interior_order=order_reversed)
+
+class Grid(PytreeNode):
+
+    """
+    I'm working on it ok 
+
+    """
+    def __init__(self, params, idtype=None, fdtype=None):
+        """ Initialising the grid """
+        self._Lx = params.get('Lx', 2*jnp.pi)
+        self._Ly = params.get('Ly', self.Lx)
+        self._nx = params.get('nx', 256)
+        self._ny = params.get('ny', self.nx)
+        self._dx = self._Lx / self._nx
+        self._dy = self._Ly / self._ny
+
+        self._kx = jnp.fft.rfftfreq(self._nx, d=self.dx) * 2*jnp.pi
+        self._ky = jnp.fft.fftfreq(self._ny, d=self.dy) * 2*jnp.pi
+        self._KY, self._KX = jnp.meshgrid(self._ky, self._kx, indexing="ij")
+        self._K2 = self._KX**2 + self._KY**2
+        self._invK2 = jnp.where(self._K2 == 0, 0.0, 1/self._K2)
+        self._Kmag = jnp.sqrt(self.K2)
+
+    @property
+    def Lx(self):
+        return self._Lx
+    
+    @property
+    def Ly(self):
+        return self._Ly
+    
+    @property
+    def nx(self):
+        return self._nx
+    
+    @property
+    def ny(self):
+        return self._ny
+    
+    @property
+    def dx(self):
+        return self._dx
+    
+    @property
+    def dy(self):
+        return self._dy
+    
+    @property
+    def KX(self):
+        return self._KX
+    
+    @property
+    def KY(self):
+        return self._KY
+    
+    @property
+    def K2(self):
+        return self._K2
+    
+    @property
+    def invK2(self):
+        return self._invK2
+    
+    @property
+    def Kmag(self):
+        return self._Kmag
+    
+    @cached_property
+    def x(self):
+        return jnp.linspace(-self.Lx/2, self.Lx/2, self.nx+1)
+    
+    @cached_property
+    def y(self):
+        return jnp.linspace(-self.Ly/2, self.Ly/2, self.ny+1)
+    
+    @cached_property
+    def X(self) -> jax.Array:
+        """Grid :math:`x`-coordinates.
+        """
+
+        return jnp.outer(
+            self.x, jnp.ones(self.ny + 1))
+
+    @cached_property
+    def Y(self) -> jax.Array:
+        """Grid :math:`y`-coordinates.
+        """
+
+        return jnp.outer(
+            jnp.ones(self.nx + 1), self.y)
+    
+    @staticmethod
+    @partial(jax.jit, static_argnums=(0,))
+    def _interpolate(x_g, y_g, u, x, y):
+        nx, = x_g.shape
+        nx -= 1
+        ny, = y_g.shape
+        ny -= 1
+        Lx = x_g[-1]
+        Ly = y_g[-1]
+
+        i = jnp.array((x + Lx) * nx / (2 * Lx))
+        i = jnp.maximum(i)
+        i = jnp.minimum(i, (nx - 1))
+        alpha = (x - x_g[i]) / (x_g[i + 1] - x_g[i])
+
+        j = jnp.array((y + Ly) * ny / (2 * Ly))
+        j = jnp.maximum(j)
+        j = jnp.minimum(j, (ny - 1))
+        beta = (y - y_g[j]) / (y_g[j + 1] - y_g[j])
+
+        return (jnp.outer(1 - alpha, 1 - beta) * u[i, :][:, j]
+                + jnp.outer(alpha, 1 - beta) * u[i + 1, :][:, j]
+                + jnp.outer(1 - alpha, beta) * u[i, :][:, j + 1]
+                + jnp.outer(alpha, beta) * u[i + 1, :][:, j + 1])
+
+    def interpolate(self, u, x, y, *, extrapolate=False):
+        """Bilinearly interpolate onto a grid.
+
+        Parameters
+        ----------
+
+        u : :class:`jax.Array`
+            Array of grid point values.
+        x : :class:`jax.Array`
+            :math:`x`-coordinates.
+        y : :class:`jax.Array`
+            :math:`y`-coordinates.
+        extrapolate : bool
+            Whether to allow extrapolation.
+
+        Returns
+        -------
+
+        :class:`jax.Array`
+            Array of values on the grid.
+        """
+
+        if not extrapolate and ((x < -self.Lx).any() or (x > self.Lx).any()
+                                or (y < -self.Ly).any() or (y > self.Ly).any()):
+            raise ValueError("Out of bounds")
+
+        return self._interpolate(self.x, self.y, u, x, y)
+
+    @cached_property
+    def dx(self):
+        """:math:`x`-dimension grid spacing.
+        """
+
+        # Need explicit cast, as float32 / int32 -> float64 if x64 is enabled
+        return 2 * self.Lx / self.nx
+
+    @cached_property
+    def dy(self):
+        """:math:`y`-dimension grid spacing.
+        """
+
+        # Need explicit cast, as float32 / int32 -> float64 if x64 is enabled
+        return 2 * (self.Ly / self.ny)
+
+    @cached_property
+    def W(self) -> jax.Array:
+        """Integration matrix diagonal.
+        """
+
+        w_x = jnp.ones(self.nx + 1) * self.dx
+        w_x = w_x.at[0].set(0.5 * self.dx)
+        w_x = w_x.at[-1].set(0.5 * self.dx)
+
+        w_y = jnp.ones(self.ny + 1) * self.dy
+        w_y = w_y.at[0].set(0.5 * self.dy)
+        w_y = w_y.at[-1].set(0.5 * self.dy)
+
+        return jnp.outer(w_x, w_y)
+
+    def D_x(self, u, *, boundary=True):
+        """Compute an :math:`x`-direction first derivative.
+
+        Parameters
+        ----------
+
+        u : :class:`jax.Array`
+            Field to differentiate.
+        boundary : bool
+            Whether to compute the derivative on the left and right boundaries.
+
+        Returns
+        -------
+
+        :class:`jax.Array`
+            The derivative.
+        """
+
+        return diff(u, dx=self.dx, order=1, N=3, axis=0,
+                    i0=None if boundary else 1, i1=None if boundary else -1)
+
+    def D_y(self, u, boundary=True):
+        """Compute a :math:`y`-direction first derivative.
+
+        Parameters
+        ----------
+
+        u : :class:`jax.Array`
+            Field to differentiate.
+        boundary : bool
+            Whether to compute the derivative on the top and bottom boundaries.
+
+        Returns
+        -------
+
+        :class:`jax.Array`
+            The derivative.
+        """
+
+        return diff(u, dx=self.dy, order=1, N=3, axis=1,
+                    i0=None if boundary else 1, i1=None if boundary else -1)
+
+    def D_xx(self, u, boundary=True):
+        """Compute an :math:`x`-direction second derivative.
+
+        Parameters
+        ----------
+
+        u : :class:`jax.Array`
+            Field to differentiate.
+        boundary : bool
+            Whether to compute the derivative on the left and right boundaries.
+
+        Returns
+        -------
+
+        :class:`jax.Array`
+            The derivative.
+        """
+
+        return diff(u, dx=self.dx, order=2, N=3, axis=0,
+                    i0=None if boundary else 1, i1=None if boundary else -1)
+
+    def D_yy(self, u, boundary=True):
+        """Compute a :math:`y`-direction second derivative.
+
+        Parameters
+        ----------
+
+        u : :class:`jax.Array`
+            Field to differentiate.
+        boundary : bool
+            Whether to compute the derivative on the top and bottom boundaries.
+
+        Returns
+        -------
+
+        :class:`jax.Array`
+            The derivative.
+        """
+
+        return diff(u, dx=self.dy, order=2, N=3, axis=1,
+                    i0=None if boundary else 1, i1=None if boundary else -1)
+
+    def integrate(self, u):
+        """
+        Compute the integral of a field.
+
+        Parameters
+        ----------
+
+        u : :class:`jax.Array`
+            Field to integrate.
+
+        Returns
+        -------
+
+        :class:`jax.Array`
+            The integral.
+        """
+
+        return jnp.tensordot(u, self.W)
+
+
+    @staticmethod
+    @jax.jit 
+    def _J(dx, dy, q, psi):
+        """ Arakawa Jacobian function"""
+        return jnp.zeros_like(q).at[1:-1, 1:-1].set(
+            (1 / (12 * dx * dy)) * (
+                + (q[2:, 1:-1] - q[:-2, 1:-1]) * (psi[1:-1, 2:] - psi[1:-1, :-2])
+                - (q[1:-1, 2:] - q[1:-1, :-2]) * (psi[2:, 1:-1] - psi[:-2, 1:-1])
+                + q[2:, 1:-1] * (psi[2:, 2:] - psi[2:, :-2])
+                - q[:-2, 1:-1] * (psi[:-2, 2:] - psi[:-2, :-2])
+                - q[1:-1, 2:] * (psi[2:, 2:] - psi[:-2, 2:])
+                + q[1:-1, :-2] * (psi[2:, :-2] - psi[:-2, :-2])
+                + q[2:, 2:] * (psi[1:-1, 2:] - psi[2:, 1:-1])
+                - q[:-2, :-2] * (psi[:-2, 1:-1] - psi[1:-1, :-2])
+                - q[:-2, 2:] * (psi[1:-1, 2:] - psi[:-2, 1:-1])
+                + q[2:, :-2] * (psi[2:, 1:-1] - psi[1:-1, :-2])))
+
+    def J(self, q, psi):
+        """ Arakawa Jacobian callable """
+        return self._J(self.dx, self.dy, q, psi)
+
+    def flatten(self):
+        # no children (static object) <--- check what this means
+        children = ()
+        aux_data = (self.Lx, self.Ly, self.nx, self.ny)
+        return children, aux_data
+
+    @classmethod
+    def unflatten(cls, aux_data, children):
+        Lx, Ly, nx, ny = aux_data
+        assert len(children) == 0
+        params = {"Lx": Lx, "Ly": Ly, "nx": nx, "ny": ny}
+        return cls(params)
+
