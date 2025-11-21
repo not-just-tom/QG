@@ -19,6 +19,7 @@ import keras
 from jax.numpy.fft import rfftn, irfftn
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import matplotlib.cm as cm
 
 import importlib
 import model.inversion
@@ -118,7 +119,7 @@ class States(Mapping):
     def __setitem__(self, state, value):
         if state not in self._states:
             raise KeyError(f"Invalid state: '{state}'")
-        if value.shape != (self.grid.nx, self.grid.ny):
+        if value.shape != (self.grid.ny, self.grid.nx):
             raise ValueError(f"Invalid value for state: '{state}'")
         self._fields[state] = value
 
@@ -146,7 +147,7 @@ class States(Mapping):
         """
 
         for state in states:
-            self[state] = jnp.zeros((self.grid.nx, self.grid.ny))
+            self[state] = jnp.zeros((self.grid.ny, self.grid.nx))
 
     def clear(self, *, keep_states=None):
         """Clear values for fields.
@@ -279,6 +280,8 @@ class Solver(PytreeNode, ABC):
     def __init__(self, params, initial: jnp.ndarray | None = None, grid_input:Grid| None = None, field_states=None, prescribed_field_states=None):
         # ==== Parameter Initialisation ===  
         self._parameters = params #= Parameters(params, defaults=self._defaults)
+        # PRNG key for the solver; stored and advanced each step
+        self._key = params.get("key", jax.random.PRNGKey(0))
 
         # ==== Grid and Initial Field Initialisation === 
         if grid_input is None:
@@ -344,9 +347,6 @@ class Solver(PytreeNode, ABC):
     
     @property
     def n(self):
-        """The number of timesteps which have been taken.
-        """
-
         return self._n
     
     @property
@@ -418,109 +418,175 @@ class Solver(PytreeNode, ABC):
     def _make_initial(self, params):
         """Create a band-passed random initial condition in physical space."""
         key = params.get('key', jax.random.PRNGKey(0)) # check this call is fine if the initial key is not inputted so the downsampling relies on the same .get 
-        key, k1, k2 = jax.random.split(key, 3)
+        key, k1 = jax.random.split(key, 2)
 
         grid = self.grid
+        k_beta = params.get('k_beta', 1.0)
 
-        noise_real = jax.random.normal(k1, (grid.ny, grid.nx // 2 + 1))
-        noise_imag = jax.random.normal(k2, (grid.ny, grid.nx // 2 + 1))
+        # actual pseudo-random initial spectrum peaked at k_beta
+        qh = Solver.pseudo_randomiser(grid, k_beta, k1, energy=1.0)
+        qh = Solver.dealias(qh, grid, s=8)
 
-
-        qh = noise_real + 1j * noise_imag
-
-        # band-pass ---- is this right???
-        kmin = params.get('kmin', 1.0)
-        kmax = params.get('kmax', 10.0)
-        mask = (grid.Kmag >= kmin) & (grid.Kmag <= kmax)
-        qh = qh * mask
-
-        # --- Calc init U to normalise ---
-        psih = -qh * grid.invK2
+        # not used yet but for maybe normalisation
+        psih = - qh * grid.invK2
         uh = -1j * grid.KY * psih
         vh =  1j * grid.KX * psih
-        u, v = irfftn(jnp.stack([uh, vh], axis=0), axes=(-2, -1))
+        u = irfftn(uh, axes=(-2, -1))
+        v = irfftn(vh, axes=(-2, -1)) 
 
-        U_initial = jnp.sqrt(0.5 * jnp.mean(u**2 + v**2))
-        U_initial = jnp.where(U_initial == 0, 1.0, U_initial)
-
-        # --- Energy Normalisation (in spectral space ?) ---
-        beta = - params.get('beta', 1e-3)
-        Lbeta0 = params.get("Lbeta0", 0.5)
-
-        if Lbeta0 is not None:
-            # Target RMS velocity implied by desired Rhines length
-            U_rms_target = (Lbeta0**2) * beta
-
-            scale = U_rms_target / U_initial
-            qh = qh * scale  # scale vorticity
-
-
+        #  physical-space initial field
         initial = irfftn(qh, axes=(-2, -1)).real
-        
         assert initial.shape == (grid.ny, grid.nx)
         return initial
+
     
     @staticmethod
     @jax.jit
     def dealias(y, grid, s=8):
-        kmax = jnp.max(grid.Kmag)
-        kcut = 2/3 * kmax
-        a = -jnp.log(1e-15) / ((kmax - kcut)**s)
-        mask = jnp.where(grid.Kmag <= kcut, 1.0, jnp.exp(-a*(grid.Kmag - kcut)**s))
+        '''this is now component-wise cutoff, with exponential decay after 2/3. The amplitude
+        is entirely made up and check it. The top corner will have exponential decay twice bc of x then y masks'''
+        kxmax = jnp.max(grid.kx)
+        kymax = jnp.max(grid.ky)
+        kxcut = 2/3 * kxmax
+        kycut = 2/3 * kymax
+        ax = -jnp.log(1e-15) / ((kxmax - kxcut)**s) # this is the exponential dropoff, check this later
+        ay = -jnp.log(1e-15) / ((kymax - kycut)**s) # these should be the same for now.
+        mask_x = jnp.where(
+            jnp.abs(grid.kx) <= kxcut,
+            1.0,
+            jnp.exp(-ax * (jnp.abs(grid.kx) - kxcut)**s)
+        )
+
+        mask_y = jnp.where(
+            jnp.abs(grid.ky) <= kycut,
+            1.0,
+            jnp.exp(-ay * (jnp.abs(grid.ky) - kycut)**s)
+        )
+
+        mask = mask_y[:, None] * mask_x[None, :]
+
         return y * mask
     
     @staticmethod
     @jax.jit
-    def RK4(state, key, grid, params, forcing_spectrum):
+    def RK4(state, grid, params, forcing_spectrum):
         qh, key = state
+        # Draw one noise key per timestep and reuse it for all RK stages
+        key, k_noise = jax.random.split(key, 2)
         dt = params['dt']
 
-        rhs1, key = Solver.rhs(qh, key, grid, params, forcing_spectrum)
-        rhs2, key = Solver.rhs(qh + 0.5 * dt * rhs1, key, grid, params, forcing_spectrum)
-        rhs3, key = Solver.rhs(qh + 0.5 * dt * rhs2, key, grid, params, forcing_spectrum)
-        rhs4, key = Solver.rhs(qh + dt * rhs3, key, grid, params, forcing_spectrum)
+        rhs1, key = Solver.rhs(qh, k_noise, grid, params, forcing_spectrum)
+        rhs2, key = Solver.rhs(qh + 0.5 * dt * rhs1, k_noise, grid, params, forcing_spectrum)
+        rhs3, key = Solver.rhs(qh + 0.5 * dt * rhs2, k_noise, grid, params, forcing_spectrum)
+        rhs4, key = Solver.rhs(qh + dt * rhs3, k_noise, grid, params, forcing_spectrum)
         qh_new = qh + (dt/6.0)*(rhs1 + 2*rhs2 + 2*rhs3 + rhs4)
         return (qh_new, key)
     
     @staticmethod
     @jax.jit
     def rhs(qh, key, grid, params, forcing_spectrum):
-        key, k1, k2 = jax.random.split(key, 3)
+        # Use the provided key to draw a single real-space noise field per timestep
+        # and reuse it for all spectral forcing to ensure Hermitian symmetry.
+        key, k_noise = jax.random.split(key, 2)
 
         # PV to velocity in Fourier space
         psih = -qh * grid.invK2
         uh = -1j * grid.KY * psih
         vh =  1j * grid.KX * psih
 
-        # Back to physical space
-        u, v, q = irfftn(jnp.stack([uh, vh, qh], axis=0), axes=(-2, -1))
+        # Back to physical space; take real part to avoid accumulation of tiny imaginary parts
+        u, v, q = irfftn(jnp.stack([uh, vh, qh], axis=0), axes=(-2, -1)).real
 
-        # Nonlinear advection
-        qe = q + params.get('eta', 0.0)
-        uq = u * qe
-        vq = v * qe
-        stackedh = rfftn(jnp.stack([uq, vq], axis=0), axes=(-2, -1))
-        uqh, vqh = stackedh[0], stackedh[1]
-
-        nonlinear = -1j * (grid.KX * uqh + grid.KY * vqh)
+        # Nonlinear advection 
+        qe = q + params.get('eta', 0.0) 
+        uq = u * qe 
+        vq = v * qe 
+        uqh, vqh = rfftn(jnp.stack([uq, vq], axis=0), axes=(-2, -1)) 
+        nonlinear = -1j * (grid.KX * uqh + grid.KY * vqh) 
         nonlinear = Solver.dealias(nonlinear, grid, s=8)
 
         # Beta term
         beta_term = - params.get('beta', 1e-3) * 1j * grid.KX * psih
 
-        # Forcing
-        noise_real = jax.random.normal(k1, qh.shape)
-        noise_imag = jax.random.normal(k2, qh.shape)
+        # --- Forcing ---
+        # Draw a real-space white-noise field and transform to spectral space so the
+        # forcing respects Hermitian symmetry (real physical fields after iFFT).
+        noise_phys = jax.random.normal(k_noise, (grid.ny, grid.nx))
+        forcing_h = rfftn(noise_phys, axes=(-2, -1))
+
         if forcing_spectrum.shape != qh.shape:
             # common case: (ny, nx) -> (ny, nx//2+1)
             if forcing_spectrum.ndim == 2 and forcing_spectrum.shape[0] == grid.ny and forcing_spectrum.shape[1] == grid.nx:
                 forcing_spectrum = forcing_spectrum[:, : qh.shape[1]]
             else:
                 raise ValueError(f"forcing_spectrum shape {forcing_spectrum.shape} incompatible with qh shape {qh.shape}")
-        forcing = (noise_real + 1j*noise_imag) * forcing_spectrum
+        forcing = forcing_h * forcing_spectrum
 
-        rhs = nonlinear - beta_term + forcing
+        # --- Dissipation ---
+        nu = params.get("nu", 0.0)
+        m  = params.get("m", 4)
+        mu = params.get("mu", 0.0)
+
+        hypervisc = nu * (grid.Kmag ** m) * qh # hyperviscosity (small scale)
+        drag = mu * qh # linear drag (large scale)
+        
+        dissipation = drag + hypervisc
+
+        rhs =  nonlinear + beta_term - dissipation #+ forcing
+
+        # --- Pause to check im happy ---
+        # spectral kinetic energy estimate
+        ke_spec = 0.5 * jnp.sum(jnp.abs(qh) ** 2 * grid.invK2)
+        max_qh = jnp.max(jnp.abs(qh))
+        max_forcing = jnp.max(jnp.abs(forcing))
+        max_nonlinear = jnp.max(jnp.abs(nonlinear))
+        max_beta = jnp.max(jnp.abs(beta_term))
+        max_diss = jnp.max(jnp.abs(dissipation))
+
+        cond = jnp.logical_or(jnp.isnan(ke_spec), ke_spec > 1e6)
+
+        def _print(_):
+            jax.debug.print("DIAG RHS: KE={} max_qh={} max_forcing={} max_nonlinear={} max_beta={} max_diss={}",
+                           ke_spec, max_qh, max_forcing, max_nonlinear, max_beta, max_diss)
+
+        jax.lax.cond(cond, _print, lambda _: None, operand=None)
+
+        assert u.shape == (grid.ny, grid.nx)
+        assert qh.shape == (grid.ny, grid.nx//2 + 1), f"qh shape {qh.shape} unexpected"
+        dealiased = Solver.dealias(qh, grid, s=8)
+        assert dealiased.shape == qh.shape, f"dealias output shape {dealiased.shape} != qh shape {qh.shape}"
+
         return rhs, key
+    
+    def pseudo_randomiser(grid, k_peak, key, energy=1.0):
+        '''This is a method to make Gaussian noise align better with the forcing wavenumber
+        It returns qh right now, NOT dealiased!!!
+        '''
+        k0 = k_peak * 2 * jnp.pi / grid.Lx
+        key_r, key_i = jax.random.split(key)
+
+        modpsi = (grid.Kmag**2 * (1 + (grid.Kmag / k0)**4))**(-0.5)
+        modpsi = modpsi.at[0,0].set(0.0)
+        modpsi = jnp.clip(modpsi, a_min=1e-8, a_max=1e8) #is this clipping necessary?
+
+        # this sets the psuedo-random using modpsi scaling
+        phase = jax.random.normal(key_r, modpsi.shape) + 1j * jax.random.normal(key_i, modpsi.shape)
+        psih = phase * modpsi
+        psih = Solver.dealias(psih, grid, s=8)
+
+        # --- kinetic energy normalization ---
+        # Note: normalize by number of grid points (not its square). Guard against
+        # tiny energy_initial to avoid huge amplification.
+        energy_initial = jnp.sum(jnp.asarray(grid.K2, dtype=jnp.float32) * jnp.abs(psih)**2) / float(grid.nx * grid.ny)
+        energy_initial = jnp.maximum(energy_initial, 1e-16)
+        scale = jnp.sqrt(energy / energy_initial)
+        scale = jnp.minimum(scale, 1e6)
+        psih = psih * scale
+
+        qh = -grid.K2 * psih
+        qh = qh.at[:, 0].set(jnp.real(qh[:, 0]))
+
+        return qh
 
     def write(self, h, path="solver"):
         """Write solver.
@@ -668,21 +734,58 @@ class Solver(PytreeNode, ABC):
         ax.set_xlabel("x")
         ax.set_ylabel("y")
         ax.set_title("Relative Vorticity (ζ)")
+        im.set_array(zeta) #just so the initial field is also in this bitch 
 
         # --- Frame update function ---
         def update(frame):
-            # advance model 
-            self.steps(frame_interval)
-
-            # fetch the updated zeta field
-            zeta = np.array(self.fields["zeta"])
+            if frame == 0:
+                # frame 0: do NOT advance
+                zeta = np.array(self.fields["zeta"])
+            else:
+                self.steps(frame_interval)
+                zeta = np.array(self.fields["zeta"])
             im.set_array(zeta)
-
             ax.set_title(f"Vorticity (step {frame * frame_interval})")
             return [im]
+
+        frames = frames + 1  # include initial field as frame 0
 
         anim = FuncAnimation(fig, update, frames=frames, blit=False)
         anim.save(outname, fps=10)
         plt.close(fig)
+
+    def plot_field_at_step(self, step=0, frame_interval=1, vmin=None, vmax=None):
+        if step > 0:
+            self.steps(step * frame_interval)
+
+        zeta = np.array(self.fields["zeta"])
+        grid = self.grid
+        nan_count = jnp.isnan(zeta).sum()
+        print(f"Number of NaNs (black squares) at step {step}: {nan_count}")
+
+        if vmin is None:
+            vmin = jnp.nanmin(zeta)
+        if vmax is None:
+            vmax = jnp.nanmax(zeta)
+
+        cmap = cm.get_cmap('RdBu_r').copy()
+        cmap.set_bad(color='black')
+        zeta_masked = np.ma.masked_invalid(zeta)
+
+        plt.figure(figsize=(6,5))
+        im = plt.imshow(
+            zeta_masked,
+            origin='lower',
+            cmap=cmap,
+            extent=(-grid.Lx/2, grid.Lx/2, -grid.Ly/2, grid.Ly/2),
+            vmin=vmin,
+            vmax=vmax
+        )
+        plt.colorbar(im, label=r'$\zeta$')
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.title(f'Vorticity Field at Step {step}')
+        plt.show()
+
 
 

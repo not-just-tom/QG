@@ -23,12 +23,15 @@ class Grid(PytreeNode):
         self._dx = self._Lx / self._nx
         self._dy = self._Ly / self._ny
 
-        self._kx = jnp.fft.rfftfreq(self._nx, d=self.dx) * 2*jnp.pi
-        self._ky = jnp.fft.fftfreq(self._ny, d=self.dy) * 2*jnp.pi
-        self._KY, self._KX = jnp.meshgrid(self._ky, self._kx, indexing="ij")
+        self._kx = jnp.fft.rfftfreq(self._nx, d=self._dx) * 2*jnp.pi 
+        self._ky = jnp.fft.fftfreq(self._ny, d=self._dy) * 2*jnp.pi
+
+        # rfft-shaped meshgrid: shape (ny, nx//2+1)
+        self._KX, self._KY = jnp.meshgrid(self._kx, self._ky, indexing='xy')
         self._K2 = self._KX**2 + self._KY**2
-        self._invK2 = jnp.where(self._K2 == 0, 0.0, 1/self._K2)
-        self._Kmag = jnp.sqrt(self.K2)
+        self._invK2 = jnp.where(self._K2 == 0.0, 0.0, 1.0 / self._K2)
+        self._Kmag = jnp.sqrt(self._K2)
+
 
     @property
     def Lx(self):
@@ -55,6 +58,14 @@ class Grid(PytreeNode):
         return self._dy
     
     @property
+    def kx(self):
+        return self._kx
+    
+    @property
+    def ky(self):
+        return self._ky
+
+    @property
     def KX(self):
         return self._KX
     
@@ -76,27 +87,20 @@ class Grid(PytreeNode):
     
     @cached_property
     def x(self):
-        return jnp.linspace(-self.Lx/2, self.Lx/2, self.nx+1)
+        return jnp.linspace(-self.Lx/2, self.Lx/2 - self.dx, self.nx)
     
     @cached_property
     def y(self):
-        return jnp.linspace(-self.Ly/2, self.Ly/2, self.ny+1)
+        return jnp.linspace(-self.Ly/2, self.Ly/2 - self.dy, self.ny)
     
     @cached_property
-    def X(self) -> jax.Array:
-        """Grid :math:`x`-coordinates.
-        """
-
-        return jnp.outer(
-            self.x, jnp.ones(self.ny + 1))
-
+    def X(self):
+        # physical grid (ny, nx)
+        return jnp.meshgrid(self.x, self.y, indexing='xy')[0]  
+    
     @cached_property
-    def Y(self) -> jax.Array:
-        """Grid :math:`y`-coordinates.
-        """
-
-        return jnp.outer(
-            jnp.ones(self.nx + 1), self.y)
+    def Y(self):
+        return jnp.meshgrid(self.x, self.y, indexing='xy')[1]
     
     @staticmethod
     @partial(jax.jit, static_argnums=(0,))
@@ -152,22 +156,6 @@ class Grid(PytreeNode):
         return self._interpolate(self.x, self.y, u, x, y)
 
     @cached_property
-    def dx(self):
-        """:math:`x`-dimension grid spacing.
-        """
-
-        # Need explicit cast, as float32 / int32 -> float64 if x64 is enabled
-        return 2 * self.Lx / self.nx
-
-    @cached_property
-    def dy(self):
-        """:math:`y`-dimension grid spacing.
-        """
-
-        # Need explicit cast, as float32 / int32 -> float64 if x64 is enabled
-        return 2 * (self.Ly / self.ny)
-
-    @cached_property
     def W(self) -> jax.Array:
         """Integration matrix diagonal.
         """
@@ -181,90 +169,6 @@ class Grid(PytreeNode):
         w_y = w_y.at[-1].set(0.5 * self.dy)
 
         return jnp.outer(w_x, w_y)
-
-    def D_x(self, u, *, boundary=True):
-        """Compute an :math:`x`-direction first derivative.
-
-        Parameters
-        ----------
-
-        u : :class:`jax.Array`
-            Field to differentiate.
-        boundary : bool
-            Whether to compute the derivative on the left and right boundaries.
-
-        Returns
-        -------
-
-        :class:`jax.Array`
-            The derivative.
-        """
-
-        return diff(u, dx=self.dx, order=1, N=3, axis=0,
-                    i0=None if boundary else 1, i1=None if boundary else -1)
-
-    def D_y(self, u, boundary=True):
-        """Compute a :math:`y`-direction first derivative.
-
-        Parameters
-        ----------
-
-        u : :class:`jax.Array`
-            Field to differentiate.
-        boundary : bool
-            Whether to compute the derivative on the top and bottom boundaries.
-
-        Returns
-        -------
-
-        :class:`jax.Array`
-            The derivative.
-        """
-
-        return diff(u, dx=self.dy, order=1, N=3, axis=1,
-                    i0=None if boundary else 1, i1=None if boundary else -1)
-
-    def D_xx(self, u, boundary=True):
-        """Compute an :math:`x`-direction second derivative.
-
-        Parameters
-        ----------
-
-        u : :class:`jax.Array`
-            Field to differentiate.
-        boundary : bool
-            Whether to compute the derivative on the left and right boundaries.
-
-        Returns
-        -------
-
-        :class:`jax.Array`
-            The derivative.
-        """
-
-        return diff(u, dx=self.dx, order=2, N=3, axis=0,
-                    i0=None if boundary else 1, i1=None if boundary else -1)
-
-    def D_yy(self, u, boundary=True):
-        """Compute a :math:`y`-direction second derivative.
-
-        Parameters
-        ----------
-
-        u : :class:`jax.Array`
-            Field to differentiate.
-        boundary : bool
-            Whether to compute the derivative on the top and bottom boundaries.
-
-        Returns
-        -------
-
-        :class:`jax.Array`
-            The derivative.
-        """
-
-        return diff(u, dx=self.dy, order=2, N=3, axis=1,
-                    i0=None if boundary else 1, i1=None if boundary else -1)
 
     def integrate(self, u):
         """

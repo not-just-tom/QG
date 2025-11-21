@@ -24,7 +24,6 @@ import importlib
 import model.utils
 importlib.reload(model.utils)
 from .utils import Solver
-from .inversion import ModifiedHelmholtzSolver
 
 
 class QGM(Solver):
@@ -43,20 +42,12 @@ class QGM(Solver):
             self._update_fields(zeta)
         self.fields.zero("F_1")
 
-    @cached_property
-    def modified_helmholtz_solver(self):
-        """Modified Helmholtz solver used for the implicit time discretization.
-        """
-
-        return ModifiedHelmholtzSolver(
-            self.grid, alpha=1 + 0.5 * self.dt, beta=0.5 * self.dt)
-
     def _update_fields(self, zeta):
         """
         Update model fields using a spectral Poisson solve.
         zeta : physical-space vorticity (2D array)
         """
-        # Compute streamfunction in Fourier space (Poisson equation: ∇²ψ = ζ)
+        # Compute streamfunction in Fourier space
         zetah = rfftn(zeta, axes=(-2, -1))
         # Avoid division by zero at k=0
         psih = -zetah * self.grid.invK2
@@ -68,11 +59,16 @@ class QGM(Solver):
 
     def step(self):
         qh = rfftn(self.fields["zeta"], axes=(-2, -1))
-        key = self.parameters.get('key', jax.random.PRNGKey(self.n))  # or store it in self
+        # Use solver's stored key and advance it each timestep
+        key = getattr(self, '_key', None)
+        if key is None:
+            key = self.parameters.get('key', jax.random.PRNGKey(self.n))
         state = (qh, key)
 
-        state = self.RK4(state, key, self.grid, self.parameters, self.forcing_spectrum)
+        state = self.RK4(state, self.grid, self.parameters, self.forcing_spectrum)
         qh_new, key = state
+        # store advanced key for next step?
+        self._key = key
 
         zeta_new = irfftn(qh_new, axes=(-2, -1)).real
         self._update_fields(zeta_new)
@@ -93,9 +89,8 @@ class QGM(Solver):
         psi = model.fields["psi"]
 
         # Compute velocity from ψ
-        u =  jnp.gradient(psi, grid.dy, axis=-2)     #  dψ/dy
-        v = -jnp.gradient(psi, grid.dx, axis=-1)     # -dψ/dx
-
+        u =  jnp.gradient(psi, grid.dy, axis=-2)     #  dont like this gradient call rlly 
+        v = -jnp.gradient(psi, grid.dx, axis=-1)   
         # RMS velocity
         U_rms = jnp.sqrt(0.5 * jnp.mean(u**2 + v**2))
 
