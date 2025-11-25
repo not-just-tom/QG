@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+from jax.numpy.fft import rfftn, irfftn
 from functools import cached_property, partial
 from jax import tree_util
 
@@ -188,28 +189,6 @@ class Grid(PytreeNode):
         """
 
         return jnp.tensordot(u, self.W)
-
-
-    @staticmethod
-    @jax.jit 
-    def _J(dx, dy, q, psi):
-        """ Arakawa Jacobian function"""
-        return jnp.zeros_like(q).at[1:-1, 1:-1].set(
-            (1 / (12 * dx * dy)) * (
-                + (q[2:, 1:-1] - q[:-2, 1:-1]) * (psi[1:-1, 2:] - psi[1:-1, :-2])
-                - (q[1:-1, 2:] - q[1:-1, :-2]) * (psi[2:, 1:-1] - psi[:-2, 1:-1])
-                + q[2:, 1:-1] * (psi[2:, 2:] - psi[2:, :-2])
-                - q[:-2, 1:-1] * (psi[:-2, 2:] - psi[:-2, :-2])
-                - q[1:-1, 2:] * (psi[2:, 2:] - psi[:-2, 2:])
-                + q[1:-1, :-2] * (psi[2:, :-2] - psi[:-2, :-2])
-                + q[2:, 2:] * (psi[1:-1, 2:] - psi[2:, 1:-1])
-                - q[:-2, :-2] * (psi[:-2, 1:-1] - psi[1:-1, :-2])
-                - q[:-2, 2:] * (psi[1:-1, 2:] - psi[:-2, 1:-1])
-                + q[2:, :-2] * (psi[2:, 1:-1] - psi[1:-1, :-2])))
-
-    def J(self, q, psi):
-        """ Arakawa Jacobian callable """
-        return self._J(self.dx, self.dy, q, psi)
 
     def flatten(self):
         # no children (static object) <--- check what this means

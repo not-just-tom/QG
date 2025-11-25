@@ -424,15 +424,19 @@ class Solver(PytreeNode, ABC):
         k_beta = params.get('k_beta', 1.0)
 
         # actual pseudo-random initial spectrum peaked at k_beta
-        qh = Solver.pseudo_randomiser(grid, k_beta, k1, energy=1.0)
+        qh = Solver.pseudo_randomiser(grid, k_beta, k1, energy=100.0)
         qh = Solver.dealias(qh, grid, s=8)
 
-        # not used yet but for maybe normalisation
-        psih = - qh * grid.invK2
-        uh = -1j * grid.KY * psih
-        vh =  1j * grid.KX * psih
-        u = irfftn(uh, axes=(-2, -1))
-        v = irfftn(vh, axes=(-2, -1)) 
+        kmin = 4
+        kmax = 10 #hardcoded
+        band_mask = (grid.Kmag >= kmin) & (grid.Kmag <= kmax)
+        qh = qh * band_mask
+        qh = qh.at[:, 0].set(0.0) 
+
+        E_spec = 0.5 * jnp.sum(jnp.abs(qh)**2 * grid.invK2) / (grid.Lx * grid.Ly)
+        E0 = 5e5  # target initial energy (tune as needed)
+        scale = jnp.sqrt(E0 / (E_spec + 1e-16))
+        qh = qh * scale
 
         #  physical-space initial field
         initial = irfftn(qh, axes=(-2, -1)).real
@@ -497,12 +501,15 @@ class Solver(PytreeNode, ABC):
         # Back to physical space; take real part to avoid accumulation of tiny imaginary parts
         u, v, q = irfftn(jnp.stack([uh, vh, qh], axis=0), axes=(-2, -1)).real
 
-        # Nonlinear advection 
-        qe = q + params.get('eta', 0.0) 
-        uq = u * qe 
-        vq = v * qe 
-        uqh, vqh = rfftn(jnp.stack([uq, vq], axis=0), axes=(-2, -1)) 
-        nonlinear = -1j * (grid.KX * uqh + grid.KY * vqh) 
+        # Compute derivatives in physical space via spectral method
+        dqdx = irfftn(1j * grid.KX * rfftn(q, axes=(-2,-1)), axes=(-2,-1)).real
+        dqdy = irfftn(1j * grid.KY * rfftn(q, axes=(-2,-1)), axes=(-2,-1)).real
+
+        # Skew-symmetric form
+        nonlinear_phys = 0.5 * (u * dqdx + v * dqdy + dqdx * u + dqdy * v)  #0.5*(u·∇q + ∇·(uq))
+
+        # Transform back to Fourier space and apply dealias filter
+        nonlinear = rfftn(nonlinear_phys, axes=(-2,-1))
         nonlinear = Solver.dealias(nonlinear, grid, s=8)
 
         # Beta term
@@ -521,6 +528,8 @@ class Solver(PytreeNode, ABC):
             else:
                 raise ValueError(f"forcing_spectrum shape {forcing_spectrum.shape} incompatible with qh shape {qh.shape}")
         forcing = forcing_h * forcing_spectrum
+        # ensure forcing respects the dealiasing cutoff as well
+        forcing = Solver.dealias(forcing, grid, s=8)
 
         # --- Dissipation ---
         nu = params.get("nu", 0.0)
@@ -546,19 +555,19 @@ class Solver(PytreeNode, ABC):
         cond = jnp.logical_or(jnp.isnan(ke_spec), ke_spec > 1e6)
 
         def _print(_):
-            jax.debug.print("DIAG RHS: KE={} max_qh={} max_forcing={} max_nonlinear={} max_beta={} max_diss={}",
-                           ke_spec, max_qh, max_forcing, max_nonlinear, max_beta, max_diss)
+            pass
+            #jax.debug.print("DIAG RHS: KE={} max_qh={} max_forcing={} max_nonlinear={} max_beta={} max_diss={}",
+            #               ke_spec, max_qh, max_forcing, max_nonlinear, max_beta, max_diss)
 
         jax.lax.cond(cond, _print, lambda _: None, operand=None)
-
         assert u.shape == (grid.ny, grid.nx)
         assert qh.shape == (grid.ny, grid.nx//2 + 1), f"qh shape {qh.shape} unexpected"
-        dealiased = Solver.dealias(qh, grid, s=8)
-        assert dealiased.shape == qh.shape, f"dealias output shape {dealiased.shape} != qh shape {qh.shape}"
+        # sanity-check shapes after dealias operations
+        assert qh.shape == (grid.ny, grid.nx//2 + 1), f"qh shape {qh.shape} unexpected"
 
         return rhs, key
     
-    def pseudo_randomiser(grid, k_peak, key, energy=1.0):
+    def pseudo_randomiser(grid, k_peak, key, energy=0.08):
         '''This is a method to make Gaussian noise align better with the forcing wavenumber
         It returns qh right now, NOT dealiased!!!
         '''
