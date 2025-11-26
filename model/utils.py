@@ -428,7 +428,7 @@ class Solver(PytreeNode, ABC):
         qh = Solver.dealias(qh, grid, s=8)
 
         kmin = 4
-        kmax = 10 #hardcoded
+        kmax = 15 #hardcoded
         band_mask = (grid.Kmag >= kmin) & (grid.Kmag <= kmax)
         qh = qh * band_mask
         qh = qh.at[:, 0].set(0.0) 
@@ -522,13 +522,12 @@ class Solver(PytreeNode, ABC):
         forcing_h = rfftn(noise_phys, axes=(-2, -1))
 
         if forcing_spectrum.shape != qh.shape:
-            # common case: (ny, nx) -> (ny, nx//2+1)
+            # (ny, nx) -> (ny, nx//2+1)
             if forcing_spectrum.ndim == 2 and forcing_spectrum.shape[0] == grid.ny and forcing_spectrum.shape[1] == grid.nx:
                 forcing_spectrum = forcing_spectrum[:, : qh.shape[1]]
             else:
                 raise ValueError(f"forcing_spectrum shape {forcing_spectrum.shape} incompatible with qh shape {qh.shape}")
         forcing = forcing_h * forcing_spectrum
-        # ensure forcing respects the dealiasing cutoff as well
         forcing = Solver.dealias(forcing, grid, s=8)
 
         # --- Dissipation ---
@@ -541,7 +540,7 @@ class Solver(PytreeNode, ABC):
         
         dissipation = drag + hypervisc
 
-        rhs =  nonlinear + beta_term - dissipation #+ forcing
+        rhs =  nonlinear + beta_term - dissipation + forcing
 
         # --- Pause to check im happy ---
         # spectral kinetic energy estimate
@@ -725,44 +724,6 @@ class Solver(PytreeNode, ABC):
         model.n = config["n"]
         return model
 
-    def make_animation(self, nsteps=5000, frame_interval=100, outname="outputs/qg_gpu.gif"):
-        frames = nsteps // frame_interval
-        fig, ax = plt.subplots(figsize=(6, 5), constrained_layout=True)
-
-        # --- set colours from initial zeta field ---
-        zeta = np.array(self.fields["zeta"])
-        vmin, vmax = float(np.min(zeta)), float(np.max(zeta))
-
-        im = ax.imshow(
-            zeta,
-            origin='lower',
-            cmap='RdBu_r',
-            extent=(-self.grid.Lx, self.grid.Lx, -self.grid.Ly, self.grid.Ly),
-            vmin=vmin, vmax=vmax
-        )
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
-        ax.set_title("Relative Vorticity (ζ)")
-        im.set_array(zeta) #just so the initial field is also in this bitch 
-
-        # --- Frame update function ---
-        def update(frame):
-            if frame == 0:
-                # frame 0: do NOT advance
-                zeta = np.array(self.fields["zeta"])
-            else:
-                self.steps(frame_interval)
-                zeta = np.array(self.fields["zeta"])
-            im.set_array(zeta)
-            ax.set_title(f"Vorticity (step {frame * frame_interval})")
-            return [im]
-
-        frames = frames + 1  # include initial field as frame 0
-
-        anim = FuncAnimation(fig, update, frames=frames, blit=False)
-        anim.save(outname, fps=10)
-        plt.close(fig)
-
     def plot_field_at_step(self, step=0, frame_interval=1, vmin=None, vmax=None):
         if step > 0:
             self.steps(step * frame_interval)
@@ -796,5 +757,202 @@ class Solver(PytreeNode, ABC):
         plt.title(f'Vorticity Field at Step {step}')
         plt.show()
 
+    def make_animation(
+            self, 
+            nsteps=5000, 
+            frame_interval=100,
+            outname="outputs/qg_gpu.gif",
+            stats=None        # flags for which plots, currently ['zonal', 'energy', 'time_av']
+        ):
 
+        # Normalize stats
+        if stats is None:
+            stats = []
+        valid_stats = ["zonal", "energy"]
+        plot_stats = [s for s in stats if s in valid_stats]
+
+        # setup figs dynamically 
+        n_panels = 1 + len(plot_stats)
+        panel_indices = {"vort": 0}
+
+        if "zonal" in plot_stats:
+            panel_indices["zonal"] = len(panel_indices)
+        if "energy" in plot_stats:
+            panel_indices["energy"] = len(panel_indices)
+
+        fig, axs = plt.subplots(
+            1, n_panels, figsize=(5 * n_panels, 5),
+            constrained_layout=True
+        )
+
+        # Always ensure axs is a list-like
+        if n_panels == 1:
+            axs = [axs]
+
+        ax_vort = axs[panel_indices["vort"]]
+        y = self.grid.y
+        dx = self.grid.dx
+        dy = self.grid.dy
+
+        umean_list = []
+        energy_list = []
+        time_list = []
+
+        # vorticity (always)
+        zeta = np.array(self.fields["zeta"])
+        vmin, vmax = float(zeta.min()), float(zeta.max())
+
+        im = ax_vort.imshow(
+            zeta, origin="lower",
+            cmap="RdBu_r",
+            extent=(-self.grid.Lx/2, self.grid.Lx/2,
+                    -self.grid.Ly/2, self.grid.Ly/2),
+            vmin=vmin, vmax=vmax
+        )
+        ax_vort.set_title("Vorticity")
+        ax_vort.set_xlabel("x")
+        ax_vort.set_ylabel("y")
+
+        # zonal mean velocity
+        if "zonal" in stats:
+            ax_umean = axs[panel_indices["zonal"]]
+            line_umean, = ax_umean.plot(np.zeros_like(y), y)
+            ax_umean.set_title("Zonal-mean U (time-avg building)")
+            ax_umean.set_xlabel("Ū(y)")
+            ax_umean.set_ylabel("y")
+            ax_umean.grid(True)
+        else:
+            line_umean = None
+
+        # energy
+        if "energy" in stats:
+            ax_energy = axs[panel_indices["energy"]]
+            line_energy, = ax_energy.plot([], [])
+            ax_energy.set_title("Energy vs Time")
+            ax_energy.set_xlabel("Step")
+            ax_energy.set_ylabel("Energy")
+            ax_energy.grid(True)
+        else:
+            line_energy = None
+
+        # update func
+        def update(frame):
+            nonlocal umean_list, energy_list, time_list
+
+            if frame == 0:
+                zeta = np.array(self.fields["zeta"])
+                psi = np.array(self.fields["psi"])
+            else:
+                self.steps(frame_interval)
+                zeta = np.array(self.fields["zeta"])
+                psi = np.array(self.fields["psi"])
+
+            # vorticity update
+            im.set_array(zeta)
+            ax_vort.set_title(f"Vorticity (step {frame * frame_interval})")
+
+            # Compute velocities if needed
+            if "zonal" in stats or "energy" in stats or 'time_av' in stats:
+                u = (np.roll(psi, -1, 0) - np.roll(psi, 1, 0)) / (2 * dy)
+                v = -(np.roll(psi, -1, 1) - np.roll(psi, 1, 1)) / (2 * dx)
+            
+            # Time averaged final 
+            if 'time' in stats:
+                ubar = u.mean(axis=1)
+                umean_list.append(ubar)
+
+            # zonal mean velocity
+            if "zonal" in stats:
+                ubar = u.mean(axis=1)
+                line_umean.set_xdata(ubar)
+
+            # energy
+            if "energy" in stats:
+                KE = 0.5 * np.mean(u*u + v*v)
+                energy_list.append(KE)
+                time_list.append(frame * frame_interval)
+
+                line_energy.set_xdata(time_list)
+                line_energy.set_ydata(energy_list)
+                ax_energy.relim()
+                ax_energy.autoscale_view()
+
+            return [x for x in [im, line_umean, line_energy] if x is not None]
+        
+        
+        frames = nsteps // frame_interval + 1
+        anim = FuncAnimation(fig, update, frames=frames, blit=False)
+        anim.save(outname, fps=10)
+        plt.close(fig)
+        print(f"Saved animation to {outname}")
+
+        # --- time-averaged final plot ---
+        fig2, ax2 = plt.subplots(figsize=(5,4))
+        umean_timeavg = np.mean(np.array(umean_list), axis=0)
+        ax2.plot(umean_timeavg, y)
+        ax2.set_title("Final Time-mean Zonal Velocity")
+        ax2.set_ylabel("y")
+        ax2.set_xlabel("Ū(y)")
+        ax2.grid(True)
+        fig2.savefig("outputs/time_averaged_u.png")
+        plt.close(fig2)
+
+
+
+
+    ################## come back to this, wanted to plot the energy spectra similar to Cope. 
+    def compute_ke_spectrum(qh, grid):
+        """
+        Compute isotropic kinetic energy spectrum from qh (spectral vorticity).
+        Returns:
+            k_vals: integer wavenumbers (1D)
+            E_k: isotropic KE spectrum (1D)
+        """
+
+        # 2D kinetic energy density in spectral space:
+        #   E = 0.5 * |q_h|^2 / k^2     because psi_h = -qh/k^2
+        E2D = 0.5 * (jnp.abs(qh)**2 * grid.invK2)   # shape (ny, nx//2+1)
+
+        kmag = grid.Kmag                               # same shape
+        kmax = int(jnp.max(kmag))
+        k_vals = jnp.arange(kmax + 1)
+
+        # Bin indices: integer shell each point belongs to
+        bins = jnp.floor(kmag).astype(int)
+        bins = jnp.clip(bins, 0, kmax)
+
+        # Sum energy into bins
+        E_k = jnp.zeros(kmax + 1)
+        E_k = E_k.at[bins].add(E2D)
+
+        return k_vals, E_k
+
+
+    def plot_ke(self, nsteps=5000, frame_interval=100,outname="ke_spectrum.png", title="Kinetic Energy Spectrum"):
+        """
+        Just checking for now
+        """
+        k_vals_list = []
+        E_k_list = []
+        frames = nsteps // frame_interval + 1
+        for i in jnp.arange(frames):
+            self.steps(frame_interval)
+            zeta = np.array(self.fields["zeta"])
+
+            k_vals, E_k = Solver.compute_ke_spectrum(zeta, self.grid)
+            k_vals_list.append(k_vals)
+            E_k_list.append(E_k)
+
+        plt.figure(figsize=(6, 5))
+        plt.loglog(k_vals_list, E_k_list, marker="o")   # skip k=0
+        plt.xlabel("Wavenumber k")
+        plt.ylabel("E(k)")
+        plt.title(title)
+        plt.grid(True, which="both", ls="--", alpha=0.6)
+        plt.tight_layout()
+        plt.savefig(outname)
+        plt.close()
+
+        print(f"[KE Spectrum] Saved to {outname}")
+        return k_vals, E_k
 
