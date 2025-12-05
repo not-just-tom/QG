@@ -299,13 +299,13 @@ class Solver(PytreeNode, ABC):
         self.epsilon = params.get('epsilon', 1e-4) # target energy injection rate
 
 
-        forcing_spectrum = jnp.exp(- (grid.Kmag - self.k_f)**2 / (2 * self.k_width**2))
+        forcing_spectrum = jnp.exp(- (grid.Kmag - self.k_f)**2 / (2 * self.k_width**2)) # check this
         forcing_spectrum = jnp.where(grid.K2 == 0, 0.0, forcing_spectrum)
 
         eps0 = jnp.sum(forcing_spectrum * grid.invK2 / 2) / (grid.Lx * grid.Ly)
-        self.forcing_spectrum = forcing_spectrum * (self.epsilon / eps0)
+        self.forcing_spectrum = forcing_spectrum * (self.epsilon / eps0) # check this
 
-        # === Downsampling initial field for low res ===
+        # === Downsampling initial field for low res === #does this work at all lmao
         if params.get('downsample', None) is None: 
             pass
         else:
@@ -327,7 +327,7 @@ class Solver(PytreeNode, ABC):
         self._prescribed_field_states = tuple(sorted(prescribed_field_states))
 
         self.zero_prescribed() # zeros the things we're interested in
-        self.initialize() # removes irrelevant states from another run - check this is strictly necessary
+        self.initialize() # removes irrelevant states from another run
 
     @property
     def parameters(self):
@@ -422,19 +422,27 @@ class Solver(PytreeNode, ABC):
 
         grid = self.grid
         k_beta = params.get('k_beta', 1.0)
+        kmin = params.get('kmin', 4.0)
+        kmax = params.get('kmax', 10.0)
 
-        # actual pseudo-random initial spectrum peaked at k_beta
-        qh = Solver.pseudo_randomiser(grid, k_beta, k1, energy=100.0)
+        # pseudo-random initial spectrum peaked at k_beta
+        qh = Solver.pseudo_randomiser(grid, k_beta, k1)
         qh = Solver.dealias(qh, grid, s=8)
 
-        kmin = 4
-        kmax = 15 #hardcoded
+        # --- band-pass filter ---
         band_mask = (grid.Kmag >= kmin) & (grid.Kmag <= kmax)
         qh = qh * band_mask
         qh = qh.at[:, 0].set(0.0) 
 
+        # --- normalisation ---
+        R_beta = params.get('R_beta', 3.0) # this probably isnt a good value - give it a look later
+        epsilon = params.get('epsilon', 1e-5)
+        beta = params.get('beta', 10.0)
+        target_U = jnp.square(jnp.sqrt(2) * jnp.power(epsilon, 0.2) * R_beta / jnp.power(beta, 0.1))
+
+
         E_spec = 0.5 * jnp.sum(jnp.abs(qh)**2 * grid.invK2) / (grid.Lx * grid.Ly)
-        E0 = 5e5  # target initial energy (tune as needed)
+        E0 = 100000  # target initial energy (tune as needed)
         scale = jnp.sqrt(E0 / (E_spec + 1e-16))
         qh = qh * scale
 
@@ -530,45 +538,18 @@ class Solver(PytreeNode, ABC):
         forcing = forcing_h * forcing_spectrum
         forcing = Solver.dealias(forcing, grid, s=8)
 
-        # --- Dissipation ---
-        nu = params.get("nu", 0.0)
-        m  = params.get("m", 4)
-        mu = params.get("mu", 0.0)
+        rhs =  nonlinear + beta_term + forcing # forcing needs building out
 
-        hypervisc = nu * (grid.Kmag ** m) * qh # hyperviscosity (small scale)
-        drag = mu * qh # linear drag (large scale)
-        
-        dissipation = drag + hypervisc
-
-        rhs =  nonlinear + beta_term - dissipation + forcing
-
-        # --- Pause to check im happy ---
-        # spectral kinetic energy estimate
-        ke_spec = 0.5 * jnp.sum(jnp.abs(qh) ** 2 * grid.invK2)
-        max_qh = jnp.max(jnp.abs(qh))
-        max_forcing = jnp.max(jnp.abs(forcing))
-        max_nonlinear = jnp.max(jnp.abs(nonlinear))
-        max_beta = jnp.max(jnp.abs(beta_term))
-        max_diss = jnp.max(jnp.abs(dissipation))
-
-        cond = jnp.logical_or(jnp.isnan(ke_spec), ke_spec > 1e6)
-
-        def _print(_):
-            pass
-            #jax.debug.print("DIAG RHS: KE={} max_qh={} max_forcing={} max_nonlinear={} max_beta={} max_diss={}",
-            #               ke_spec, max_qh, max_forcing, max_nonlinear, max_beta, max_diss)
-
-        jax.lax.cond(cond, _print, lambda _: None, operand=None)
+        # --- Shape check ---
         assert u.shape == (grid.ny, grid.nx)
         assert qh.shape == (grid.ny, grid.nx//2 + 1), f"qh shape {qh.shape} unexpected"
-        # sanity-check shapes after dealias operations
         assert qh.shape == (grid.ny, grid.nx//2 + 1), f"qh shape {qh.shape} unexpected"
 
         return rhs, key
     
-    def pseudo_randomiser(grid, k_peak, key, energy=0.08):
-        '''This is a method to make Gaussian noise align better with the forcing wavenumber
-        It returns qh right now, NOT dealiased!!!
+    def pseudo_randomiser(grid, k_peak, key):
+        '''This is a method to make noise align better with the forcing wavenumber
+        It returns qh right now, NOT dealiased!!! No normalisation!!!!
         '''
         k0 = k_peak * 2 * jnp.pi / grid.Lx
         key_r, key_i = jax.random.split(key)
@@ -581,15 +562,6 @@ class Solver(PytreeNode, ABC):
         phase = jax.random.normal(key_r, modpsi.shape) + 1j * jax.random.normal(key_i, modpsi.shape)
         psih = phase * modpsi
         psih = Solver.dealias(psih, grid, s=8)
-
-        # --- kinetic energy normalization ---
-        # Note: normalize by number of grid points (not its square). Guard against
-        # tiny energy_initial to avoid huge amplification.
-        energy_initial = jnp.sum(jnp.asarray(grid.K2, dtype=jnp.float32) * jnp.abs(psih)**2) / float(grid.nx * grid.ny)
-        energy_initial = jnp.maximum(energy_initial, 1e-16)
-        scale = jnp.sqrt(energy / energy_initial)
-        scale = jnp.minimum(scale, 1e6)
-        psih = psih * scale
 
         qh = -grid.K2 * psih
         qh = qh.at[:, 0].set(jnp.real(qh[:, 0]))
@@ -762,28 +734,42 @@ class Solver(PytreeNode, ABC):
             nsteps=5000, 
             frame_interval=100,
             outname="outputs/qg_gpu.gif",
-            stats=None        # flags for which plots, currently ['zonal', 'energy', 'time_av']
+            stats=None        # flags for which plots, currently ['zonal', 'energy', 'enstrophy', ke_spec]
         ):
 
         # Normalize stats
         if stats is None:
             stats = []
-        valid_stats = ["zonal", "energy"]
-        plot_stats = [s for s in stats if s in valid_stats]
+        valid_stats = ["zonal", "energy", 'enstrophy', 'kespec']
+        stats = [s for s in stats if s in valid_stats]
 
         # setup figs dynamically 
-        n_panels = 1 + len(plot_stats)
+        n_panels = 1 + len(stats)
         panel_indices = {"vort": 0}
 
-        if "zonal" in plot_stats:
+        if "zonal" in stats:
             panel_indices["zonal"] = len(panel_indices)
-        if "energy" in plot_stats:
+        if "energy" in stats:
             panel_indices["energy"] = len(panel_indices)
+        if "enstrophy" in stats:
+            panel_indices["enstrophy"] = len(panel_indices)
+        if "kespec" in stats:
+            panel_indices["kespec"] = len(panel_indices)
+
+        # Compute subplot grid
+        if n_panels == 1:
+            nrows, ncols = 1, 1
+        else:
+            nrows = 2
+            ncols = int(np.ceil(n_panels / 2))
 
         fig, axs = plt.subplots(
-            1, n_panels, figsize=(5 * n_panels, 5),
-            constrained_layout=True
+            nrows, ncols,
+            figsize=(5 * ncols, 5 * nrows),
+            constrained_layout=False
         )
+
+        axs = np.ravel(axs)
 
         # Always ensure axs is a list-like
         if n_panels == 1:
@@ -796,7 +782,11 @@ class Solver(PytreeNode, ABC):
 
         umean_list = []
         energy_list = []
-        time_list = []
+        enstrophy_list = []
+        ke_list = []
+        time_list_energy = []
+        time_list_enstro = []
+        time_list_ke = []
 
         # vorticity (always)
         zeta = np.array(self.fields["zeta"])
@@ -817,7 +807,7 @@ class Solver(PytreeNode, ABC):
         if "zonal" in stats:
             ax_umean = axs[panel_indices["zonal"]]
             line_umean, = ax_umean.plot(np.zeros_like(y), y)
-            ax_umean.set_title("Zonal-mean U (time-avg building)")
+            ax_umean.set_title("Zonal-mean U")
             ax_umean.set_xlabel("Ū(y)")
             ax_umean.set_ylabel("y")
             ax_umean.grid(True)
@@ -835,9 +825,31 @@ class Solver(PytreeNode, ABC):
         else:
             line_energy = None
 
+        # enstrophy
+        if "enstrophy" in stats:
+            ax_enstrophy = axs[panel_indices["enstrophy"]]
+            line_enstrophy, = ax_enstrophy.plot([], [])
+            ax_enstrophy.set_title("Enstrophy vs Time")
+            ax_enstrophy.set_xlabel("Step")
+            ax_enstrophy.set_ylabel("Enstrophy")
+            ax_enstrophy.grid(True)
+        else:
+            line_enstrophy = None
+
+        # KE spectrum
+        if "kespec" in stats:
+            ax_spec = axs[panel_indices["kespec"]] if "kespec" in panel_indices else axs[-1]
+            line_spec, = ax_spec.loglog([], [])
+            ax_spec.set_title("KE Spectrum")
+            ax_spec.set_xlabel("k")
+            ax_spec.set_ylabel("E(k)")
+            ax_spec.grid(True, which='both')
+        else:
+            line_spec = None
+
         # update func
         def update(frame):
-            nonlocal umean_list, energy_list, time_list
+            nonlocal umean_list, energy_list, enstrophy_list, ke_list, time_list_energy, time_list_enstro, time_list_ke
 
             if frame == 0:
                 zeta = np.array(self.fields["zeta"])
@@ -852,107 +864,143 @@ class Solver(PytreeNode, ABC):
             ax_vort.set_title(f"Vorticity (step {frame * frame_interval})")
 
             # Compute velocities if needed
-            if "zonal" in stats or "energy" in stats or 'time_av' in stats:
+            if "zonal" in stats or "energy" in stats or "enstrophy" in stats:
                 u = (np.roll(psi, -1, 0) - np.roll(psi, 1, 0)) / (2 * dy)
                 v = -(np.roll(psi, -1, 1) - np.roll(psi, 1, 1)) / (2 * dx)
             
-            # Time averaged final 
-            if 'time' in stats:
-                ubar = u.mean(axis=1)
-                umean_list.append(ubar)
-
             # zonal mean velocity
             if "zonal" in stats:
                 ubar = u.mean(axis=1)
                 line_umean.set_xdata(ubar)
+                umean_list.append(ubar)
 
             # energy
             if "energy" in stats:
-                KE = 0.5 * np.mean(u*u + v*v)
+                KE = 0.5 * np.mean(u**2 + v**2)
                 energy_list.append(KE)
-                time_list.append(frame * frame_interval)
+                time_list_energy.append(frame * frame_interval)
 
-                line_energy.set_xdata(time_list)
+                line_energy.set_xdata(time_list_energy)
                 line_energy.set_ydata(energy_list)
                 ax_energy.relim()
                 ax_energy.autoscale_view()
 
-            return [x for x in [im, line_umean, line_energy] if x is not None]
-        
-        
+            # enstrophy
+            if "enstrophy" in stats:
+                enstro = 0.5 * np.mean(zeta**2)
+                enstrophy_list.append(enstro)
+                time_list_enstro.append(frame * frame_interval)
+
+                line_enstrophy.set_xdata(time_list_enstro)
+                line_enstrophy.set_ydata(enstrophy_list)
+                ax_enstrophy.relim()
+                ax_enstrophy.autoscale_view()
+
+            if "kespec" in stats:
+                E_k, kbins = Solver.compute_ke_spectrum(psi, self.grid)
+                ke_list.append(E_k)
+                time_list_ke.append(kbins)
+                line_spec.set_ydata(E_k[1:])
+                line_spec.set_xdata(kbins[1:])
+                ax_spec.relim()
+                ax_spec.autoscale_view()
+
+            return [x for x in [im, line_umean, line_energy, line_enstrophy, line_spec] if x is not None]
+
+
         frames = nsteps // frame_interval + 1
         anim = FuncAnimation(fig, update, frames=frames, blit=False)
         anim.save(outname, fps=10)
         plt.close(fig)
         print(f"Saved animation to {outname}")
 
-        # --- time-averaged final plot ---
-        fig2, ax2 = plt.subplots(figsize=(5,4))
-        umean_timeavg = np.mean(np.array(umean_list), axis=0)
-        ax2.plot(umean_timeavg, y)
-        ax2.set_title("Final Time-mean Zonal Velocity")
-        ax2.set_ylabel("y")
-        ax2.set_xlabel("Ū(y)")
-        ax2.grid(True)
-        fig2.savefig("outputs/time_averaged_u.png")
+        # Compute subplot for final plots 
+        if n_panels <4:
+            nrows, ncols = 1, n_panels
+        else:
+            nrows = 2
+            ncols = int(np.ceil(n_panels / 2))
+
+        fig2, axs2 = plt.subplots(
+            nrows, ncols,
+            figsize=(5 * ncols, 5 * nrows),
+            constrained_layout=True
+        )
+
+        axs2 = np.ravel(axs2)
+
+        # --- final: time-averaged zonal velocity ---
+        if "zonal" in stats:
+            ax2_umean = axs2[panel_indices["zonal"]]
+            umean_timeavg = np.mean(np.array(umean_list), axis=0)
+            ax2_umean.plot(umean_timeavg, y)
+            ax2_umean.set_title("Final Time-averaged Zonal Velocity")
+            ax2_umean.set_ylabel("y")
+            ax2_umean.set_xlabel("Ū(y)")
+            ax2_umean.grid(True)
+
+        # --- final: energy vs time ---
+        if "energy" in stats:
+            ax2_energy = axs2[panel_indices["energy"]]
+            ax2_energy.plot(time_list_energy, energy_list)
+            ax2_energy.set_title("Energy vs Time (Final)")
+            ax2_energy.set_xlabel("Step")
+            ax2_energy.set_ylabel("Energy")
+            ax2_energy.grid(True)
+
+        # --- final: enstrophy vs time ---
+        if "enstrophy" in stats:
+            ax2_enstro = axs2[panel_indices["enstrophy"]]
+            ax2_enstro.plot(time_list_enstro, enstrophy_list)
+            ax2_enstro.set_title("Enstrophy vs Time (Final)")
+            ax2_enstro.set_xlabel("Step")
+            ax2_enstro.set_ylabel("Enstrophy")
+            ax2_enstro.grid(True)
+
+        if "kespec" in stats:
+            ke_stack = np.vstack(ke_list)  
+            E_k_timeavg = ke_stack.mean(axis=0)
+            k_vals = np.arange(E_k_timeavg.size)
+
+            ax2_kespec = axs2[panel_indices["kespec"]]
+            ax2_kespec.loglog(k_vals[1:], E_k_timeavg[1:])
+            ax2_kespec.set_title("Time-Averaged Energy Spectra")
+            ax2_kespec.set_xlabel("Step")
+            ax2_kespec.set_ylabel("Energy")
+            ax2_kespec.grid(True)
+
+        # Save all final panels together
+        fig2.savefig("outputs/final_summary.png")
         plt.close(fig2)
 
 
 
-
-    ################## come back to this, wanted to plot the energy spectra similar to Cope. 
-    def compute_ke_spectrum(qh, grid):
+    @staticmethod
+    def compute_ke_spectrum(psi, grid):
         """
-        Compute isotropic kinetic energy spectrum from qh (spectral vorticity).
-        Returns:
-            k_vals: integer wavenumbers (1D)
-            E_k: isotropic KE spectrum (1D)
+        Compute 1D isotropic KE spectrum E(k) from streamfunction psi(x,y).
         """
+        # Compute velocity in Fourier space
+        psih = rfftn(psi, axes=(-2,-1))
+        uh = -1j * grid.KY * psih
+        vh =  1j * grid.KX * psih
 
-        # 2D kinetic energy density in spectral space:
-        #   E = 0.5 * |q_h|^2 / k^2     because psi_h = -qh/k^2
-        E2D = 0.5 * (jnp.abs(qh)**2 * grid.invK2)   # shape (ny, nx//2+1)
+        # KE density in spectral space
+        KE2D = 0.5 * (jnp.abs(uh)**2 + jnp.abs(vh)**2)
 
-        kmag = grid.Kmag                               # same shape
-        kmax = int(jnp.max(kmag))
-        k_vals = jnp.arange(kmax + 1)
+        # bin into isotropic shells
+        kmax = int(jnp.max(grid.Kmag))
+        kbins = jnp.arange(kmax+1)
 
-        # Bin indices: integer shell each point belongs to
-        bins = jnp.floor(kmag).astype(int)
-        bins = jnp.clip(bins, 0, kmax)
+        # flatten arrays
+        kmag_flat = grid.Kmag.flatten().astype(int)
+        KE_flat = KE2D.flatten()
 
-        # Sum energy into bins
-        E_k = jnp.zeros(kmax + 1)
-        E_k = E_k.at[bins].add(E2D)
+        # accumulate into bins
+        E_k = jnp.zeros(kmax+1, dtype=float).at[kbins].add(
+            jnp.bincount(kmag_flat, weights=KE_flat, length=kmax+1)
+        )
 
-        return k_vals, E_k
+        return np.array(E_k), np.array(kbins)
 
-
-    def plot_ke(self, nsteps=5000, frame_interval=100,outname="ke_spectrum.png", title="Kinetic Energy Spectrum"):
-        """
-        Just checking for now
-        """
-        k_vals_list = []
-        E_k_list = []
-        frames = nsteps // frame_interval + 1
-        for i in jnp.arange(frames):
-            self.steps(frame_interval)
-            zeta = np.array(self.fields["zeta"])
-
-            k_vals, E_k = Solver.compute_ke_spectrum(zeta, self.grid)
-            k_vals_list.append(k_vals)
-            E_k_list.append(E_k)
-
-        plt.figure(figsize=(6, 5))
-        plt.loglog(k_vals_list, E_k_list, marker="o")   # skip k=0
-        plt.xlabel("Wavenumber k")
-        plt.ylabel("E(k)")
-        plt.title(title)
-        plt.grid(True, which="both", ls="--", alpha=0.6)
-        plt.tight_layout()
-        plt.savefig(outname)
-        plt.close()
-
-        print(f"[KE Spectrum] Saved to {outname}")
-        return k_vals, E_k
 
