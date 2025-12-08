@@ -21,11 +21,6 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib.cm as cm
 
-import importlib
-import model.inversion
-importlib.reload(model.inversion)
-from .inversion import PoissonSolver
-
 from .grid import Grid
 from .pytree import PytreeNode
 
@@ -365,10 +360,6 @@ class Solver(PytreeNode, ABC):
     @cached_property
     def dt(self):
         return jnp.array(self.parameters["dt"])
-
-    @cached_property
-    def poisson_solver(self):
-        return PoissonSolver(self.grid)
 
     @property
     def prescribed_field_states(self):
@@ -965,8 +956,8 @@ class Solver(PytreeNode, ABC):
             ax2_kespec = axs2[panel_indices["kespec"]]
             ax2_kespec.loglog(k_vals[1:], E_k_timeavg[1:])
             ax2_kespec.set_title("Time-Averaged Energy Spectra")
-            ax2_kespec.set_xlabel("Step")
-            ax2_kespec.set_ylabel("Energy")
+            ax2_kespec.set_xlabel("k")
+            ax2_kespec.set_ylabel("E(k)")
             ax2_kespec.grid(True)
 
         # Save all final panels together

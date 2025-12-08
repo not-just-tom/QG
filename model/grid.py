@@ -3,11 +3,9 @@ import jax.numpy as jnp
 from jax.numpy.fft import rfftn, irfftn
 from functools import cached_property, partial
 from jax import tree_util
-
-from .finite_difference import diff_bounded, order_reversed
 from .pytree import PytreeNode
 
-diff = partial(diff_bounded, interior_order=order_reversed)
+
 
 class Grid(PytreeNode):
 
