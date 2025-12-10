@@ -291,13 +291,16 @@ class Solver(PytreeNode, ABC):
         # forcing stuff
         self.k_f = params.get('k_f', 8.0)        # central forcing wavenumber
         self.k_width = params.get('k_width', 2.0) # width of the ring
-        self.epsilon = params.get('epsilon', 1e-4) # target energy injection rate
 
+        # ---  (setting energy input for forcing) ---
+        L_rh = params.get('L_rh', 1.0) 
+        beta = params.get('beta', 10.0)
+        self.epsilon = 1e-6 *beta**3*L_rh**5 # target energy injection rate using C_eps = 1e-3
 
-        forcing_spectrum = jnp.exp(- (grid.Kmag - self.k_f)**2 / (2 * self.k_width**2)) # check this
+        forcing_spectrum = jnp.exp(- (grid.Kmag - self.k_f)**2 / (2 * self.k_width**2)) # standard Gaussian annulus - im happy w this
         forcing_spectrum = jnp.where(grid.K2 == 0, 0.0, forcing_spectrum)
 
-        eps0 = jnp.sum(forcing_spectrum * grid.invK2 / 2) / (grid.Lx * grid.Ly)
+        eps0 = jnp.sum(forcing_spectrum * grid.invK2 / 2)
         self.forcing_spectrum = forcing_spectrum * (self.epsilon / eps0) # check this
 
         # === Downsampling initial field for low res === #does this work at all lmao
@@ -412,33 +415,21 @@ class Solver(PytreeNode, ABC):
         key, k1 = jax.random.split(key, 2)
 
         grid = self.grid
-        k_beta = params.get('k_beta', 1.0)
+        k_f = params.get('k_f', 16.0)
         kmin = params.get('kmin', 4.0)
         kmax = params.get('kmax', 10.0)
 
-        # pseudo-random initial spectrum peaked at k_beta
-        qh = Solver.pseudo_randomiser(grid, k_beta, k1)
+        # pseudo-random initial spectrum peaked at k_f
+        qh = Solver.pseudo_randomiser(grid, k_f, k1)
         qh = Solver.dealias(qh, grid, s=8)
 
         # --- band-pass filter ---
         band_mask = (grid.Kmag >= kmin) & (grid.Kmag <= kmax)
         qh = qh * band_mask
-        qh = qh.at[:, 0].set(0.0) 
-
-        # --- normalisation ---
-        R_beta = params.get('R_beta', 3.0) # this probably isnt a good value - give it a look later
-        epsilon = params.get('epsilon', 1e-5)
-        beta = params.get('beta', 10.0)
-        target_U = jnp.square(jnp.sqrt(2) * jnp.power(epsilon, 0.2) * R_beta / jnp.power(beta, 0.1))
-
-
-        E_spec = 0.5 * jnp.sum(jnp.abs(qh)**2 * grid.invK2) / (grid.Lx * grid.Ly)
-        E0 = 10  # target initial energy (tune as needed)
-        scale = jnp.sqrt(E0 / (E_spec + 1e-16))
-        qh = qh * scale
+        qh = qh.at[:, 0].set(0.0)
 
         #  physical-space initial field
-        initial = irfftn(qh, axes=(-2, -1)).real
+        initial = irfftn(qh, axes=(-2, -1), norm='ortho').real
         assert initial.shape == (grid.ny, grid.nx)
         return initial
 
@@ -456,15 +447,15 @@ class Solver(PytreeNode, ABC):
         ay = -jnp.log(1e-15) / ((kymax - kycut)**s) # these should be the same for now.
         mask_x = jnp.where(
             jnp.abs(grid.kx) <= kxcut,
-            1.0,
-            jnp.exp(-ax * (jnp.abs(grid.kx) - kxcut)**s)
-        )
+            1.0,0)
+        #    jnp.exp(-ax * (jnp.abs(grid.kx) - kxcut)**s)
+        #)
 
         mask_y = jnp.where(
             jnp.abs(grid.ky) <= kycut,
-            1.0,
-            jnp.exp(-ay * (jnp.abs(grid.ky) - kycut)**s)
-        )
+            1.0,0)
+        #    jnp.exp(-ay * (jnp.abs(grid.ky) - kycut)**s)
+        #)
 
         mask = mask_y[:, None] * mask_x[None, :]
 
@@ -490,7 +481,7 @@ class Solver(PytreeNode, ABC):
     def rhs(qh, key, grid, params, forcing_spectrum):
         # Use the provided key to draw a single real-space noise field per timestep
         # and reuse it for all spectral forcing to ensure Hermitian symmetry.
-        key, k_noise = jax.random.split(key, 2)
+        key, key_noise = jax.random.split(key, 2)
 
         # PV to velocity in Fourier space
         psih = -qh * grid.invK2
@@ -498,27 +489,25 @@ class Solver(PytreeNode, ABC):
         vh =  1j * grid.KX * psih
 
         # Back to physical space; take real part to avoid accumulation of tiny imaginary parts
-        u, v, q = irfftn(jnp.stack([uh, vh, qh], axis=0), axes=(-2, -1)).real
+        u, v, q = irfftn(jnp.stack([uh, vh, qh], axis=0), axes=(-2, -1), norm='ortho').real
 
         # Compute derivatives in physical space via spectral method
-        dqdx = irfftn(1j * grid.KX * rfftn(q, axes=(-2,-1)), axes=(-2,-1)).real
-        dqdy = irfftn(1j * grid.KY * rfftn(q, axes=(-2,-1)), axes=(-2,-1)).real
+        dqdx = irfftn(1j * grid.KX * rfftn(q, axes=(-2,-1), norm='ortho'), axes=(-2,-1), norm='ortho').real
+        dqdy = irfftn(1j * grid.KY * rfftn(q, axes=(-2,-1), norm='ortho'), axes=(-2,-1), norm='ortho').real
 
         # Skew-symmetric form
         nonlinear_phys = 0.5 * (u * dqdx + v * dqdy + dqdx * u + dqdy * v)  #0.5*(u·∇q + ∇·(uq))
 
         # Transform back to Fourier space and apply dealias filter
-        nonlinear = rfftn(nonlinear_phys, axes=(-2,-1))
+        nonlinear = rfftn(nonlinear_phys, axes=(-2,-1), norm='ortho')
         nonlinear = Solver.dealias(nonlinear, grid, s=8)
 
         # Beta term
         beta_term = - params.get('beta', 1e-3) * 1j * grid.KX * psih
 
-        # --- Forcing ---
-        # Draw a real-space white-noise field and transform to spectral space so the
-        # forcing respects Hermitian symmetry (real physical fields after iFFT).
-        noise_phys = jax.random.normal(k_noise, (grid.ny, grid.nx))
-        forcing_h = rfftn(noise_phys, axes=(-2, -1))
+        # --- forcing ---
+        noise_phys = jax.random.normal(key_noise, (grid.ny, grid.nx))
+        forcing_h = rfftn(noise_phys, axes=(-2, -1), norm='ortho')
 
         if forcing_spectrum.shape != qh.shape:
             # (ny, nx) -> (ny, nx//2+1)
@@ -822,18 +811,20 @@ class Solver(PytreeNode, ABC):
 
             # Compute velocities if needed
             if "zonal" in stats or "energy" in stats or "enstrophy" in stats:
-                u = (np.roll(psi, -1, 0) - np.roll(psi, 1, 0)) / (2 * dy)
-                v = -(np.roll(psi, -1, 1) - np.roll(psi, 1, 1)) / (2 * dx)
+                u = -(np.roll(psi, -1, 0) - np.roll(psi, 1, 0)) / (2 * dy)
+                v = (np.roll(psi, -1, 1) - np.roll(psi, 1, 1)) / (2 * dx)
             
             # zonal mean velocity
             if "zonal" in stats:
                 ubar = u.mean(axis=1)
                 line_umean.set_xdata(ubar)
+                ax_umean.relim()
+                ax_umean.autoscale_view()
                 umean_list.append(ubar)
 
             # energy
             if "energy" in stats:
-                KE = 0.5 * np.mean(u**2 + v**2)
+                KE = 0.5 * np.mean(u**2 + v**2)*dx*dy
                 energy_list.append(KE)
                 time_list_energy.append(frame * frame_interval)
 
@@ -844,7 +835,7 @@ class Solver(PytreeNode, ABC):
 
             # enstrophy
             if "enstrophy" in stats:
-                enstro = 0.5 * np.mean(zeta**2)
+                enstro = 0.5 * np.mean(zeta**2)*dx*dy
                 enstrophy_list.append(enstro)
                 time_list_enstro.append(frame * frame_interval)
 
@@ -930,15 +921,13 @@ class Solver(PytreeNode, ABC):
         fig2.savefig("outputs/final_summary.png")
         plt.close(fig2)
 
-
-
     @staticmethod
     def compute_ke_spectrum(psi, grid):
         """
         Compute 1D isotropic KE spectrum E(k) using uh, vh
         """
         # Compute velocity in Fourier space
-        psih = rfftn(psi, axes=(-2,-1))
+        psih = rfftn(psi, axes=(-2,-1), norm='ortho')
         uh = -1j * grid.KY * psih
         vh =  1j * grid.KX * psih
 

@@ -48,17 +48,17 @@ class QGM(Solver):
         zeta : physical-space vorticity (2D array)
         """
         # Compute streamfunction in Fourier space
-        zetah = rfftn(zeta, axes=(-2, -1))
+        zetah = rfftn(zeta, axes=(-2, -1), norm='ortho')
         # Avoid division by zero at k=0
         psih = -zetah * self.grid.invK2
-        psi = irfftn(psih, axes=(-2, -1)).real
+        psi = irfftn(psih, axes=(-2, -1), norm='ortho').real
 
         self.fields["psi"] = psi
         self.fields["zeta"] = zeta
 
 
     def step(self):
-        qh = rfftn(self.fields["zeta"], axes=(-2, -1))
+        qh = rfftn(self.fields["zeta"], axes=(-2, -1), norm='ortho')
         # Use solver's stored key and advance it each timestep
         key = getattr(self, '_key', None)
         if key is None:
@@ -70,7 +70,7 @@ class QGM(Solver):
         # store advanced key for next step?
         self._key = key
 
-        zeta_new = irfftn(qh_new, axes=(-2, -1)).real
+        zeta_new = irfftn(qh_new, axes=(-2, -1), norm='ortho').real
         self._update_fields(zeta_new)
         super().step()
 
