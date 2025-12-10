@@ -27,7 +27,7 @@ from .utils import Solver
 
 
 class QGM(Solver):
-    """Finite difference solver for the 2D barotropic vorticity equation on a
+    """Spectral solver for the 2D barotropic vorticity equation on a
     beta-plane"""
 
     def __init__(self, parameters, *, idtype=None):
@@ -74,30 +74,6 @@ class QGM(Solver):
         self._update_fields(zeta_new)
         super().step()
 
-    def compute_rhines_length(model):
-        """
-        Compute the instantaneous Rhines scale L_β:
-
-            L_β = sqrt(U_rms / β)
-
-        where U_rms = sqrt( <u^2 + v^2> ).
-        """
-        grid = model.grid
-        beta = model.parameters["beta"]
-
-        # Get streamfunction
-        psi = model.fields["psi"]
-
-        # Compute velocity from ψ
-        u =  jnp.gradient(psi, grid.dy, axis=-2)     #  dont like this gradient call rlly 
-        v = -jnp.gradient(psi, grid.dx, axis=-1)   
-        # RMS velocity
-        U_rms = jnp.sqrt(0.5 * jnp.mean(u**2 + v**2))
-
-        # Rhines scale
-        L_beta = jnp.sqrt(U_rms / beta)
-
-        return float(L_beta)
 
         
 

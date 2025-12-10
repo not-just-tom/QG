@@ -433,7 +433,7 @@ class Solver(PytreeNode, ABC):
 
 
         E_spec = 0.5 * jnp.sum(jnp.abs(qh)**2 * grid.invK2) / (grid.Lx * grid.Ly)
-        E0 = 100000  # target initial energy (tune as needed)
+        E0 = 10  # target initial energy (tune as needed)
         scale = jnp.sqrt(E0 / (E_spec + 1e-16))
         qh = qh * scale
 
@@ -447,7 +447,7 @@ class Solver(PytreeNode, ABC):
     @jax.jit
     def dealias(y, grid, s=8):
         '''this is now component-wise cutoff, with exponential decay after 2/3. The amplitude
-        is entirely made up and check it. The top corner will have exponential decay twice bc of x then y masks'''
+        is entirely made up and I should check it.'''
         kxmax = jnp.max(grid.kx)
         kymax = jnp.max(grid.ky)
         kxcut = 2/3 * kxmax
@@ -540,14 +540,14 @@ class Solver(PytreeNode, ABC):
     
     def pseudo_randomiser(grid, k_peak, key):
         '''This is a method to make noise align better with the forcing wavenumber
-        It returns qh right now, NOT dealiased!!! No normalisation!!!!
+        It returns qh right now, IS dealiased!!! No normalisation!!!!
         '''
         k0 = k_peak * 2 * jnp.pi / grid.Lx
         key_r, key_i = jax.random.split(key)
 
         modpsi = (grid.Kmag**2 * (1 + (grid.Kmag / k0)**4))**(-0.5)
         modpsi = modpsi.at[0,0].set(0.0)
-        modpsi = jnp.clip(modpsi, a_min=1e-8, a_max=1e8) #is this clipping necessary?
+        modpsi = jnp.clip(modpsi, a_min=1e-8, a_max=1e8) # is this clipping necessary?
 
         # this sets the psuedo-random using modpsi scaling
         phase = jax.random.normal(key_r, modpsi.shape) + 1j * jax.random.normal(key_i, modpsi.shape)
@@ -590,23 +590,6 @@ class Solver(PytreeNode, ABC):
 
     @classmethod
     def read(cls, h, path="solver"):
-        """Read solver.
-
-        Parameters
-        ----------
-
-        h : :class:`h5py.Group` or :class:`zarr.hierarchy.Group`
-            Parent group.
-        path : str
-            Group path.
-
-        Returns
-        -------
-
-        :class:`.Solver`
-            The solver.
-        """
-
         g = h[path]
         del h
 
@@ -618,23 +601,6 @@ class Solver(PytreeNode, ABC):
         return model
 
     def new(self, *, copy_prescribed=False):
-        """Return a new :class:`.Solver` with the same configuration as this
-        :class:`.Solver`.
-
-        Parameters
-        ----------
-
-        copy_prescribed : bool
-            Whether to copy values of prescribed fields to the new
-            :class:`.Solver`.
-
-        Returns
-        -------
-
-        :class:`.Solver`
-            The new :class:`.Solver`.
-        """
-
         model = type(self)(self.parameters)
         if copy_prescribed:
             for state in self.prescribed_field_states:
@@ -969,7 +935,7 @@ class Solver(PytreeNode, ABC):
     @staticmethod
     def compute_ke_spectrum(psi, grid):
         """
-        Compute 1D isotropic KE spectrum E(k) from streamfunction psi(x,y).
+        Compute 1D isotropic KE spectrum E(k) using uh, vh
         """
         # Compute velocity in Fourier space
         psih = rfftn(psi, axes=(-2,-1))

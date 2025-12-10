@@ -1,6 +1,5 @@
 import jax
 import jax.numpy as jnp
-from jax.numpy.fft import rfftn, irfftn
 from functools import cached_property, partial
 from jax import tree_util
 from .pytree import PytreeNode
