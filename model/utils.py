@@ -468,19 +468,30 @@ class Solver(PytreeNode, ABC):
         # Draw one noise key per timestep and reuse it for all RK stages
         key, k_noise = jax.random.split(key, 2)
         dt = params['dt']
-
+        # Filtered RK4: apply spectral filter (dealias) to intermediate
+        # stages to suppress aliasing accumulation (GeophysicalFlows-like).
         rhs1, key = Solver.rhs(qh, k_noise, grid, params, forcing_spectrum)
-        rhs2, key = Solver.rhs(qh + 0.5 * dt * rhs1, k_noise, grid, params, forcing_spectrum)
-        rhs3, key = Solver.rhs(qh + 0.5 * dt * rhs2, k_noise, grid, params, forcing_spectrum)
-        rhs4, key = Solver.rhs(qh + dt * rhs3, k_noise, grid, params, forcing_spectrum)
+
+        qh1 = qh + 0.5 * dt * rhs1
+        qh1 = Solver.dealias(qh1, grid, s=8)
+        rhs2, key = Solver.rhs(qh1, k_noise, grid, params, forcing_spectrum)
+
+        qh2 = qh + 0.5 * dt * rhs2
+        qh2 = Solver.dealias(qh2, grid, s=8)
+        rhs3, key = Solver.rhs(qh2, k_noise, grid, params, forcing_spectrum)
+
+        qh3 = qh + dt * rhs3
+        qh3 = Solver.dealias(qh3, grid, s=8)
+        rhs4, key = Solver.rhs(qh3, k_noise, grid, params, forcing_spectrum)
+
         qh_new = qh + (dt/6.0)*(rhs1 + 2*rhs2 + 2*rhs3 + rhs4)
+        # final filtering to remove any residual aliasing
+        qh_new = Solver.dealias(qh_new, grid, s=8)
         return (qh_new, key)
     
     @staticmethod
     @jax.jit
     def rhs(qh, key, grid, params, forcing_spectrum):
-        # Use the provided key to draw a single real-space noise field per timestep
-        # and reuse it for all spectral forcing to ensure Hermitian symmetry.
         key, key_noise = jax.random.split(key, 2)
 
         # PV to velocity in Fourier space
@@ -488,10 +499,10 @@ class Solver(PytreeNode, ABC):
         uh = -1j * grid.KY * psih
         vh =  1j * grid.KX * psih
 
-        # Back to physical space; take real part to avoid accumulation of tiny imaginary parts
+        # Back to physical space, avoiding imaginary components(?)
         u, v, q = irfftn(jnp.stack([uh, vh, qh], axis=0), axes=(-2, -1), norm='ortho').real
 
-        # Compute derivatives in physical space via spectral method
+        # Compute derivatives in spectral space then back to phsical (2 calls each)
         dqdx = irfftn(1j * grid.KX * rfftn(q, axes=(-2,-1), norm='ortho'), axes=(-2,-1), norm='ortho').real
         dqdy = irfftn(1j * grid.KY * rfftn(q, axes=(-2,-1), norm='ortho'), axes=(-2,-1), norm='ortho').real
 
@@ -515,10 +526,15 @@ class Solver(PytreeNode, ABC):
                 forcing_spectrum = forcing_spectrum[:, : qh.shape[1]]
             else:
                 raise ValueError(f"forcing_spectrum shape {forcing_spectrum.shape} incompatible with qh shape {qh.shape}")
-        forcing = forcing_h * forcing_spectrum
+        # Scale forcing like the Julia implementation: Fh *= sqrt(forcing_spectrum) / sqrt(dt)
+        dt = params.get('dt', 1.0)
+        forcing = forcing_h * (jnp.sqrt(forcing_spectrum) / jnp.sqrt(dt))
         forcing = Solver.dealias(forcing, grid, s=8)
 
-        rhs =  nonlinear + beta_term + forcing # forcing needs building out
+        mu = params.get('mu', 0.01)
+        drag = -mu * qh
+
+        rhs =  nonlinear + beta_term + forcing + drag # forcing needs building out
 
         # --- Shape check ---
         assert u.shape == (grid.ny, grid.nx)
@@ -633,6 +649,29 @@ class Solver(PytreeNode, ABC):
                 "fields": dict(self.fields),
                 "n": self.n}
 
+    def get_forcing_stats(self):
+        """Return quick diagnostics for the forcing generated from the current key.
+
+        Returns a dict with max/mean in physical and spectral space. Does not
+        advance the stored solver key (uses a split of the stored key).
+        """
+        key = getattr(self, '_key', jax.random.PRNGKey(0))
+        key, k_noise = jax.random.split(key, 2)
+        noise_phys = jax.random.normal(k_noise, (self.grid.ny, self.grid.nx))
+        forcing_h = rfftn(noise_phys, axes=(-2, -1), norm='ortho')
+        # align shapes
+        fs = self.forcing_spectrum
+        if fs.shape != forcing_h.shape:
+            fs = fs[:, : forcing_h.shape[1]]
+        forcing = forcing_h * (jnp.sqrt(fs) / jnp.sqrt(self.dt))
+        forcing_phys = irfftn(forcing, axes=(-2, -1), norm='ortho').real
+        return {
+            'f_spec_max': float(jnp.max(jnp.abs(forcing))),
+            'f_spec_mean': float(jnp.mean(jnp.abs(forcing))),
+            'f_phys_max': float(jnp.max(jnp.abs(forcing_phys))),
+            'f_phys_mean': float(jnp.mean(jnp.abs(forcing_phys)))
+        }
+
     @classmethod
     def from_config(cls, config):
         config = {key: keras.saving.deserialize_keras_object(value) for key, value in config.items()}
@@ -743,7 +782,7 @@ class Solver(PytreeNode, ABC):
             cmap="RdBu_r",
             extent=(-self.grid.Lx/2, self.grid.Lx/2,
                     -self.grid.Ly/2, self.grid.Ly/2),
-            vmin=vmin, vmax=vmax
+            animated=True #vmin=vmin, vmax=vmax
         )
         ax_vort.set_title("Vorticity")
         ax_vort.set_xlabel("x")
