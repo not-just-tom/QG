@@ -1,0 +1,33 @@
+grid: 
+  nx: 128
+  ny: 128
+  Lx: 6.283185307179586  # 2π
+
+timestep:
+  dt: 0.005
+  tmax: 5.0
+  stepper: FilteredRK4
+  auto_dt: false
+  cfl: 0.1
+
+forcing:
+  k_f: 8.0           # central forcing wavenumber
+  k_width: 2.0       # width of the ring
+  kmin: 4.0
+  kmax: 10.0
+  epsilon: 0.001     # energy injection rate
+  seed: 0            # PRNG seed
+
+dissipation:
+  nu: 0.0            # hyperviscosity coefficient
+  m: 4               # hyperviscosity exponent
+  mu: 0.01           # linear drag coefficient
+
+diagnostics:
+  cadence: 10
+  animate: [zeta]
+  final: [energy, enstrophy, ke_spectrum]
+
+ml:
+  enabled: false
+  model_path: null
