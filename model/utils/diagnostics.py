@@ -11,6 +11,8 @@ import numpy as np
 from jax.numpy.fft import rfftn
 from collections import defaultdict
 from abc import ABC, abstractmethod
+from model.utils.logging import get_logger 
+logger = get_logger(__name__)
 
 class Diagnostic(ABC):
     name: str
@@ -31,7 +33,7 @@ class Recorder:
     def __init__(self, cfg):
         diag_cfg = cfg.diagnostics
 
-        self.cadence = int(getattr(diag_cfg, "cadence", 1))
+        self.cadence = int(getattr(diag_cfg, "cadence", 100))
 
         self.animate_names = set(getattr(diag_cfg, "animate", []))
         self.final_names   = set(getattr(diag_cfg, "final", []))
@@ -47,7 +49,8 @@ class Recorder:
                 raise ValueError(f"Unknown diagnostic: {name}")
 
         # storage
-        self.animate_buffers = {}              # name -> last value
+        # animate_buffers now stores a time series (list) for each animate diagnostic
+        self.animate_buffers = defaultdict(list)
         self.final_buffers = defaultdict(list) # name -> time series
 
     def sample(self, model):
@@ -62,7 +65,8 @@ class Recorder:
             val = jax.device_get(val)
 
             if d.name in self.animate_names:
-                self.animate_buffers[d.name] = val
+                # store a timeseries of values for animate diagnostics
+                self.animate_buffers[d.name].append(val)
 
             if d.name in self.final_names:
                 self.final_buffers[d.name].append(val)

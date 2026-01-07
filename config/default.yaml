@@ -5,7 +5,7 @@ grid:
 
 timestep:
   dt: 0.005
-  tmax: 5.0
+  tmax: 50.0
   stepper: FilteredRK4
   auto_dt: false
   cfl: 0.1
@@ -24,10 +24,11 @@ dissipation:
   mu: 0.01           # linear drag coefficient
 
 diagnostics:
-  cadence: 10
+  cadence: 100
   animate: [zeta]
   final: [energy, enstrophy, ke_spectrum]
 
 ml:
   enabled: false
-  model_path: null
+  model: cnn
+  spin_up: 10.0

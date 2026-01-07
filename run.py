@@ -8,6 +8,8 @@ import model.core.model
 importlib.reload(model.core.model)
 import model.utils.diagnostics
 importlib.reload(model.utils.diagnostics)
+import model.utils.plotting
+importlib.reload(model.utils.plotting)
 from model.core.grid import Grid
 from model.utils.config import load_config
 from model.utils.diagnostics import Recorder
@@ -112,15 +114,15 @@ def main():
     start = time.time()
     model.initialize()
 
-    for _ in range(steps // cadence):
-        n += cadence
+    for _ in range((steps // cadence)+1):
         model.steps(cadence)
         # sample diagnostics 
         recorder.sample(model)
         if n % 1000 == 0:
             logger.info("Completed step %d / %d", n, steps)
+        n += cadence
 
-    logger.info("Finished run in %.2f s", time.time() - start)
+    logger.info("Finished run in %.2fs", time.time() - start)
 
     # final sample to ensure buffers populated
     recorder.sample(model)
@@ -130,7 +132,7 @@ def main():
     if animate_list:
         outname = getattr(getattr(cfg, "diagnostics", {}), "outname", "../outputs/qg.gif")
         animate_model(model, recorder, nsteps=steps, frame_interval=cadence, outname=outname, plots=animate_list)
-    logger.info("Plotting complete.")
+    logger.info("Plotting complete at time %.2fs", time.time() - start)
 
 if __name__ == "__main__":
     main()
