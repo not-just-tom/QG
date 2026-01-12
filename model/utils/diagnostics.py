@@ -11,8 +11,6 @@ import numpy as np
 from jax.numpy.fft import rfftn
 from collections import defaultdict
 from abc import ABC, abstractmethod
-from model.utils.logging import get_logger 
-logger = get_logger(__name__)
 
 class Diagnostic(ABC):
     name: str

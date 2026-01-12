@@ -12,12 +12,12 @@ class Grid(PytreeNode):
     I'm working on it ok 
 
     """
-    def __init__(self, params, idtype=None, fdtype=None):
+    def __init__(self, cfg):
         """ Initialising the grid """
-        self._Lx = params.get('Lx', 2*jnp.pi)
-        self._Ly = params.get('Ly', self.Lx)
-        self._nx = params.get('nx', 256)
-        self._ny = params.get('ny', self.nx)
+        self._Lx = cfg.params.Lx
+        self._Ly = cfg.params.Ly if hasattr(cfg.params, 'Ly') else cfg.params.Lx
+        self._nx = cfg.params.nx
+        self._ny = cfg.params.ny if hasattr(cfg.params, 'ny') else cfg.params.nx
         self._dx = self._Lx / self._nx
         self._dy = self._Ly / self._ny
 
