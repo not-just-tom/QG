@@ -11,104 +11,64 @@ importlib.reload(model.utils.diagnostics)
 import model.utils.plotting
 importlib.reload(model.utils.plotting)
 from model.core.grid import Grid
-from model.utils.config import load_config
+from model.utils.config import Config
 from model.utils.diagnostics import Recorder
-from model.utils.logging import get_logger
+from model.utils.logging import configure_logging
 from model.core.solver import Solver
 from model.core.model import QGM
 from model.utils.plotting import animate_model
 
-import sys
+import logging
 import time
 import jax
 import jax.numpy as jnp
 from jax.numpy.fft import irfftn
 
-logger = get_logger(__name__)
 
 
-def _params_from_config(cfg):
-    params = {}
-    # grid parameters (Lx, Ly, nx, ny)
-    params.update(cfg.grid)
-    # time step
-    try:
-        params["dt"] = float(cfg.time.dt)
-    except Exception:
-        params["dt"] = 1e-3
-    # physics / forcing (support SimpleNamespace or dict)
-    phys = getattr(cfg, "physics", None)
-    if phys is None:
-        params["beta"] = 1.0
-    else:
-        params["beta"] = getattr(phys, "beta", 1.0)
-
-    forcing = getattr(cfg, "forcing", None)
-    params["k_f"] = getattr(forcing, "k_f", 8.0)
-    params["k_width"] = getattr(forcing, "k_width", 2.0)
-    params["epsilon"] = getattr(forcing, "epsilon", 1e-3)
-    return params
 
 
 def main():
-    cfg = load_config(CONFIG_DEFAULT_PATH)
+    cfg = Config.load_config(CONFIG_DEFAULT_PATH)
 
-    params = _params_from_config(cfg)
+    logger = configure_logging(level=cfg.filepaths.log_level, out_file="../logs/run.log")
+    logger = logging.getLogger(__name__)
 
     # build grid + load params for initial condition # not complete - just bare min to get psuedo-rand goin
-    grid = Grid(params)
-    forcing = getattr(cfg, "forcing")
+    grid = Grid(cfg)
+    
+    
+    # === build the ml closure === # 
+    if cfg.ml.enabled is True:
+        import model.ML.architectures
+        importlib.reload(model.ML.architectures)
+        from model.ML.architectures import build_net
 
-    # generate initial state
-    if custom_init := getattr(cfg, "initial_condition", None):
-        logger.info("Using custom initial condition from config")
-        # === i dont use this yet but i need a check to make sure it fits the grid ===
-        raise NotImplementedError("Custom not implemented yet, needs grid shape check")
-    elif forcing is None:
-        logger.info("Using random initial, as forcing absent")
-        key = jax.random.PRNGKey(0) 
-        key, k1, k2 = jax.random.split(key)
-        noise_real = jax.random.normal(k1, (grid.ny, grid.nx // 2 + 1)) 
-        noise_imag = jax.random.normal(k2, (grid.ny, grid.nx // 2 + 1)) 
-        qh = noise_real + 1j * noise_imag 
-        qh = qh.at[:, 0].set(jnp.real(qh[:, 0]))  
-        initial = Solver.dealias(qh, grid, s=8) # dealiasing
+        net_factory = build_net(cfg.ml.model)
+        key = jax.random.PRNGKey(int(cfg.params.seed))
+        net = net_factory(key=key) # yeah this definitely needs so be standardised 
+
+        #  this also might just need to be in the actual net definition later?
+        def ml_closure(qh, net=net, grid=grid):
+            q = irfftn(qh, axes=(-2, -1), norm='ortho').real
+            out = net(q)
+            out_h = jax.numpy.fft.rfftn(out, axes=(-2, -1), norm='ortho')
+            out_h = Solver.dealias(out_h, grid, s=8)
+            return out_h
     else:
-        logger.info("Using pseudo-random initial generated from forcing wavenumber")
-        k_f = getattr(forcing, 'k_f', 8.0)
-        kmin = getattr(forcing, 'kmin', 4.0)
-        kmax = getattr(forcing, 'kmax', 10.0)
-        key = jax.random.PRNGKey(0) 
-        key, k1 = jax.random.split(key)
+        ml_closure = None
 
-        # pseudo-random initial spectrum peaked at k_f
-        qh = Solver.pseudo_randomiser(grid, k_f, k1)
-        qh = Solver.dealias(qh, grid, s=8)
+    # ===== build the model ===== #
+    model = QGM(cfg, ml_closure=ml_closure)
 
-        # --- band-pass filter ---
-        band_mask = (grid.Kmag >= kmin) & (grid.Kmag <= kmax)
-        qh = qh * band_mask
-        qh = qh.at[:, 0].set(0.0)
-
-        #  physical-space initial field
-        initial = irfftn(qh, axes=(-2, -1), norm='ortho').real
-    model = QGM(params, initial, grid)
-
-    # initialize spectral state
-    seed = getattr(forcing, "seed", 0) if hasattr(cfg, 'forcing') else 0 # check here I don't want to move the seed to elsewhere and if you're looking at this in the future then check you haven't and its defaulting 
-    key = jax.random.PRNGKey(int(seed))
-    key, key0 = jax.random.split(key)
-    qh = Solver.pseudo_randomiser(grid, params.get("k_f", 8.0), key0)
-
-
-    dt = float(params["dt"])
-    tmax = float(getattr(getattr(cfg, "timestep", {}), 'tmax', 5.0) or 5.0)
+    dt = float(cfg.params.dt)
+    tmax = float(cfg.params.tmax or 50.0)
     cadence = int(getattr(getattr(cfg, "diagnostics", {}), 'cadence', 100) or 100)
     steps = int(float(tmax) / float(dt))
     
     recorder = Recorder(cfg)
 
-    # === loop time ===
+    # === loop over time ===
     n = 0
     logger.info("Starting run: dt=%s, steps=%d", float(dt), steps)
     start = time.time()

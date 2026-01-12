@@ -14,11 +14,8 @@ Add initialise function which can clear field variables <---
 import jax
 import jax.numpy as jnp
 from jax.numpy.fft import rfftn, irfftn
-
-
 import importlib
 import model.core.solver
-from model.core.grid import Grid
 importlib.reload(model.core.solver)
 from model.core.solver import Solver
 
@@ -27,9 +24,9 @@ class QGM(Solver):
     """Spectral solver for the 2D barotropic vorticity equation on a
     beta-plane"""
 
-    def __init__(self, parameters, initial: jnp.ndarray | None = None, grid:Grid| None = None,):
+    def __init__(self, config, initial: jnp.ndarray | None = None, ml_closure=None):
         super().__init__(
-            parameters, initial, grid, field_states={"F_1"})
+            config, initial, ml_closure, field_states={"F_1"})
 
     def initialize(self, zeta=None):
         super().initialize(zeta=zeta)
@@ -58,11 +55,9 @@ class QGM(Solver):
         qh = rfftn(self.fields["zeta"], axes=(-2, -1), norm='ortho')
         # Use solver's stored key and advance it each timestep
         key = getattr(self, '_key', None)
-        if key is None:
-            key = self.parameters.get('key', jax.random.PRNGKey(self.n))
         state = (qh, key)
 
-        state = self.RK4(state, self.grid, self.parameters, self.forcing_spectrum)
+        state = self.RK4(state, self.grid, self.cfg, self.ml_closure)
         qh_new, key = state
         # store advanced key for next step?
         self._key = key

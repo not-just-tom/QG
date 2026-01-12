@@ -1,0 +1,368 @@
+2026-01-10 10:40:42,777 INFO jax._src.xla_bridge: Unable to initialize backend 'tpu': UNIMPLEMENTED: LoadPjrtPlugin is not implemented on windows yet.
+2026-01-10 10:44:52,774 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 10:47:39,844 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 10:48:32,444 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 10:48:33,373 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 10:49:56,661 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 10:49:56,770 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 10:50:01,882 INFO __main__: Completed step 0 / 10000
+2026-01-10 10:50:17,559 INFO __main__: Completed step 1000 / 10000
+2026-01-10 10:50:33,036 INFO __main__: Completed step 2000 / 10000
+2026-01-10 10:50:45,102 INFO __main__: Completed step 3000 / 10000
+2026-01-10 10:50:57,129 INFO __main__: Completed step 4000 / 10000
+2026-01-10 10:51:09,009 INFO __main__: Completed step 5000 / 10000
+2026-01-10 10:51:20,430 INFO __main__: Completed step 6000 / 10000
+2026-01-10 10:51:32,180 INFO __main__: Completed step 7000 / 10000
+2026-01-10 10:51:44,013 INFO __main__: Completed step 8000 / 10000
+2026-01-10 10:51:55,807 INFO __main__: Completed step 9000 / 10000
+2026-01-10 10:52:07,733 INFO __main__: Completed step 10000 / 10000
+2026-01-10 10:52:07,735 INFO __main__: Finished run in 130.96s
+2026-01-10 10:52:08,047 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-10 10:52:08,051 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-10 10:52:26,851 INFO __main__: Plotting complete at time 150.08s
+2026-01-10 10:53:10,546 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 10:53:13,132 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 10:53:17,081 INFO __main__: Completed step 0 / 10000
+2026-01-10 10:53:19,808 INFO __main__: Completed step 1000 / 10000
+2026-01-10 10:53:22,598 INFO __main__: Completed step 2000 / 10000
+2026-01-10 10:53:25,310 INFO __main__: Completed step 3000 / 10000
+2026-01-10 10:53:27,987 INFO __main__: Completed step 4000 / 10000
+2026-01-10 10:53:30,764 INFO __main__: Completed step 5000 / 10000
+2026-01-10 10:53:33,460 INFO __main__: Completed step 6000 / 10000
+2026-01-10 10:53:35,966 INFO __main__: Completed step 7000 / 10000
+2026-01-10 10:53:38,753 INFO __main__: Completed step 8000 / 10000
+2026-01-10 10:53:41,537 INFO __main__: Completed step 9000 / 10000
+2026-01-10 10:53:44,241 INFO __main__: Completed step 10000 / 10000
+2026-01-10 10:53:44,242 INFO __main__: Finished run in 31.11s
+2026-01-10 10:53:44,282 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-10 10:53:44,285 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-10 10:53:59,482 INFO __main__: Plotting complete at time 46.35s
+2026-01-10 10:54:37,323 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 10:54:37,483 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 10:54:42,766 INFO __main__: Completed step 0 / 10000
+2026-01-10 10:54:47,529 INFO __main__: Completed step 1000 / 10000
+2026-01-10 10:54:52,405 INFO __main__: Completed step 2000 / 10000
+2026-01-10 10:54:57,167 INFO __main__: Completed step 3000 / 10000
+2026-01-10 10:55:02,486 INFO __main__: Completed step 4000 / 10000
+2026-01-10 10:55:07,307 INFO __main__: Completed step 5000 / 10000
+2026-01-10 10:55:11,888 INFO __main__: Completed step 6000 / 10000
+2026-01-10 10:55:16,802 INFO __main__: Completed step 7000 / 10000
+2026-01-10 10:55:21,074 INFO __main__: Completed step 8000 / 10000
+2026-01-10 10:55:24,128 INFO __main__: Completed step 9000 / 10000
+2026-01-10 10:55:27,187 INFO __main__: Completed step 10000 / 10000
+2026-01-10 10:55:27,189 INFO __main__: Finished run in 49.70s
+2026-01-10 10:55:27,232 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-10 10:55:27,235 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-10 10:55:44,225 INFO __main__: Plotting complete at time 66.74s
+2026-01-10 12:53:25,196 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 12:56:52,146 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 12:56:52,264 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 12:56:55,686 INFO __main__: Completed step 0 / 10000
+2026-01-10 12:56:58,554 INFO __main__: Completed step 1000 / 10000
+2026-01-10 12:57:01,375 INFO __main__: Completed step 2000 / 10000
+2026-01-10 12:57:04,086 INFO __main__: Completed step 3000 / 10000
+2026-01-10 12:57:06,671 INFO __main__: Completed step 4000 / 10000
+2026-01-10 12:57:09,461 INFO __main__: Completed step 5000 / 10000
+2026-01-10 12:57:12,356 INFO __main__: Completed step 6000 / 10000
+2026-01-10 12:57:15,396 INFO __main__: Completed step 7000 / 10000
+2026-01-10 12:57:18,344 INFO __main__: Completed step 8000 / 10000
+2026-01-10 12:57:21,147 INFO __main__: Completed step 9000 / 10000
+2026-01-10 12:57:23,898 INFO __main__: Completed step 10000 / 10000
+2026-01-10 12:57:23,899 INFO __main__: Finished run in 31.63s
+2026-01-10 12:57:23,949 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-10 12:57:23,952 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-10 12:57:39,361 INFO __main__: Plotting complete at time 47.10s
+2026-01-10 13:04:54,004 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 13:04:54,173 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 13:04:58,012 INFO __main__: Completed step 0 / 10000
+2026-01-10 13:05:00,922 INFO __main__: Completed step 1000 / 10000
+2026-01-10 13:05:03,776 INFO __main__: Completed step 2000 / 10000
+2026-01-10 13:05:06,528 INFO __main__: Completed step 3000 / 10000
+2026-01-10 13:05:09,263 INFO __main__: Completed step 4000 / 10000
+2026-01-10 13:05:12,110 INFO __main__: Completed step 5000 / 10000
+2026-01-10 13:05:15,133 INFO __main__: Completed step 6000 / 10000
+2026-01-10 13:05:18,190 INFO __main__: Completed step 7000 / 10000
+2026-01-10 13:05:20,875 INFO __main__: Completed step 8000 / 10000
+2026-01-10 13:05:23,707 INFO __main__: Completed step 9000 / 10000
+2026-01-10 13:05:26,609 INFO __main__: Completed step 10000 / 10000
+2026-01-10 13:05:26,611 INFO __main__: Finished run in 32.44s
+2026-01-10 13:05:26,650 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-10 13:05:26,652 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-10 13:05:42,189 INFO __main__: Plotting complete at time 48.01s
+2026-01-10 13:06:16,992 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 13:06:17,096 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 13:06:20,499 INFO __main__: Completed step 0 / 10000
+2026-01-10 13:06:23,292 INFO __main__: Completed step 1000 / 10000
+2026-01-10 13:06:26,087 INFO __main__: Completed step 2000 / 10000
+2026-01-10 13:06:28,857 INFO __main__: Completed step 3000 / 10000
+2026-01-10 13:06:31,615 INFO __main__: Completed step 4000 / 10000
+2026-01-10 13:06:34,392 INFO __main__: Completed step 5000 / 10000
+2026-01-10 13:06:37,098 INFO __main__: Completed step 6000 / 10000
+2026-01-10 13:06:39,794 INFO __main__: Completed step 7000 / 10000
+2026-01-10 13:06:42,612 INFO __main__: Completed step 8000 / 10000
+2026-01-10 13:06:45,213 INFO __main__: Completed step 9000 / 10000
+2026-01-10 13:06:47,962 INFO __main__: Completed step 10000 / 10000
+2026-01-10 13:06:47,964 INFO __main__: Finished run in 30.87s
+2026-01-10 13:06:48,009 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-10 13:06:48,013 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-10 13:07:06,801 INFO __main__: Plotting complete at time 49.70s
+2026-01-10 13:09:25,006 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 13:09:25,137 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 13:09:28,666 INFO __main__: Completed step 0 / 10000
+2026-01-10 13:09:31,450 INFO __main__: Completed step 1000 / 10000
+2026-01-10 13:09:34,451 INFO __main__: Completed step 2000 / 10000
+2026-01-10 13:09:37,283 INFO __main__: Completed step 3000 / 10000
+2026-01-10 13:09:39,876 INFO __main__: Completed step 4000 / 10000
+2026-01-10 13:09:42,407 INFO __main__: Completed step 5000 / 10000
+2026-01-10 13:09:45,184 INFO __main__: Completed step 6000 / 10000
+2026-01-10 13:09:47,939 INFO __main__: Completed step 7000 / 10000
+2026-01-10 13:09:50,648 INFO __main__: Completed step 8000 / 10000
+2026-01-10 13:09:53,403 INFO __main__: Completed step 9000 / 10000
+2026-01-10 13:09:56,117 INFO __main__: Completed step 10000 / 10000
+2026-01-10 13:09:56,118 INFO __main__: Finished run in 30.98s
+2026-01-10 13:09:56,154 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-10 13:09:56,157 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-10 13:10:10,922 INFO __main__: Plotting complete at time 45.78s
+2026-01-10 13:10:12,453 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 13:10:12,632 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 13:10:12,685 INFO model.core.solver: didnt use it
+2026-01-10 13:10:16,059 INFO __main__: Completed step 0 / 10000
+2026-01-10 13:10:19,447 INFO __main__: Completed step 1000 / 10000
+2026-01-10 13:10:22,295 INFO __main__: Completed step 2000 / 10000
+2026-01-10 13:10:25,259 INFO __main__: Completed step 3000 / 10000
+2026-01-10 13:10:28,221 INFO __main__: Completed step 4000 / 10000
+2026-01-10 13:10:31,043 INFO __main__: Completed step 5000 / 10000
+2026-01-10 13:10:34,119 INFO __main__: Completed step 6000 / 10000
+2026-01-10 13:10:37,124 INFO __main__: Completed step 7000 / 10000
+2026-01-10 13:10:39,936 INFO __main__: Completed step 8000 / 10000
+2026-01-10 13:10:42,763 INFO __main__: Completed step 9000 / 10000
+2026-01-10 13:10:45,610 INFO __main__: Completed step 10000 / 10000
+2026-01-10 13:10:45,611 INFO __main__: Finished run in 32.98s
+2026-01-10 13:10:45,652 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-10 13:10:45,655 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-10 13:11:00,958 INFO __main__: Plotting complete at time 48.33s
+2026-01-10 13:15:48,580 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 13:15:48,755 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 13:15:48,846 INFO model.core.solver: didnt use it
+2026-01-10 13:15:52,583 INFO __main__: Completed step 0 / 10000
+2026-01-10 13:15:55,605 INFO __main__: Completed step 1000 / 10000
+2026-01-10 13:15:58,383 INFO __main__: Completed step 2000 / 10000
+2026-01-10 13:16:01,205 INFO __main__: Completed step 3000 / 10000
+2026-01-10 13:16:03,990 INFO __main__: Completed step 4000 / 10000
+2026-01-10 13:16:06,776 INFO __main__: Completed step 5000 / 10000
+2026-01-10 13:16:09,256 INFO __main__: Completed step 6000 / 10000
+2026-01-10 13:16:12,298 INFO __main__: Completed step 7000 / 10000
+2026-01-10 13:16:15,229 INFO __main__: Completed step 8000 / 10000
+2026-01-10 13:16:17,973 INFO __main__: Completed step 9000 / 10000
+2026-01-10 13:16:20,873 INFO __main__: Completed step 10000 / 10000
+2026-01-10 13:16:20,874 INFO __main__: Finished run in 32.12s
+2026-01-10 13:16:20,920 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-10 13:16:20,922 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-10 13:16:35,640 INFO __main__: Plotting complete at time 46.88s
+2026-01-10 13:17:51,204 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 13:17:51,353 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 13:21:16,493 INFO __main__: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 13:21:16,607 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 13:21:16,680 INFO model.core.solver: didnt use it
+2026-01-10 13:21:19,995 INFO __main__: Completed step 0 / 10000
+2026-01-10 13:21:23,049 INFO __main__: Completed step 1000 / 10000
+2026-01-10 13:21:25,867 INFO __main__: Completed step 2000 / 10000
+2026-01-10 13:21:28,636 INFO __main__: Completed step 3000 / 10000
+2026-01-10 13:21:32,782 INFO __main__: Completed step 4000 / 10000
+2026-01-10 13:21:40,366 INFO __main__: Completed step 5000 / 10000
+2026-01-10 13:21:47,881 INFO __main__: Completed step 6000 / 10000
+2026-01-10 13:21:55,459 INFO __main__: Completed step 7000 / 10000
+2026-01-10 13:22:02,764 INFO __main__: Completed step 8000 / 10000
+2026-01-10 13:22:10,606 INFO __main__: Completed step 9000 / 10000
+2026-01-10 13:22:18,061 INFO __main__: Completed step 10000 / 10000
+2026-01-10 13:22:18,064 INFO __main__: Finished run in 61.46s
+2026-01-10 13:22:18,147 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-10 13:22:18,151 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-10 13:22:41,706 INFO __main__: Plotting complete at time 85.10s
+2026-01-10 15:01:01,531 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:01:01,694 INFO __main__: Starting run: dt=0.005, steps=1000
+2026-01-10 15:05:04,808 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:05:04,932 INFO __main__: Starting run: dt=0.005, steps=1000
+2026-01-10 15:05:04,939 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:05:04,957 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:07:42,460 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:07:42,583 INFO __main__: Starting run: dt=0.005, steps=1000
+2026-01-10 15:07:42,589 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:07:42,610 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:25:34,270 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:25:34,408 INFO __main__: Starting run: dt=0.005, steps=1000
+2026-01-10 15:25:34,416 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:25:34,443 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:26,017 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:26,130 INFO __main__: Starting run: dt=0.005, steps=1000
+2026-01-10 15:26:26,138 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:26,157 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:26,188 INFO model.core.solver: didnt use it
+2026-01-10 15:26:26,209 INFO model.core.solver: didnt use it
+2026-01-10 15:26:26,224 INFO model.core.solver: didnt use it
+2026-01-10 15:26:26,240 INFO model.core.solver: didnt use it
+2026-01-10 15:26:26,256 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:29,015 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:30,312 INFO __main__: Completed step 0 / 1000
+2026-01-10 15:26:30,318 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:31,612 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:32,869 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:34,138 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:35,387 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:36,641 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:37,897 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:39,133 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:40,411 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:41,651 INFO make initial: Using pseudo-random initial generated from forcing wavenumber
+2026-01-10 15:26:42,889 INFO __main__: Completed step 1000 / 1000
+2026-01-10 15:26:42,892 INFO __main__: Finished run in 16.76s
+2026-01-10 15:26:42,941 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-10 15:26:42,944 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-10 15:26:44,712 INFO __main__: Plotting complete at time 18.58s
+2026-01-10 15:34:21,211 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 15:35:18,055 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 15:35:18,115 INFO model.core.solver: didnt use it
+2026-01-10 15:35:18,131 INFO model.core.solver: didnt use it
+2026-01-10 15:35:18,147 INFO model.core.solver: didnt use it
+2026-01-10 15:35:18,166 INFO model.core.solver: didnt use it
+2026-01-10 15:35:21,776 INFO __main__: Completed step 0 / 10000
+2026-01-10 15:35:32,438 INFO __main__: Completed step 1000 / 10000
+2026-01-10 15:35:42,424 INFO __main__: Completed step 2000 / 10000
+2026-01-10 15:35:53,380 INFO __main__: Completed step 3000 / 10000
+2026-01-10 15:36:00,947 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 15:36:00,997 INFO model.core.solver: didnt use it
+2026-01-10 15:36:01,013 INFO model.core.solver: didnt use it
+2026-01-10 15:36:01,034 INFO model.core.solver: didnt use it
+2026-01-10 15:36:01,055 INFO model.core.solver: didnt use it
+2026-01-10 15:36:04,583 INFO __main__: Completed step 0 / 10000
+2026-01-10 15:36:59,425 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 15:36:59,471 INFO model.core.solver: didnt use it
+2026-01-10 15:36:59,527 INFO model.core.solver: didnt use it
+2026-01-10 15:36:59,544 INFO model.core.solver: didnt use it
+2026-01-10 15:36:59,573 INFO model.core.solver: didnt use it
+2026-01-10 15:37:45,337 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 15:37:45,384 INFO model.core.solver: didnt use it
+2026-01-10 15:37:45,402 INFO model.core.solver: didnt use it
+2026-01-10 15:37:45,420 INFO model.core.solver: didnt use it
+2026-01-10 15:37:45,438 INFO model.core.solver: didnt use it
+2026-01-10 15:38:32,016 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 15:38:32,915 INFO model.core.solver: didnt use it
+2026-01-10 15:38:32,937 INFO model.core.solver: didnt use it
+2026-01-10 15:38:32,964 INFO model.core.solver: didnt use it
+2026-01-10 15:38:32,986 INFO model.core.solver: didnt use it
+2026-01-10 15:38:36,965 INFO __main__: Completed step 0 / 10000
+2026-01-10 15:38:53,289 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 15:38:53,337 INFO model.core.solver: didnt use it
+2026-01-10 15:38:53,350 INFO model.core.solver: didnt use it
+2026-01-10 15:38:53,364 INFO model.core.solver: didnt use it
+2026-01-10 15:38:53,379 INFO model.core.solver: didnt use it
+2026-01-10 15:38:57,073 INFO __main__: Completed step 0 / 10000
+2026-01-10 15:39:04,924 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 15:39:05,041 INFO model.core.solver: didnt use it
+2026-01-10 15:39:05,062 INFO model.core.solver: didnt use it
+2026-01-10 15:39:05,077 INFO model.core.solver: didnt use it
+2026-01-10 15:39:05,093 INFO model.core.solver: didnt use it
+2026-01-10 16:31:59,138 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 16:31:59,179 INFO model.core.solver: didnt use it
+2026-01-10 16:31:59,203 INFO model.core.solver: didnt use it
+2026-01-10 16:31:59,224 INFO model.core.solver: didnt use it
+2026-01-10 16:31:59,253 INFO model.core.solver: didnt use it
+2026-01-10 16:35:34,304 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 16:35:49,116 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-10 16:39:08,151 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 00:12:17,184 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 00:20:57,809 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:17:13,266 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:18:43,710 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:19:00,613 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:20:52,453 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:20:56,774 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:20:59,892 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:22:08,830 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:22:12,817 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:36:55,612 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:37:03,859 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:44:02,100 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:44:08,485 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:53:58,563 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:53:59,962 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:55:05,684 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:55:06,808 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:55:07,671 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:57:47,699 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:57:51,818 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:57:55,091 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:58:32,085 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:58:57,286 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 09:58:58,921 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:11:54,199 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:11:55,286 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:11:56,195 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:11:56,995 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:12:48,903 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:12:53,304 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:12:54,121 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:12:57,910 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:16:34,282 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:18:35,097 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:18:51,516 INFO __main__: Completed step 0 / 10000
+2026-01-11 10:19:00,675 INFO __main__: Completed step 1000 / 10000
+2026-01-11 10:19:10,307 INFO __main__: Completed step 2000 / 10000
+2026-01-11 10:19:20,214 INFO __main__: Completed step 3000 / 10000
+2026-01-11 10:19:30,702 INFO __main__: Completed step 4000 / 10000
+2026-01-11 10:19:40,992 INFO __main__: Completed step 5000 / 10000
+2026-01-11 10:19:51,826 INFO __main__: Completed step 6000 / 10000
+2026-01-11 10:20:03,157 INFO __main__: Completed step 7000 / 10000
+2026-01-11 10:20:14,788 INFO __main__: Completed step 8000 / 10000
+2026-01-11 10:20:26,891 INFO __main__: Completed step 9000 / 10000
+2026-01-11 10:20:38,416 INFO __main__: Completed step 10000 / 10000
+2026-01-11 10:20:38,417 INFO __main__: Finished run in 123.32s
+2026-01-11 10:20:38,468 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-11 10:20:38,470 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-11 10:20:52,348 INFO __main__: Plotting complete at time 137.25s
+2026-01-11 10:21:03,582 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:21:20,264 INFO __main__: Completed step 0 / 10000
+2026-01-11 10:21:30,127 INFO __main__: Completed step 1000 / 10000
+2026-01-11 10:21:41,145 INFO __main__: Completed step 2000 / 10000
+2026-01-11 10:21:52,850 INFO __main__: Completed step 3000 / 10000
+2026-01-11 10:22:03,351 INFO __main__: Completed step 4000 / 10000
+2026-01-11 10:22:12,453 INFO __main__: Completed step 5000 / 10000
+2026-01-11 10:22:21,822 INFO __main__: Completed step 6000 / 10000
+2026-01-11 10:22:31,714 INFO __main__: Completed step 7000 / 10000
+2026-01-11 10:22:41,362 INFO __main__: Completed step 8000 / 10000
+2026-01-11 10:22:50,829 INFO __main__: Completed step 9000 / 10000
+2026-01-11 10:23:00,984 INFO __main__: Completed step 10000 / 10000
+2026-01-11 10:23:00,985 INFO __main__: Finished run in 117.40s
+2026-01-11 10:23:01,032 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-11 10:23:01,034 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-11 10:23:14,255 INFO __main__: Plotting complete at time 130.67s
+2026-01-11 10:24:18,578 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:24:35,625 INFO __main__: Completed step 0 / 10000
+2026-01-11 10:24:44,486 INFO __main__: Completed step 1000 / 10000
+2026-01-11 10:24:53,427 INFO __main__: Completed step 2000 / 10000
+2026-01-11 10:25:02,460 INFO __main__: Completed step 3000 / 10000
+2026-01-11 10:25:11,569 INFO __main__: Completed step 4000 / 10000
+2026-01-11 10:25:20,741 INFO __main__: Completed step 5000 / 10000
+2026-01-11 10:25:30,278 INFO __main__: Completed step 6000 / 10000
+2026-01-11 10:25:39,270 INFO __main__: Completed step 7000 / 10000
+2026-01-11 10:25:48,265 INFO __main__: Completed step 8000 / 10000
+2026-01-11 10:25:57,589 INFO __main__: Completed step 9000 / 10000
+2026-01-11 10:26:07,176 INFO __main__: Completed step 10000 / 10000
+2026-01-11 10:26:07,177 INFO __main__: Finished run in 108.60s
+2026-01-11 10:26:07,242 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-11 10:26:07,245 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-11 10:26:20,465 INFO __main__: Plotting complete at time 121.88s
+2026-01-11 10:40:30,750 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:41:35,163 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:42:53,725 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:43:36,783 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:49:00,011 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:52:29,303 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 10:53:54,258 INFO __main__: Starting run: dt=0.005, steps=10000
+2026-01-11 11:13:20,707 INFO __main__: Completed step 0 / 10000
+2026-01-11 14:04:12,422 INFO __main__: Completed step 1000 / 10000
+2026-01-11 16:30:34,287 INFO __main__: Completed step 2000 / 10000
+2026-01-11 18:54:40,347 INFO __main__: Completed step 3000 / 10000
+2026-01-11 21:39:10,267 INFO __main__: Completed step 4000 / 10000
+2026-01-12 00:33:27,386 INFO __main__: Completed step 5000 / 10000
+2026-01-12 15:28:12,580 INFO __main__: Completed step 6000 / 10000

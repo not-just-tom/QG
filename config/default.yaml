@@ -1,11 +1,22 @@
-grid: 
-  nx: 128
-  ny: 128
-  Lx: 6.283185307179586  # 2π
+filepaths:
+  continue_from_checkpoint: false
+  out_dir: '../outputs'
+  train_set: '../filepath'
+  val_set: '../filepath'
+  log_level: 'info'
 
-timestep:
+params: 
+  seed: 42
+  nx: 128
+  Lx: 6.283185307179586  # 2π
+  L_rh: 1.0
+  beta: 10.0
   dt: 0.005
   tmax: 50.0
+  kmin: 4.0
+  kmax: 10.0
+
+timestep:
   stepper: FilteredRK4
   auto_dt: false
   cfl: 0.1
@@ -13,15 +24,8 @@ timestep:
 forcing:
   k_f: 8.0           # central forcing wavenumber
   k_width: 2.0       # width of the ring
-  kmin: 4.0
-  kmax: 10.0
   epsilon: 0.001     # energy injection rate
   seed: 0            # PRNG seed
-
-dissipation:
-  nu: 0.0            # hyperviscosity coefficient
-  m: 4               # hyperviscosity exponent
-  mu: 0.01           # linear drag coefficient
 
 diagnostics:
   cadence: 100
@@ -29,6 +33,13 @@ diagnostics:
   final: [energy, enstrophy, ke_spectrum]
 
 ml:
-  enabled: false
+  enabled: true
   model: cnn
   spin_up: 10.0
+  input_channels:
+  output_channels: 
+  num_epochs: 10
+  optimiser: AdamW
+  batches_per_epoch: 100
+  lr_schedule: idk rn
+  end_lr: yeha fiuck knows
