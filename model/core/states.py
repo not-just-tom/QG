@@ -2,209 +2,150 @@ try:
     import h5py
 except ModuleNotFoundError:
     h5py = None
-
 try:
     import zarr
 except ModuleNotFoundError:
     zarr = None
-
+import jax
 import jax.numpy as jnp
-import numpy as np
-from collections.abc import Mapping
-from .grid import Grid
+import dataclasses
+import model.utils.pytree as Pytree
 
-class IOInterface:
-    def __init__(self, h):
-        self._h = h
 
-    @property
-    def h(self):
-        return self._h
+def _generic_rfftn(a):
+    return jnp.fft.rfftn(a, axes=(-2, -1))
 
-    @property
-    def attrs(self):
-        return self.h.attrs
+def _generic_irfftn(a, shape):
+    return jnp.fft.irfftn(a, axes=(-2, -1), norm='ortho', s=None)
 
-    def create_group(self, name):
-        return IOInterface(self.h.create_group(name))
 
-    def create_dataset(self, name, shape=None, dtype=None, data=None):
-        if shape is None and data is not None:
-            shape = data.shape
-        if dtype is None and data is not None:
-            dtype = data.dtype
-
-        if h5py is not None and isinstance(self.h, (h5py.File, h5py.Group)):
-            self.h.create_dataset(name, shape=shape, dtype=dtype, data=data)
-        elif zarr is not None and isinstance(self.h, zarr.Group):
-            a = self.h.create_array(name, shape=shape, dtype=dtype)
-            if data is not None:
-                a[:] = data
-        else:
-            raise TypeError(f"Unexpected type: '{type(self.h)}'")
-
-class States(Mapping):
+@Pytree.register_pytree_dataclass
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class State:
     """Holds the evolving state of the QG model for JAX-functional stepping."""
-    def __init__(self, grid, states):
-        states = tuple(states)
-        if len(set(states)) != len(states):
-            raise ValueError("Duplicate state")
-
-        self._grid = grid
-        self._states = set(states)
-        self._fields = {}
-
-    def __getitem__(self, state):
-        if state not in self._states:
-            raise KeyError(f"Invalid state: '{state}'")
-        if state not in self._fields:
-            raise ValueError(f"Uninitialized value for state: '{state}'")
-        return self._fields[state]
-
-    def __setitem__(self, state, value):
-        if state not in self._states:
-            raise KeyError(f"Invalid state: '{state}'")
-        if value.shape != (self.grid.ny, self.grid.nx):
-            raise ValueError(f"Invalid value for state: '{state}'")
-        self._fields[state] = value
-
-    def __iter__(self):
-        yield from sorted(self._states)
-
-    def __len__(self):
-        return len(self._states)
+    qh: jnp.ndarray
+    _q_shape: tuple[int, int]
 
     @property
-    def grid(self) -> Grid:
-        """The 2D grid.
-        """
+    def q(self) -> jnp.ndarray:
+        return _generic_irfftn(self.qh, shape=self._q_shape)
 
-        return self._grid
+
+    def update(self, **kwargs) -> "State":
+        """Replace the value stored in this state to produces a new* state object, containing the
+        replacement value.
+
+        The keyword arguments may be either `q` or `qh` (not both),
+        allowing the replacement value to be provided in spectral form
+        if desired.
+        """
+        if not kwargs:
+            # Copy the class with no changes
+            return dataclasses.replace(self)
+        if extra_attrs := (kwargs.keys() - {"q", "qh"}):
+            extra_attr_str = ", ".join(extra_attrs)
+            pl_suf = "s" if len(extra_attrs) > 1 else ""
+            raise ValueError(
+                f"tried to update unknown state attribute{pl_suf} {extra_attr_str}"
+            )
+        if len(kwargs) > 1:
+            raise ValueError("duplicate updates for q (specified both q and qh)") 
+        # Exactly one attribute specified
+        attr, update = next(iter(kwargs.items()))
+        new_qh = update if attr == "qh" else _generic_rfftn(update)
+        return dataclasses.replace(self, qh=new_qh)
 
     def zero(self, *states):
-        """Set fields equal to a zero-valued field.
+        pass
 
-        Parameters
-        ----------
 
-        states : tuple
-            The states of fields to set equal to a zero-valued field.
+@Pytree.register_pytree_dataclass
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class TempStates:
+    """Temporary states including calculated values, beyond the single truth 
+    q/qh which are required for doing a physics step in kernel before being discarded
+    """
+
+    state: State
+    ph: jnp.ndarray
+    u: jnp.ndarray
+    v: jnp.ndarray
+    dqhdt: jnp.ndarray
+
+    @property
+    def qh(self) -> jnp.ndarray:
+        return self.state.qh
+
+    @property
+    def q(self) -> jnp.ndarray:
+        return self.state.q
+
+    @property
+    def p(self) -> jnp.ndarray:
+        return _generic_irfftn(self.ph, shape=self.state._q_shape)
+
+    @property
+    def uh(self) -> jnp.ndarray:
+        return _generic_rfftn(self.u)
+
+    @property
+    def vh(self) -> jnp.ndarray:
+        return _generic_rfftn(self.v)
+
+    @property
+    def dqdt(self) -> jnp.ndarray:
+        return _generic_irfftn(self.dqhdt, shape=self.state._q_shape)
+
+    def update(self, **kwargs) -> "TempStates":
+        """Replace values stored in this state.
+
+        This function produces a *new* state object, with specified
+        attributes replaced.
+
+        The keyword arguments may specify any of this class's
+        attributes *except* :attr:`state`, but must not apply multiple
+        updates to the same attribute. That is, modifying both the
+        spectral and real space values at the same time is not
+        allowed.
+
+        The object this method is called on is not modified.
         """
 
-        for state in states:
-            self[state] = jnp.zeros((self.grid.ny, self.grid.nx))
-
-    def clear(self, *, keep_states=None):
-        """Clear values for fields.
-
-        Parameters
-        ----------
-
-        keep_states : Iterable
-            states for fields which should be retained.
-        """
-
-        if keep_states is None:
-            keep_states = set()
-        else:
-            keep_states = set(keep_states)
-        keep_states = sorted(keep_states)
-
-        fields = {state: self[state] for state in keep_states}
-        self._fields.clear()
-        self.update(fields)
-
-    def write(self, h, path="fields"):
-        """Write fields.
-
-        Parameters
-        ----------
-
-        h : :class:`h5py.Group` or :class:`zarr.hierarchy.Group`
-            Parent group.
-        path : str
-            Group path.
-
-        Returns
-        -------
-
-        :class:`h5py.Group` or :class:`zarr.hierarchy.Group`
-            Group storing the fields.
-        """
-
-        if not np.can_cast(self.grid.Lx, float):
-            raise ValueError("Serialization not supported")
-        if not np.can_cast(self.grid.Ly, float):
-            raise ValueError("Serialization not supported")
-        if not np.can_cast(self.grid.nx, int):
-            raise ValueError("Serialization not supported")
-        if not np.can_cast(self.grid.ny, int):
-            raise ValueError("Serialization not supported")
-
-        h = IOInterface(h)
-        g = h.create_group(path)
-        del h
-        g.attrs["Lx"] = float(self.grid.Lx)
-        g.attrs["Ly"] = float(self.grid.Ly)
-        g.attrs["nx"] = int(self.grid.nx)
-        g.attrs["ny"] = int(self.grid.ny)
-
-        for state, value in self.items():
-            g.create_dataset(
-                name=state, data=np.array(value))
-
-        return g.h
-
-    @classmethod
-    def read(cls, h, path="fields", *, grid=None):
-        """Read fields.
-
-        Parameters
-        ----------
-
-        h : :class:`h5py.Group` or :class:`zarr.hierarchy.Group`
-            Parent group.
-        path : str
-            Group path.
-        grid : :class:`.Grid`
-            The 2D grid.
-
-        Returns
-        -------
-
-        :class:`.Fields`
-            The fields.
-        """
-
-        g = h[path]
-        del h
-
-        Lx = g.attrs["Lx"]
-        Ly = g.attrs["Ly"]
-        nx = g.attrs["nx"]
-        ny = g.attrs["ny"]
-        if grid is None:
-            grid = Grid(Lx, Ly, nx, ny)
-        if Lx != grid.Lx or Ly != grid.Ly:
-            raise ValueError("Invalid dimension(s)")
-        if nx != grid.nx or ny != grid.ny:
-            raise ValueError("Invalid number(s) of divisions")
-
-        fields = cls(grid, set(g))
-        for state in g:
-            fields[state] = g[state][...]
-
-        return fields
-
-    def update(self, d):
-        """Update field values from the supplied :class:`Mapping`.
-
-        Parameters
-        ----------
-
-        d : Mapping
-            Key-value pairs containing the field values.
-        """
-
-        for state, value in d.items():
-            self[state] = value
+        new_values = {}
+        if "state" in kwargs:
+            raise ValueError(
+                "do not update attribute 'state' directly, update individual fields "
+                "(for example q or qh)"
+            )
+        if extra_attrs := (
+            kwargs.keys()
+            - {"q", "qh", "p", "ph", "u", "uh", "v", "vh", "dqhdt", "dqdt"}
+        ):
+            extra_attr_str = ", ".join(extra_attrs)
+            pl_suf = "s" if len(extra_attrs) > 1 else ""
+            raise ValueError(
+                f"tried to update unknown state attribute{pl_suf} {extra_attr_str}"
+            )
+        for name, new_val in kwargs.items():
+            match name:
+                case "q" | "qh":
+                    # Special handling for q and qh, make spectral and assign to state
+                    new_val = self.state.update(**{name: new_val})
+                    name = "state"
+                case "uh" | "vh":
+                    # Handle other spectral names, store as non-spectral
+                    new_val = _generic_irfftn(new_val, shape=self.state._q_shape)
+                    name = name[:-1]
+                case "p":
+                    new_val = _generic_rfftn(new_val)
+                    name = "ph"
+                case "dqdt":
+                    new_val = _generic_rfftn(new_val)
+                    name = "dqhdt"
+            # Check that we don't have duplicate destinations
+            if name in new_values:
+                raise ValueError(f"duplicate updates for {name}")
+            # Set up the actual replacement
+            new_values[name] = new_val
+        # Produce new object with processed values
+        return dataclasses.replace(self, **new_values)

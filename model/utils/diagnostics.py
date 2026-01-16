@@ -3,14 +3,22 @@
 Functions are JAX-friendly where appropriate and accept numpy/jax arrays.
 """
 from __future__ import annotations
-
-from typing import Tuple
 import jax
 import jax.numpy as jnp
 import numpy as np
 from jax.numpy.fft import rfftn
 from collections import defaultdict
 from abc import ABC, abstractmethod
+
+def build_diagnostic(name: str):
+    mapping = {
+        "PV": VorticityDiagnostic,
+        "ke_spectrum": KESpectrumDiagnostic,
+        "energy": EnergyDiagnostic,
+        "enstrophy": EnstrophyDiagnostic,
+    }
+    cls = mapping.get(name)
+    return cls() if cls is not None else None
 
 class Diagnostic(ABC):
     name: str
@@ -20,91 +28,70 @@ class Diagnostic(ABC):
         """Fields required from solver (e.g. psi, zeta)."""
 
     @abstractmethod
-    def compute(self, state, grid):
-        """Pure JAX computation."""
-
-    @abstractmethod
-    def reduce(self, value):
-        """Optional reduction (e.g. radial binning)."""
+    def retrieve(self, state, grid=None):
+        """Pull the value from TempStates"""
 
 class Recorder:
-    def __init__(self, cfg):
+    def __init__(self, cfg, grid=None):
+        self.grid = grid
         diag_cfg = cfg.diagnostics
-
         self.cadence = int(getattr(diag_cfg, "cadence", 100))
 
-        self.animate_names = set(getattr(diag_cfg, "animate", []))
-        self.final_names   = set(getattr(diag_cfg, "final", []))
+        animate = set(getattr(diag_cfg, "animate", []))
+        final = set(getattr(diag_cfg, "final", []))
 
-        self.diagnostics = []
-        self._diag_map = {}
+        animate.add('PV')
+        self.animate_names = animate
+        self.final_names = final 
+
+        self.diagnostics = {}
         for name in self.animate_names | self.final_names:
             d = build_diagnostic(name)
-            if d is not None:
-                self.diagnostics.append(d)
-                self._diag_map[d.name] = d
-            else:
+            if d is None:
                 raise ValueError(f"Unknown diagnostic: {name}")
+            self.diagnostics[name] = d
 
-        # storage
-        # animate_buffers now stores a time series (list) for each animate diagnostic
         self.animate_buffers = defaultdict(list)
-        self.final_buffers = defaultdict(list) # name -> time series
+        self.final_buffers   = {}
 
-    def sample(self, model):
-        if model.n % self.cadence != 0:
-            return
+    def sample(self, state):
+        for name, d in self.diagnostics.items():
+            # sanity check
+            for field in d.requires():
+                self._get_field(state, field)
+            value = d.retrieve(state, grid=self.grid)
+            value = jax.device_get(value)
 
-        fields = model.fields
-        grid = model.grid
+            if name in self.animate_names:
+                self.animate_buffers[name].append(value)
 
-        for d in self.diagnostics:
-            val = d.compute(fields, grid)
-            val = jax.device_get(val)
+            if name in self.final_names:
+                self.final_buffers[name] = value
 
-            if d.name in self.animate_names:
-                # store a timeseries of values for animate diagnostics
-                self.animate_buffers[d.name].append(val)
+    def _get_field(self, full_state, field):
+        # first try TempStates
+        if hasattr(full_state, field):
+            return getattr(full_state, field)
 
-            if d.name in self.final_names:
-                self.final_buffers[d.name].append(val)
+        # then try inner State
+        if hasattr(full_state.state, field):
+            return getattr(full_state.state, field)
 
-    def write(self, path):
-        import zarr, os
-        # Ensure parent dir exists
-        parent = os.path.dirname(path)
-        if parent:
-            os.makedirs(parent, exist_ok=True)
-        root = zarr.open(path, mode="w")
+        raise AttributeError(f"Field '{field}' not found in TempStates or State")
 
-        for name, values in self.final_buffers.items():
-            arr = np.asarray(values)
-            root.create_array(
-                name,
-                data=arr,
-                chunks=True,
-                overwrite=True
-            )
-        for name, val in self.animate_buffers.items():
-            root.create_array(
-                name,
-                data=np.asarray(val),
-                overwrite=True
-            )
+
+
 
 class VorticityDiagnostic(Diagnostic):
-    name = "zeta"
+    name = "PV"
 
     def requires(self):
-        return {"zeta"}
+        return {"q"}  # vorticity
 
-    def compute(self, state, grid):
-        return state["zeta"]
-    
-    def reduce(self, value):
-        # I think this is fine?
-        return value
+    def retrieve(self, state, grid=None):
+        return state.q
 
+# the rest need working on vvv
 
 class KESpectrumDiagnostic(Diagnostic):
     name = "ke_spectrum"
@@ -158,17 +145,6 @@ class EnstrophyDiagnostic(Diagnostic):
 
     def reduce(self, value, grid=None):
         return value
-
-
-def build_diagnostic(name: str):
-    mapping = {
-        "zeta": VorticityDiagnostic,
-        "ke_spectrum": KESpectrumDiagnostic,
-        "energy": EnergyDiagnostic,
-        "enstrophy": EnstrophyDiagnostic,
-    }
-    cls = mapping.get(name)
-    return cls() if cls is not None else None
 
 
 def compute_ke(psi: jnp.ndarray, grid) -> float:

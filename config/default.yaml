@@ -7,17 +7,19 @@ filepaths:
 
 params: 
   seed: 42
-  nx: 128
+  nx: 256
   Lx: 6.283185307179586  # 2π
-  L_rh: 1.0
-  beta: 10.0
-  dt: 0.005
-  tmax: 50.0
-  kmin: 4.0
-  kmax: 10.0
+  beta: 100
+  kmin: 0.0
+  kmax: 3.0
 
-timestep:
-  stepper: FilteredRK4
+plotting:
+  nsteps: 10000
+  dt: 0.0005
+  cadence: 100
+  animate: []
+  final: []
+  stepper: AB3Stepper
   auto_dt: false
   cfl: 0.1
 
@@ -25,16 +27,10 @@ forcing:
   k_f: 8.0           # central forcing wavenumber
   k_width: 2.0       # width of the ring
   epsilon: 0.001     # energy injection rate
-  seed: 0            # PRNG seed
-
-diagnostics:
-  cadence: 100
-  animate: [zeta]
-  final: [energy, enstrophy, ke_spectrum]
 
 ml:
   enabled: true
-  model: cnn
+  model: zero
   spin_up: 10.0
   input_channels:
   output_channels: 

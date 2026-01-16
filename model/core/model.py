@@ -11,60 +11,144 @@ Add initialise function which can clear field variables <---
 
 
 """
-import jax
 import jax.numpy as jnp
 from jax.numpy.fft import rfftn, irfftn
 import importlib
-import model.core.solver
-importlib.reload(model.core.solver)
-from model.core.solver import Solver
+import model.core.grid
+importlib.reload(model.core.grid)
+from model.core.grid import Grid
+import model.utils.pytree as Pytree
+import model.core.kernel
+importlib.reload(model.core.kernel)
+import model.core.kernel as _kernel
+import model.core.states as states
 
 
-class QGM(Solver):
+def _grid_xy(nx, ny, Lx, Ly):
+    dx = Lx / nx
+    dy = Ly / ny
+    x = jnp.linspace(-Lx/2 + dx/2, Lx/2 - dx/2, nx)
+    y = jnp.linspace(-Ly/2 + dy/2, Ly/2 - dy/2, ny)
+    return jnp.meshgrid(x, y)
+
+
+@Pytree.register_pytree_class_attrs(
+    children=["Lx", "Ly"],
+    static_attrs=[],
+)
+class Model(_kernel.Kernel):
+    def __init__(
+        self,
+        params,
+    ):
+        super().__init__(
+            params=params
+        )
+        self.Lx = params['Lx']
+        self.Ly = params['Ly'] if hasattr(params, 'Ly') else params['Lx']
+        self._grid = Grid(
+            nx=self.nx,
+            ny=self.ny,
+            Lx=self.Lx,
+            Ly=self.Ly,
+        )
+
+    def get_full_state(self, state: states.State) -> states.TempStates:
+        """Compute all the temp values for a step in kernel.
+        """
+        full_state = super()._get_state(state)
+        full_state = self._do_external_forcing(full_state)
+        return full_state
+
+    def get_grid(self) -> Grid:
+        """Just a safer way to get info from the grid class
+        """
+        return self._grid
+
+    def _do_external_forcing(self, state: states.TempStates) -> states.TempStates:
+        # put machine leanring here?
+        return state
+    
+    @property
+    def _dealias(self, alpha=36.0, p=8):
+        """Apply a precomputed dealias mask from the grid if available.
+        """
+       
+        return jnp.exp(-alpha * (self.Kmag / jnp.max(self.Kmag)) ** p)
+
+    @property
+    def dx(self):
+        return self.get_grid().dx
+
+    @property
+    def dy(self):
+        return self.get_grid().dy
+    
+    @property
+    def kk(self):
+        return jnp.fft.rfftfreq(self.nx, d=self.dx / (2 * jnp.pi))
+
+    @property
+    def ll(self):
+        return jnp.fft.fftfreq(self.ny, d=self.dy / (2 * jnp.pi))
+
+    @property
+    def Kmag(self):
+        KX, KY = jnp.meshgrid(self.kk, self.ll)
+        return jnp.sqrt(KX**2 + KY**2)
+
+
+    @property
+    def M(self):
+        return self.nx * self.ny
+
+    @property
+    def x(self):
+        return _grid_xy(
+            nx=self.nx,
+            ny=self.ny,
+            Lx=self.Lx,
+            Ly=self.Ly,
+        )[0]
+
+    @property
+    def y(self):
+        return _grid_xy(
+            nx=self.nx,
+            ny=self.ny,
+            Lx=self.Lx,
+            Ly=self.Ly,
+        )[1]
+        
+    @property
+    def ll(self):
+        return jnp.fft.fftfreq(
+            self.ny,
+            d=(self.Ly / (2 * jnp.pi * self.ny)),
+        )
+
+    @property
+    def kk(self):
+        return jnp.fft.rfftfreq(
+            self.nx,
+            d=(self.Lx / (2 * jnp.pi * self.nx)),
+        )
+
+
+@Pytree.register_pytree_class_attrs(
+    children=["beta"],
+    static_attrs=[],
+)
+class QGM(Model):
     """Spectral solver for the 2D barotropic vorticity equation on a
     beta-plane"""
 
-    def __init__(self, config, initial: jnp.ndarray | None = None, ml_closure=None):
-        super().__init__(
-            config, initial, ml_closure, field_states={"F_1"})
+    def __init__(self, params):
+        super().__init__(params)
 
-    def initialize(self, zeta=None):
-        super().initialize(zeta=zeta)
-        if zeta is None:
-            self._update_fields(self._initial)
-        else:
-            self._update_fields(zeta)
-        self.fields.zero("F_1")
-
-    def _update_fields(self, zeta):
-        """
-        Update model fields using a spectral Poisson solve.
-        zeta : physical-space vorticity (2D array)
-        """
-        # Compute streamfunction in Fourier space
-        zetah = rfftn(zeta, axes=(-2, -1), norm='ortho')
-        # Avoid division by zero at k=0
-        psih = -zetah * self.grid.invK2
-        psi = irfftn(psih, axes=(-2, -1), norm='ortho').real
-
-        self.fields["psi"] = psi
-        self.fields["zeta"] = zeta
-
-
-    def step(self):
-        qh = rfftn(self.fields["zeta"], axes=(-2, -1), norm='ortho')
-        # Use solver's stored key and advance it each timestep
-        key = getattr(self, '_key', None)
-        state = (qh, key)
-
-        state = self.RK4(state, self.grid, self.cfg, self.ml_closure)
-        qh_new, key = state
-        # store advanced key for next step?
-        self._key = key
-
-        zeta_new = irfftn(qh_new, axes=(-2, -1), norm='ortho').real
-        self._update_fields(zeta_new)
-        super().step()
+    def intialise(self, key):
+        state = super().initialise()
+        return state
 
 
         

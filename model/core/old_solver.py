@@ -22,14 +22,6 @@ class Solver(PytreeNode, ABC):
     """
     My model to try and get this thing started
     """
-
-    _registry = {}
-
-    _defaults = {"Lx": required,  # x \in [-Lx, Lx]
-                 "nx": required,
-                 "beta": required,
-                 "dt": required}
-    
     def __init__(self, cfg, initial: jnp.ndarray | None = None, ml_closure:jnp.ndarray| None = None, field_states=None, prescribed_field_states=None):
         # ==== Parameter Initialisation ===  
         self._cfg = cfg
