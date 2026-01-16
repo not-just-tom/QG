@@ -36,7 +36,7 @@ ARCHITECTURES = {
 }
 
 
-def build_net(arch):
+def net_constructor(arch):
     if (constructor := ARCHITECTURES.get(arch)) is not None:
         return constructor
     raise ValueError(f"unknown architecture {arch}")

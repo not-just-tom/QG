@@ -31,142 +31,13 @@ importlib.reload(model.ML)
 from model.utils.logging import configure_logging
 from model.ML.utils import build_network, make_json_serializable, load_network_continue
 
-def init_network(architecture, lr, rng, input_channels, output_channels, processing_size, train_path, optim_type, num_epochs, batches_per_epoch, end_lr, schedule_type, coarse_op_name, arch_args={}, channel_coarsen_type="spectral", wrap_optim="legacy"):
-
-    #check if this is needed later
-    def leaf_map(leaf):
-        if isinstance(leaf, jnp.ndarray):
-            if leaf.dtype == jnp.dtype(jnp.float64):
-                return leaf.astype(jnp.float32)
-            if leaf.dtype == jnp.dtype(jnp.complex128):
-                return leaf.astype(jnp.complex64)
-        return leaf
-
-    n_layers_in = 1
-    n_layers_out = 1
-
-    args = {
-        "img_size": processing_size,
-        "n_layers_in": n_layers_in,
-        "n_layers_out": n_layers_out,
-        **arch_args,
-    }
-    net_cls = get_net_constructor(architecture)
-    net = net_cls(
-        **args,
-        key=rng,
-    )
-
-    # Configure learning rate schedule
-    steps_per_epoch = batches_per_epoch
-    total_steps = steps_per_epoch * num_epochs
-    match schedule_type:
-        case "constant":
-            sched_args = {
-                "type": "constant",
-                "args": {
-                    "value": lr,
-                },
-            }
-            schedule = optax.constant_schedule(**sched_args["args"])
-        case "warmup1-cosine":
-            sched_args = {
-                "type": "warmup1-cosine",
-                "args": {
-                    "init_value": 0.0,
-                    "peak_value": lr,
-                    "warmup_steps": steps_per_epoch,
-                    "decay_steps": total_steps,
-                    "end_value": (0.0 if end_lr is None else end_lr),
-                },
-            }
-            schedule = optax.warmup_cosine_decay_schedule(**sched_args["args"])
-        case "onecycle-cosine":
-            sched_args = {
-                "type": "onecycle-cosine",
-                "args": {
-                    "transition_steps": total_steps,
-                    "peak_value": lr,
-                    "pct_start": 0.3,
-                    "div_factor": 25.0,
-                    "final_div_factor": 10000.0,
-                }
-            }
-            schedule = optax.cosine_onecycle_schedule(**sched_args["args"])
-        case "ross22":
-            sched_args = {
-                "type": "ross22",
-                "args": {
-                    "init_value": lr,
-                    "boundaries_and_scales": {
-                        step: 0.1
-                        for step in [math.floor(s * steps_per_epoch * num_epochs) for s in (1/2, 3/4, 7/8)]
-                    },
-                },
-            }
-            schedule = optax.piecewise_constant_schedule(**sched_args["args"])
-        case _:
-            raise ValueError(f"unsupported schedule {schedule_type}")
-
-    match optim_type:
-        case "adabelief":
-            optim = optax.adabelief(learning_rate=schedule)
-        case "adam":
-            optim = optax.adam(learning_rate=schedule)
-        case "sgd":
-            optim = optax.sgd(learning_rate=schedule)
-        case "adamw":
-            optim = optax.adamw(learning_rate=schedule)
-        case _:
-            if m := re.match(r"adam:eps=(?P<eps>[^,]+)", optim_type):
-                eps = float(m.group("eps"))
-                optim = optax.adam(learning_rate=schedule, eps=eps)
-            else:
-                raise ValueError(f"unsupported optimizer {optim_type}")
-
-    match wrap_optim:
-        case "legacy":
-            optim = optax.apply_if_finite(
-                optax.chain(
-                    optax.identity() if schedule_type in {"ross22"} else optax.clip(1.0),
-                    optim,
-                ),
-                100,
-            )
-        case "none":
-            optim = optim
-        case "if_finite":
-            optim = optax.apply_if_finite(optim, 100)
-        case _:
-            raise ValueError(f"unsupported optimizer wrapper {wrap_optim}")
-
-    net = jax.tree_util.tree_map(leaf_map, net)
-    optim = jax.tree_util.tree_map(leaf_map, optim)
-    state = jax_utils.EquinoxTrainState(
-        net=net,
-        optim=optim,
-    )
-    network_info = {
-        "arch": architecture,
-        "args": args,
-        "input_channels": input_channels,
-        "output_channels": output_channels,
-        "processing_size": processing_size,
-        "train_path": str(pathlib.Path(train_path).resolve()),
-        "coarse_op_name": coarse_op_name,
-        "net_aux": {
-            "channel_coarsen_type": channel_coarsen_type,
-        },
-    }
-    return state, network_info
-
 
 def run(config):
-    out_dir = pathlib.Path(config.out_dir)
+    out_dir = pathlib.Path(config.filepaths.out_dir)
     if out_dir.is_file():
-        raise ValueError(f"Path must be a directory, not a file: {config.out_dir}")
+        raise ValueError(f"Path must be a directory, not a file: {config.filepaths.out_dir}")
     out_dir.mkdir(exist_ok=True)
-    configure_logging(level=config.log_level, out_file="logs/run.log") #return to this to put numbers on it 
+    configure_logging(level=config.filepaths.log_level, out_file="logs/run.log") #return to this to put numbers on it 
     logger = logging.getLogger("main")
     logger.info("Arguments: %s", vars(config))
 
@@ -174,7 +45,7 @@ def run(config):
     if config.seed is None:
         logger.info("No seed provided")
     else:
-        seed = config.seed # this needs to be changed
+        seed = config.params.seed # this needs to be changed
     logger.info("Using seed %d", seed)
     np_rng = np.random.default_rng(seed=seed)# what does this do
 
