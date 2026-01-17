@@ -9,9 +9,9 @@ params:
   seed: 42
   nx: 256
   Lx: 6.283185307179586  # 2π
-  beta: 100
-  kmin: 0.0
-  kmax: 3.0
+  beta: 50
+  kmin: 3.0
+  kmax: 7.0
 
 plotting:
   nsteps: 10000
