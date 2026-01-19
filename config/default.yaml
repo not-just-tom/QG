@@ -11,7 +11,7 @@ params:
   Lx: 6.283185307179586  # 2π
   beta: 50
   kmin: 3.0
-  kmax: 7.0
+  kmax: 10.0
 
 plotting:
   nsteps: 10000
