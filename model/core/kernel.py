@@ -16,6 +16,7 @@ class Kernel(ABC):
         params
     ):
         # Store small, fundamental properties (others will be computed on demand)
+        self._params = params
         self.Lx = params['Lx']
         self.Ly = params['Ly'] if hasattr(params, 'Ly') else params['Lx'] 
         self.nx = params['nx']
@@ -65,6 +66,10 @@ class Kernel(ABC):
     @property
     def _il(self):
         return 1j * self.ll
+    
+    @property
+    def params(self):
+        return self._params
 
     # ==== Internals ==== #
     def _get_state(self, state: states.State) -> states.TempStates:

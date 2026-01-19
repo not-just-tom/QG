@@ -24,14 +24,6 @@ import functools
 import yaml
 import os
 
-#delete
-import operator
-import functools
-import matplotlib.pyplot as plt
-import cmocean.cm as cmo
-import jax
-import jax.numpy as jnp
-
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "QG", "config", "default.yaml")
