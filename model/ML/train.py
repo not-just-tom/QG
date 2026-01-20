@@ -33,57 +33,8 @@ from model.utils.config import Config
 from model.utils.logging import configure_logging
 from model.core.steppers import SteppedModel, build_stepper
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 import matplotlib.gridspec as gridspec
-
-def make_triple_gif(hr_q, lr_q, sgs_q, out_file="q_triple.gif", interval=50):
-    """
-    Create a GIF with 3 panels side by side:
-    - hr_q: high-res field, shape (nt, ny, nx)
-    - lr_q: low-res field, shape (nt, ny, nx)
-    - sgs_q: SGS forcing, shape (nt, ny, nx)
-    """
-    nt = hr_q.shape[0]
-
-    # Determine global vmin/vmax for HR and LR
-    hr_vmax = jnp.max(jnp.abs(hr_q))
-    lr_vmax = jnp.max(jnp.abs(lr_q))
-    sgs_vmax = jnp.max(jnp.abs(sgs_q))
-
-    fig = plt.figure(figsize=(12, 4), constrained_layout=True)
-    gs = gridspec.GridSpec(1, 3, figure=fig)
-
-    ax_hr = fig.add_subplot(gs[0])
-    ax_lr = fig.add_subplot(gs[1])
-    ax_sgs = fig.add_subplot(gs[2])
-
-    im_hr = ax_hr.imshow(hr_q[0], cmap=cmo.balance, vmin=-hr_vmax, vmax=hr_vmax)
-    ax_hr.set_title("High-Res")
-    ax_hr.axis("off")
-
-    im_lr = ax_lr.imshow(lr_q[0], cmap=cmo.balance, vmin=-lr_vmax, vmax=lr_vmax)
-    ax_lr.set_title("Low-Res")
-    ax_lr.axis("off")
-
-    im_sgs = ax_sgs.imshow(sgs_q[0], cmap=cmo.curl, vmin=-sgs_vmax, vmax=sgs_vmax)
-    ax_sgs.set_title("SGS Forcing")
-    ax_sgs.axis("off")
-
-    def update(frame):
-        im_hr.set_array(hr_q[frame])
-        im_lr.set_array(lr_q[frame])
-        im_sgs.set_array(sgs_q[frame])
-        ax_hr.set_title(f"High-Res t={frame}")
-        ax_lr.set_title(f"Low-Res t={frame}")
-        ax_sgs.set_title(f"SGS t={frame}")
-        return [im_hr, im_lr, im_sgs]
-
-    ani = animation.FuncAnimation(
-        fig, update, frames=nt, interval=interval, blit=False
-    )
-    ani.save(out_file, fps=10)
-    plt.close(fig)
-    print(f"Saved GIF to {out_file}")
+from model.utils.plotting import make_triple_gif
 
 
 # === just loading in params as dict === #
@@ -117,8 +68,8 @@ def run():
     coarsener = Coarsener(hr_model=model, n_lr=32)
     
    # === jax.jit functionality === #
-    @functools.partial(jax.jit, static_argnames=["num_steps"])
-    def roll_out_state(state, num_steps):
+    @functools.partial(jax.jit, static_argnames=["nsteps"])
+    def roll_out_state(state, nsteps):
 
         def loop_fn(carry, _x):
             current_state = carry
@@ -128,12 +79,12 @@ def run():
             return next_state, current_state
 
         _final_carry, traj_steps = jax.lax.scan(
-            loop_fn, state, None, length=num_steps
+            loop_fn, state, None, length=nsteps
         )
         return traj_steps
 
     final_state = roll_out_state(
-       init_state, num_steps=7500
+       init_state, nsteps=nsteps
     ).state
 
     @jax.jit
@@ -161,9 +112,7 @@ def run():
     ax2.imshow(sgs_forcing[7500], cmap=cmo.curl, vmin=-f_vmax, vmax=f_vmax)
     ax2.set_title("SGS Forcing")
 
-
-
-    make_triple_gif(final_state.q[::cadence], lr_state.q[::cadence], sgs_forcing[::cadence], out_file="../outputs/q_triple.gif", interval=200)
+    make_triple_gif(final_state.q[::cadence], lr_state.q[::cadence], sgs_forcing[::cadence], out_file="../outputs/q_triple.gif", cadence=100)
 
 
 if __name__ == "__main__":
