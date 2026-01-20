@@ -2249,3 +2249,9 @@
 2026-01-19 17:25:13,976 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/q_triple.gif
 2026-01-19 17:26:48,313 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
 2026-01-19 17:26:48,315 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/q_triple.gif
+2026-01-19 17:42:53,052 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-19 17:42:53,054 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/q_triple.gif
+2026-01-19 17:46:12,999 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-19 17:46:13,002 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/q_triple.gif
+2026-01-19 18:04:01,688 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-19 18:04:01,730 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/q_triple_40000.gif
