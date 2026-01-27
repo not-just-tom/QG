@@ -37,5 +37,6 @@ ml:
   num_epochs: 10
   optimiser: AdamW
   batches_per_epoch: 100
+  learning_rate: 5e-4
   lr_schedule: idk rn
   end_lr: yeha fiuck knows

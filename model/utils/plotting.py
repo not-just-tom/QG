@@ -134,15 +134,15 @@ def make_triple_gif(hr_q, lr_q, sgs_q, out_file="q_triple.gif", cadence=100):
     ax_lr = fig.add_subplot(gs[1])
     ax_sgs = fig.add_subplot(gs[2])
 
-    im_hr = ax_hr.imshow(hr_q[0], cmap=cmo.balance, vmin=-hr_vmax, vmax=hr_vmax)
+    im_hr = ax_hr.imshow(hr_q[0])#, cmap=cmo.balance)#, vmin=-hr_vmax, vmax=hr_vmax)
     ax_hr.set_title("High-Res n=256")
     ax_hr.axis("off")
 
-    im_lr = ax_lr.imshow(lr_q[0], cmap=cmo.balance, vmin=-lr_vmax, vmax=lr_vmax)
+    im_lr = ax_lr.imshow(lr_q[0])#, cmap=cmo.balance, vmin=-lr_vmax, vmax=lr_vmax)
     ax_lr.set_title("Low-Res n=32")
     ax_lr.axis("off")
 
-    im_sgs = ax_sgs.imshow(sgs_q[0], cmap=cmo.curl, vmin=-sgs_vmax, vmax=sgs_vmax)
+    im_sgs = ax_sgs.imshow(sgs_q[0])#, cmap=cmo.curl, vmin=-sgs_vmax, vmax=sgs_vmax)
     ax_sgs.set_title("SGS Forcing")
     ax_sgs.axis("off")
 

@@ -12,8 +12,10 @@ CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR,"config", "default.yaml")
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-import importlib 
+import importlib
 import model.core.steppers
+import model.utils.plotting
+importlib.reload(model.utils.plotting)
 importlib.reload(model.core.steppers)
 import model.core.model
 import model.ML.utils.coarsen
@@ -22,6 +24,7 @@ importlib.reload(model.ML.utils.coarsen)
 from model.core.model import QGM
 from model.utils.diagnostics import Recorder
 from model.ML.utils.coarsen import Coarsener
+from model.utils.plotting import make_triple_gif
 import logging
 import pathlib
 import yaml
@@ -148,6 +151,8 @@ def run():
 
     target_q = generate_train_data(123, nsteps=100)
 
+    #make_triple_gif(target_q, jnp.zeros_like(target_q), jnp.zeros_like(target_q), out_file='test.gif')
+
    # === jax.jit functionality === #
     def roll_out_with_net(init_q, net, nsteps):
 
@@ -164,7 +169,7 @@ def run():
         # Extrace the small model from the coarsener
         # Then wrap it in the network parameterization and stepper
         # Make sure to match time steps
-        small_model = SteppedModel(
+        lr_model = SteppedModel(
             model=ForcedModel(
                 model=coarsener.lr_model,
                 param_func=net_parameterization,
@@ -173,15 +178,15 @@ def run():
         )
         # Package our state
         # First, package it for the base model
-        base_state = small_model.model.model.initialise(params['seed']
+        base_state = lr_model.model.model.initialise(params['seed']
         ).update(q=init_q)
         # Next, wrap it for the parameterization and stepper
-        init_state = small_model.initialize_stepper_state(
-            small_model.model.initialise_param_state(base_state)
+        init_state = lr_model.initialize_stepper_state(
+            lr_model.model.initialise_param_state(base_state)
         )
 
         def step(carry, _x):
-            next_state = small_model.step_model(carry)
+            next_state = lr_model.step_model(carry)
             # NOTE: Be careful! We output the *old* state for the trajectory
             # Otherwise the initial step would be skipped
             return next_state, carry.state.model_state.q
@@ -199,6 +204,7 @@ def run():
             nsteps=target_q.shape[0],
         )
         err = rolled_out - target_q
+
         return err 
 
     #@eqx.filter_jit
@@ -230,8 +236,8 @@ def run():
 
         # Compute loss value and gradients
         loss, grads = eqx.filter_value_and_grad(loss_fn)(net, batch)
-        print("grads:", grads)
-        print("optim_state:", optim_state)
+        print("grads:", grads.shape)
+        #print("optim_state:", optim_state)
         # Update the network weights
         updates, new_optim_state = optim.update(grads, optim_state, net)
         new_net = eqx.apply_updates(net, updates)
@@ -268,3 +274,65 @@ def run():
 
 if __name__ == "__main__":
     run()
+
+
+
+
+
+
+
+
+
+import optax
+import jax.numpy as jnp
+import jax
+import numpy as np
+
+BATCH_SIZE = 5
+NUM_TRAIN_STEPS = 1_000
+RAW_TRAINING_DATA = np.random.randint(255, size=(NUM_TRAIN_STEPS, BATCH_SIZE, 1))
+
+TRAINING_DATA = np.unpackbits(RAW_TRAINING_DATA.astype(np.uint8), axis=-1)
+LABELS = jax.nn.one_hot(RAW_TRAINING_DATA % 2, 2).astype(jnp.float32).reshape(NUM_TRAIN_STEPS, BATCH_SIZE, 2)
+
+initial_params = {
+    'hidden': jax.random.normal(shape=[8, 32], key=jax.random.PRNGKey(0)),
+    'output': jax.random.normal(shape=[32, 2], key=jax.random.PRNGKey(1)),
+}
+
+def net(x: jnp.ndarray, params: optax.Params) -> jnp.ndarray:
+  x = jnp.dot(x, params['hidden'])
+  x = jax.nn.relu(x)
+  x = jnp.dot(x, params['output'])
+  return x
+
+
+def loss(params: optax.Params, batch: jnp.ndarray, labels: jnp.ndarray) -> jnp.ndarray:
+  y_hat = net(batch, params)
+
+  # optax also provides a number of common loss functions.
+  loss_value = optax.sigmoid_binary_cross_entropy(y_hat, labels).sum(axis=-1)
+
+  return loss_value.mean()
+
+def fit(params: optax.Params, optimizer: optax.GradientTransformation) -> optax.Params:
+  opt_state = optimizer.init(params)
+
+  @jax.jit
+  def step(params, opt_state, batch, labels):
+    loss_value, grads = jax.value_and_grad(loss)(params, batch, labels)
+    updates, opt_state = optimizer.update(grads, opt_state, params)
+    params = optax.apply_updates(params, updates)
+    return params, opt_state, loss_value
+
+  for i, (batch, labels) in enumerate(zip(TRAINING_DATA, LABELS)):
+    params, opt_state, loss_value = step(params, opt_state, batch, labels)
+    if i % 100 == 0:
+      print(f'step {i}, loss: {loss_value}')
+
+  return params, opt_state
+
+# Finally, we can fit our parametrized function using the Adam optimizer
+# provided by optax.
+optimizer = optax.adam(learning_rate=1e-2)
+_ = fit(initial_params, optimizer)

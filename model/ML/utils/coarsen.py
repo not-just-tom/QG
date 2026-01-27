@@ -1,15 +1,17 @@
 from abc import ABC, abstractmethod
 import jax
 import jax.numpy as jnp
+import copy
 
 def coarsen(hr_model, n_lr):
     if hr_model.nx<n_lr:
         raise ValueError(f'Coarsening can only be reducing resolution! Attempted {hr_model.n} to {n_lr}')
     
-    params = hr_model.params
+    params = copy.deepcopy(hr_model.params)
     params['nx'] = n_lr
     params['ny'] = n_lr
     return type(hr_model)(params)
+
 
 class Coarsener(ABC):
     def __init__(self, hr_model, n_lr):
@@ -28,13 +30,13 @@ class Coarsener(ABC):
         lr_state = self.lr_model.initialise(42) # this doesn't need to be tracked but should I keep the seed the same as the config?
         nk = lr_state.qh.shape[0] // 2
 
-        # Galerkin Truncation
+        # Galerkin Truncation - something is really up here
         trunc = jnp.concatenate(
             [
-                state.qh[:, :nk, : nk + 1],    # positive ky
-                state.qh[:, -nk:, : nk + 1],   # negative ky
+                state.qh[:nk, : nk + 1],    # positive ky
+                state.qh[-nk:, : nk + 1],   # negative ky
             ],
-            axis=-2,
+            axis=0,
         )
         filtered = trunc * self.spectral_filter[None, :] / self.ratio**2
         return lr_state.update(qh = filtered)
@@ -48,11 +50,12 @@ class Coarsener(ABC):
         return coarsened_deriv.q - lr_deriv.q
     
     @property
+    @abstractmethod
     def spectral_filter(self):
-        return self.lr_model.filtr
+        pass
 
-    def tree_flatten_with_keys(self):
-        return [(jax.tree_util.GetAttrKey("hr_model"), self.hr_model)], self.n_lr
+    def tree_flatten(self):
+        return [self.hr_model], self.n_lr
 
     @classmethod
     def tree_unflatten(cls, aux_data, children):

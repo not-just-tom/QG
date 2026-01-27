@@ -299,6 +299,37 @@ class AB3Stepper(Stepper):
             _ablevel=new_ablevel,
             _updates=new_updates,
         )
+    
+
+@Pytree.register_pytree_dataclass
+@dataclasses.dataclass
+class NoStepValue(typing.Generic[P]):
+    """Shields contents from the provided time-steppers.
+
+    When a time-stepper encounters a value wrapped in this class, it
+    will skip its normal stepping computations and directly use the
+    value from the updates. This allows a user to manually update an
+    auxiliary value outside the normal time-stepping.
+
+    For example, :func:`jax.random.key` values should not be
+    time-stepped normally. Wrapping them in this class and manually
+    :func:`updating them <jax.random.split>` can accomplish this.
+
+    This class is used as part of :class:`ParameterizedModelState
+    <pyqg_jax.parameterizations.ParameterizedModelState>`.
+
+    Parameters
+    ----------
+    value : object
+        The inner value to wrap. This can be an arbitrary JAX PyTree.
+
+    Attributes
+    ----------
+    value
+        The internal, wrapped value
+    """
+
+    value: P
 
 
 @Pytree.register_pytree_dataclass
