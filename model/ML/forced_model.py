@@ -8,27 +8,7 @@ from model.utils import pytree as Pytree
 @Pytree.register_pytree_dataclass
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class ForcedModelState:
-    """Wrapped model state for parameterized models.
-
-    Warning
-    -------
-    You should not construct this class yourself. Instead, you should
-    obtain instances from :class:`ParameterizedModel`.
-
-    Attributes
-    ----------
-    model_state : State
-        The inner model state. The actual types depends on the inner
-        model, but this is likely to be
-        :class:`FullPseudoSpectralState
-        <pyqg_jax.state.PseudoSpectralState>`.
-
-    param_aux : NoStepValue
-        The auxiliary state for the parameterization. This is an
-        arbitrary object time-stepped by the parameterization itself.
-        It will be wrapped in a :class:`NoStepValue
-        <pyqg_jax.steppers.NoStepValue>` to shield it from the time
-        steppers.
+    """Wrapped model state for parameterised models.
     """
 
     model_state: states.State
@@ -44,34 +24,7 @@ def _init_none(init_state, model):
     static_attrs=[],
 )
 class ForcedModel:
-    """A model wrapped in a user-specified parameterization.
-
-    Parameters
-    ----------
-    model
-        The inner core model to wrap in the parameterization.
-
-    param_func : function
-        The function implementing the parameterization. Will be called
-        by :meth:`get_updates` to compute time-stepping updates.
-
-    init_param_aux_func : function, optional
-        The function used to initialize the parameterization's
-        auxiliary state. Defaults to a function initializing the state
-        to :data:`None`.
-
-    Attributes
-    ----------
-    model
-        The inner model wrapped in the parameterization.
-
-    param_func : function
-        The user-specified parameterization function.
-        Takes arguments :pycode:`(model_state, param_aux, model)`.
-
-    init_param_aux_func : function
-        Function used to initialize the auxiliary state.
-        Takes arguments :pycode:`(model_state, model)`.
+    """Model with defined parameterisation
     """
 
     def __init__(self, model, param_func, init_param_aux_func=None):
@@ -94,22 +47,6 @@ class ForcedModel:
     def get_full_state(self, state):
         """Expand a wrapped partial state into an *unwrapped* full
         state.
-
-        This function defers to :attr:`model` to compute the full
-        state.
-
-        Parameters
-        ----------
-        state : ParameterizedModelState
-            The wrapped, parameterized state to be expanded.
-
-        Returns
-        -------
-        FullPseudoSpectralState
-            The expanded state. The real type depends on
-            :attr:`model`, but is likely to be
-            :class:`FullPseudoSpectralState
-            <pyqg_jax.state.FullPseudoSpectralState>`.
         """
         return self.model.get_full_state(state.model_state)
 

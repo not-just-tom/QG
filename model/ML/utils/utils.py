@@ -1,7 +1,7 @@
 import functools
 import model.core.states as states
 
-def q_parameterization(param_func):
+def parameterization(param_func):
     """Decorator implementing parameterizations in terms of potential
     vorticity.
 

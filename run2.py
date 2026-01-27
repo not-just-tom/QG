@@ -173,3 +173,7 @@ def main():
     ax.set_title("Final PV")
     ax.imshow(final_q, cmap=cmo.balance, vmin=-vmax, vmax=vmax)
     plt.show()
+
+    # ============================
+
+     
