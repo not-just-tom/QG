@@ -3,6 +3,11 @@ import jax
 import inspect
 import itertools
 import weakref
+import functools
+import textwrap
+import types
+import typing 
+import importlib
 
 __all__ = \
     [
@@ -88,3 +93,110 @@ def register_pytree_dataclass(cls):
 
     jax.tree_util.register_pytree_node(cls, flatten, unflatten)
     return cls
+
+def find_array_like_types() -> tuple[type, ...]:
+    array_like_types = [jax.Array, jax.ShapeDtypeStruct]
+    try:
+        np_mod = importlib.import_module("numpy")
+        array_like_types.append(np_mod.ndarray)
+    except Exception:
+        pass
+    return tuple(array_like_types)
+
+
+array_like_types: typing.Final[tuple[type, ...]] = find_array_like_types()
+
+def summarize_object(obj: object) -> str:
+    if isinstance(obj, array_like_types):
+        return summarize_array(obj)
+    elif isinstance(obj, functools.partial):
+        return summarize_partial(obj)
+    elif isinstance(obj, types.FunctionType):
+        return summarize_function(obj)
+    elif isinstance(obj, (tuple, list, set)):
+        return summarize_sequence(obj)
+    elif isinstance(obj, dict):
+        return summarize_dict(obj)
+    else:
+        return repr(obj)
+
+
+def summarize_function(func: types.FunctionType) -> str:
+    try:
+        func_name = str(func.__qualname__)
+        func_module = str(func.__module__)
+    except AttributeError:
+        return repr(func)
+    if func_module == "builtins":
+        return f"<function {func_name}>"
+    return f"<function {func_module}.{func_name}>"
+
+
+def summarize_partial(partial: functools.partial) -> str:
+    func = summarize_object(partial.func)
+    args = (summarize_object(arg) for arg in partial.args)
+    kwargs = (
+        f"{name}={summarize_object(value)}" for name, value in partial.keywords.items()
+    )
+    contents = ", ".join(itertools.chain([func], args, kwargs))
+    cls = type(partial)
+    if cls == jax.tree_util.Partial:
+        qualname = "jax.tree_util.Partial"
+    else:
+        qualname = f"{cls.__module__!s}.{cls.__qualname__!s}"
+    return f"{qualname}({contents})"
+
+
+def summarize_array(arr: jax.Array) -> str:
+    dtype = (
+        str(arr.dtype.name)
+        .replace("float", "f")
+        .replace("uint", "u")
+        .replace("int", "i")
+        .replace("complex", "c")
+    )
+    shape = ",".join(str(d) for d in arr.shape)
+    return f"{dtype}[{shape}]"
+
+
+@dataclasses.dataclass(frozen=True)
+class ReprDummy:
+    obj: object
+
+    def __repr__(self):
+        return summarize_object(self.obj)
+
+
+def summarize_sequence(seq: tuple[object] | list[object] | set[object]) -> str:
+    return repr(type(seq)(ReprDummy(o) for o in seq))
+
+
+def summarize_dict(dt: dict[object, object]) -> str:
+    return repr({ReprDummy(k): ReprDummy(v) for k, v in dt.items()})
+
+
+def indent_repr(text: str, spaces: int) -> str:
+    indent_str = " " * spaces
+    indented = textwrap.indent(text, indent_str)
+    if indented.startswith(indent_str):
+        return indented[spaces:]
+    return indented
+
+
+def auto_repr(obj: object) -> str:
+    parts = [f"{type(obj).__name__}("]
+    for attr in inspect.signature(type(obj)).parameters:
+        parts.append(
+            f"  {attr}={indent_repr(summarize_object(getattr(obj, attr)), 2)},"
+        )
+    parts.append(")")
+    return "\n".join(parts)
+
+
+@dataclasses.dataclass(frozen=True)
+class AttrGetter:
+    # Like operator.attrgetter but supports weak references
+    attr: str
+
+    def __call__(self, obj):
+        return getattr(obj, self.attr)

@@ -15,7 +15,7 @@ from model.utils.plotting import animate
 from model.utils.config import Config
 from model.utils.logging import configure_logging
 from model.core.steppers import SteppedModel, build_stepper
-from model.core.model import QGM
+from model.core.model import create_model
 from model.utils.diagnostics import Recorder
 import logging
 import jax
@@ -23,6 +23,8 @@ import time
 import functools
 import yaml
 import os
+
+jax.config.update("jax_enable_x64", True)
 
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -53,11 +55,12 @@ def main():
     outname = getattr(cfg.filepaths, "outname", "../outputs/qg.gif")
 
     
-    # Instantiate the model from configs
-    model = QGM(params=params)
+    # Instantiate the model from configs using factory
+    n_layers = params.pop('n_layers', 1)  # Extract n_layers, default to 1
+    model = create_model(params, n_layers=n_layers)
     stepper = build_stepper(cfg_stepper, dt)
     sm = SteppedModel(model=model, stepper=stepper)
-    recorder = Recorder(cfg, grid=model.get_grid())
+    recorder = Recorder(cfg, grid=model.get_grid()) # basically depreciated at this point....
     state = sm.initialise(params['seed'])
 
 

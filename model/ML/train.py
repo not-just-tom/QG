@@ -19,7 +19,7 @@ import model.core.model
 import model.ML.utils.coarsen
 importlib.reload(model.core.model)
 importlib.reload(model.ML.utils.coarsen)
-from model.core.model import QGM
+from model.core.model import create_model
 from model.utils.diagnostics import Recorder
 from model.ML.utils.coarsen import Coarsener
 import logging
@@ -90,7 +90,7 @@ def run():
             self.ops = eqx.nn.Sequential(
                 [
                     eqx.nn.Conv2d(
-                        in_channels=1,
+                        in_channels=2,
                         out_channels=5,
                         kernel_size=3,
                         padding="SAME",
@@ -99,7 +99,7 @@ def run():
                     ),
                     eqx.nn.Conv2d(
                         in_channels=5,
-                        out_channels=1,
+                        out_channels=2,
                         kernel_size=3,
                         padding="SAME",
                         key=key2,
@@ -116,6 +116,22 @@ def run():
         @property
         def spectral_filter(self):
             return self.lr_model.filtr
+
+        def coarsen_state(self, state):
+            lr_state = self.lr_model.initialise(42)
+            nk = lr_state.qh.shape[-2] // 2
+            trunc = jnp.concatenate(
+                [
+                    state.qh[:, :nk, :nk + 1],
+                    state.qh[:, -nk:, :nk + 1],
+                ],
+                axis=-2,
+            )
+            spectral_filter = self.spectral_filter
+            if trunc.ndim == 3 and spectral_filter.ndim == 2:
+                spectral_filter = jnp.expand_dims(spectral_filter, 0)
+            filtered = trunc * spectral_filter / self.ratio**2
+            return lr_state.update(qh=filtered)
     
     net = module_to_single(NNParam(key=jax.random.key(123)))
         
@@ -125,7 +141,8 @@ def run():
     
 
     # Instantiate the model from configs
-    model = QGM(params=params)
+    n_layers = params.pop('n_layers', 1)  # Extract n_layers, default to 1
+    model = create_model(params, n_layers=n_layers)
     stepper = build_stepper(cfg_stepper, dt)
     stepped_model = SteppedModel(model=model, stepper=stepper)
 
@@ -201,7 +218,7 @@ def run():
         err = rolled_out - target_q
         return err 
 
-    #@eqx.filter_jit
+    @eqx.filter_jit
     def train_batch(batch, net, optim_state):
 
         def loss_fn(net, batch):
@@ -209,27 +226,29 @@ def run():
             mse = jnp.mean(err**2)
             return mse
         
-        # ====================================
-        # this is just debugging 
-        from jax.tree_util import tree_leaves
-
-        from jax.tree_util import tree_flatten_with_path
-
-        def find_custom_jvp_with_path(tree):
-            leaves, _ = tree_flatten_with_path(tree)
-            hits = []
-            for path, leaf in leaves:
-                if type(leaf).__name__ in ("custom_jvp", "custom_vjp"):
-                    hits.append((path, leaf))
-            return hits
-
-        hits = find_custom_jvp_with_path(net)
-        for path, leaf in hits:
-            print(path, type(leaf))
-        # ====================================
-
         # Compute loss value and gradients
         loss, grads = eqx.filter_value_and_grad(loss_fn)(net, batch)
+
+        # Gradient sanity checks (finite + bounded)
+        GRAD_MIN_ABS = 1e-30
+        GRAD_MAX_ABS = 1e6
+
+        def _check_grads(grads):
+            leaves = jax.tree_util.tree_leaves(grads)
+            for g in leaves:
+                if g is None:
+                    continue
+                g_np = np.asarray(g)
+                if not np.all(np.isfinite(g_np)):
+                    raise ValueError("Non-finite gradient detected")
+                abs_g = np.abs(g_np)
+                if np.any(abs_g > GRAD_MAX_ABS):
+                    raise ValueError("Gradient too large detected")
+                if np.any((abs_g > 0) & (abs_g < GRAD_MIN_ABS)):
+                    raise ValueError("Gradient too small detected")
+
+        jax.debug.callback(_check_grads, grads)
+
         print("grads:", grads)
         print("optim_state:", optim_state)
         # Update the network weights

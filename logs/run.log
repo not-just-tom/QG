@@ -2268,3 +2268,264 @@
 2026-01-22 16:52:25,555 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
 2026-01-22 16:52:25,577 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y test.gif
 2026-01-27 10:12:39,884 INFO jax._src.xla_bridge: Unable to initialize backend 'tpu': UNIMPLEMENTED: LoadPjrtPlugin is not implemented on windows yet.
+2026-01-27 13:58:48,069 INFO jax._src.xla_bridge: Unable to initialize backend 'tpu': UNIMPLEMENTED: LoadPjrtPlugin is not implemented on windows yet.
+2026-01-27 15:02:42,185 INFO __main__: Starting run: dt=0.0005, steps=40000
+2026-01-27 15:02:43,356 INFO __main__: Completed step 0 / 40000
+2026-01-27 15:03:34,350 INFO __main__: Completed step 1000 / 40000
+2026-01-27 15:04:02,133 INFO __main__: Starting run: dt=0.0005, steps=40000
+2026-01-27 15:05:59,894 INFO __main__: Starting run: dt=0.0005, steps=40000
+2026-01-27 15:08:03,382 INFO __main__: Starting run: dt=0.0005, steps=40000
+2026-01-27 15:08:03,511 INFO __main__: Completed step 0 / 40000
+2026-01-27 15:28:04,023 INFO __main__: Starting run: dt=0.0005, steps=40000
+2026-01-27 15:28:04,180 INFO __main__: Completed step 0 / 40000
+2026-01-27 15:29:16,780 INFO __main__: Starting run: dt=0.0005, steps=40000
+2026-01-27 15:29:16,928 INFO __main__: Completed step 0 / 40000
+2026-01-27 15:30:28,091 INFO __main__: Starting run: dt=0.0005, steps=40000
+2026-01-27 15:30:28,272 INFO __main__: Completed step 0 / 40000
+2026-01-27 15:32:22,406 INFO __main__: Completed step 1000 / 40000
+2026-01-27 15:34:09,326 INFO __main__: Completed step 2000 / 40000
+2026-01-27 15:35:49,240 INFO __main__: Completed step 3000 / 40000
+2026-01-27 15:36:59,459 INFO __main__: Completed step 4000 / 40000
+2026-01-27 15:37:59,715 INFO __main__: Completed step 5000 / 40000
+2026-01-27 15:38:58,346 INFO __main__: Completed step 6000 / 40000
+2026-01-27 15:39:56,468 INFO __main__: Completed step 7000 / 40000
+2026-01-27 15:40:52,674 INFO __main__: Completed step 8000 / 40000
+2026-01-27 15:41:52,603 INFO __main__: Completed step 9000 / 40000
+2026-01-27 15:42:46,678 INFO __main__: Completed step 10000 / 40000
+2026-01-27 15:43:42,559 INFO __main__: Completed step 11000 / 40000
+2026-01-27 15:44:37,773 INFO __main__: Completed step 12000 / 40000
+2026-01-27 15:45:37,418 INFO __main__: Completed step 13000 / 40000
+2026-01-27 21:28:11,196 INFO __main__: Completed step 14000 / 40000
+2026-01-27 21:28:41,758 INFO __main__: Starting run: dt=0.0005, steps=4000
+2026-01-27 21:28:41,937 INFO __main__: Completed step 0 / 4000
+2026-01-27 21:30:57,897 INFO __main__: Completed step 1000 / 4000
+2026-01-27 21:32:57,302 INFO __main__: Completed step 2000 / 4000
+2026-01-27 21:34:59,691 INFO __main__: Completed step 3000 / 4000
+2026-01-27 21:36:59,860 INFO __main__: Completed step 4000 / 4000
+2026-01-27 21:37:02,054 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-27 21:37:02,058 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-27 21:56:57,699 INFO __main__: Starting run: dt=0.0005, steps=4000
+2026-01-27 21:56:57,925 INFO __main__: Completed step 0 / 4000
+2026-01-27 22:05:19,723 INFO __main__: Starting run: dt=0.0005, steps=4000
+2026-01-27 22:05:19,938 INFO __main__: Completed step 0 / 4000
+2026-01-27 22:06:35,418 INFO __main__: Starting run: dt=0.0005, steps=4000
+2026-01-27 22:06:35,578 INFO __main__: Completed step 0 / 4000
+2026-01-27 22:08:52,536 INFO __main__: Starting run: dt=0.0005, steps=4000
+2026-01-27 22:08:52,675 INFO __main__: Completed step 0 / 4000
+2026-01-27 22:09:25,988 INFO __main__: Starting run: dt=0.0005, steps=4000
+2026-01-27 22:09:26,196 INFO __main__: Completed step 0 / 4000
+2026-01-27 22:11:50,770 INFO __main__: Completed step 1000 / 4000
+2026-01-27 22:14:06,248 INFO __main__: Completed step 2000 / 4000
+2026-01-27 22:16:08,478 INFO __main__: Completed step 3000 / 4000
+2026-01-27 22:18:06,444 INFO __main__: Completed step 4000 / 4000
+2026-01-27 22:18:07,597 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-27 22:18:07,601 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-27 22:18:15,484 INFO __main__: Plotting complete at time 529.49s
+2026-01-27 22:20:22,789 INFO __main__: Starting run: dt=0.0005, steps=1000
+2026-01-27 22:20:22,969 INFO __main__: Completed step 0 / 1000
+2026-01-27 22:22:30,599 INFO __main__: Completed step 1000 / 1000
+2026-01-27 22:22:31,049 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-27 22:22:31,053 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-27 22:22:32,896 INFO __main__: Plotting complete at time 130.11s
+2026-01-27 22:31:23,219 INFO __main__: Starting run: dt=0.0005, steps=1000
+2026-01-27 22:31:23,379 INFO __main__: Completed step 0 / 1000
+2026-01-28 16:43:47,511 INFO __main__: Starting run: dt=0.0005, steps=1000
+2026-01-28 16:43:49,765 INFO __main__: Completed step 0 / 1000
+2026-01-28 16:45:54,366 INFO __main__: Completed step 1000 / 1000
+2026-01-28 16:45:54,830 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-28 16:45:54,834 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-28 16:45:56,999 INFO __main__: Plotting complete at time 129.49s
+2026-01-28 16:53:47,360 INFO __main__: Starting run: dt=0.0005, steps=1000
+2026-01-28 16:53:47,664 INFO __main__: Completed step 0 / 1000
+2026-01-28 16:56:09,628 INFO __main__: Completed step 1000 / 1000
+2026-01-28 16:56:09,695 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-28 16:56:09,700 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-28 16:56:12,470 INFO __main__: Plotting complete at time 145.10s
+2026-01-28 16:56:50,904 INFO __main__: Starting run: dt=0.0005, steps=1000
+2026-01-28 16:56:51,037 INFO __main__: Completed step 0 / 1000
+2026-01-28 16:58:38,274 INFO __main__: Completed step 1000 / 1000
+2026-01-28 16:58:38,350 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-28 16:58:38,354 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-28 16:58:40,432 INFO __main__: Plotting complete at time 109.53s
+2026-01-28 17:16:04,728 INFO __main__: Starting run: dt=0.0005, steps=1000
+2026-01-28 17:16:04,938 INFO __main__: Completed step 0 / 1000
+2026-01-28 17:17:47,816 INFO __main__: Completed step 1000 / 1000
+2026-01-28 17:17:48,046 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-28 17:17:48,050 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-28 17:17:49,847 INFO __main__: Plotting complete at time 105.11s
+2026-01-28 17:26:43,019 INFO __main__: Starting run: dt=0.0005, steps=1000
+2026-01-28 17:26:43,226 INFO __main__: Completed step 0 / 1000
+2026-01-28 17:29:35,664 INFO __main__: Completed step 1000 / 1000
+2026-01-28 17:29:36,829 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-28 17:29:36,833 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-28 17:29:40,654 INFO __main__: Plotting complete at time 177.63s
+2026-01-28 17:38:04,677 INFO __main__: Starting run: dt=0.0005, steps=1000
+2026-01-28 17:38:04,831 INFO __main__: Completed step 0 / 1000
+2026-01-28 17:39:47,533 INFO __main__: Completed step 1000 / 1000
+2026-01-28 17:39:47,901 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-28 17:39:47,904 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-28 17:39:49,546 INFO __main__: Plotting complete at time 104.87s
+2026-01-28 17:41:20,976 INFO __main__: Starting run: dt=0.0005, steps=1000
+2026-01-28 17:41:21,543 INFO __main__: Completed step 0 / 1000
+2026-01-28 17:42:53,809 INFO __main__: Completed step 1000 / 1000
+2026-01-28 17:42:54,177 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-28 17:42:54,181 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-28 17:42:55,856 INFO __main__: Plotting complete at time 94.87s
+2026-01-28 17:48:47,403 INFO __main__: Starting run: dt=0.0005, steps=1000
+2026-01-28 17:48:47,602 INFO __main__: Completed step 0 / 1000
+2026-01-28 17:50:32,613 INFO __main__: Completed step 1000 / 1000
+2026-01-28 17:50:32,994 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-28 17:50:32,999 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-28 17:50:34,762 INFO __main__: Plotting complete at time 107.36s
+2026-01-28 17:53:15,306 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-28 17:53:15,460 INFO __main__: Completed step 0 / 500
+2026-01-28 17:53:26,130 INFO __main__: Completed step 100 / 500
+2026-01-28 17:53:35,688 INFO __main__: Completed step 200 / 500
+2026-01-28 17:53:45,357 INFO __main__: Completed step 300 / 500
+2026-01-28 17:53:55,434 INFO __main__: Completed step 400 / 500
+2026-01-28 17:54:06,675 INFO __main__: Completed step 500 / 500
+2026-01-28 17:54:06,914 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-28 17:54:06,918 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-28 17:54:14,538 INFO __main__: Plotting complete at time 59.23s
+2026-01-28 22:23:17,993 INFO jax._src.xla_bridge: Unable to initialize backend 'tpu': UNIMPLEMENTED: LoadPjrtPlugin is not implemented on windows yet.
+2026-01-28 23:36:31,896 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-28 23:42:47,124 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-28 23:42:54,591 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-28 23:43:56,271 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-28 23:50:43,971 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-28 23:50:44,962 INFO __main__: Completed step 0 / 500
+2026-01-28 23:51:20,400 INFO __main__: Completed step 100 / 500
+2026-01-28 23:51:58,627 INFO __main__: Completed step 200 / 500
+2026-01-28 23:52:37,301 INFO __main__: Completed step 300 / 500
+2026-01-28 23:53:36,825 INFO __main__: Completed step 400 / 500
+2026-01-28 23:58:30,861 INFO __main__: Completed step 500 / 500
+2026-01-28 23:58:30,942 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-28 23:58:30,945 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-29 00:09:43,998 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-29 00:09:44,336 INFO __main__: Completed step 0 / 500
+2026-01-29 00:10:18,320 INFO __main__: Completed step 100 / 500
+2026-01-29 00:10:53,986 INFO __main__: Completed step 200 / 500
+2026-01-29 00:11:30,417 INFO __main__: Completed step 300 / 500
+2026-01-29 00:12:16,332 INFO __main__: Completed step 400 / 500
+2026-01-29 00:13:00,392 INFO __main__: Completed step 500 / 500
+2026-01-29 00:13:00,514 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-29 00:13:00,518 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1000x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-29 00:13:11,783 INFO __main__: Plotting complete at time 207.78s
+2026-01-29 00:13:48,833 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-29 00:13:49,841 INFO __main__: Completed step 0 / 500
+2026-01-29 00:14:01,481 INFO __main__: Completed step 100 / 500
+2026-01-29 00:14:13,113 INFO __main__: Completed step 200 / 500
+2026-01-29 00:14:24,445 INFO __main__: Completed step 300 / 500
+2026-01-29 00:14:36,157 INFO __main__: Completed step 400 / 500
+2026-01-29 00:14:49,679 INFO __main__: Completed step 500 / 500
+2026-01-29 00:14:49,740 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-29 00:14:49,745 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-29 00:14:56,473 INFO __main__: Plotting complete at time 67.64s
+2026-01-29 10:00:27,070 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-29 10:00:27,349 INFO __main__: Completed step 0 / 500
+2026-01-29 10:00:43,754 INFO __main__: Completed step 100 / 500
+2026-01-29 10:01:00,330 INFO __main__: Completed step 200 / 500
+2026-01-29 10:01:16,102 INFO __main__: Completed step 300 / 500
+2026-01-29 11:28:40,849 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-29 11:28:41,536 INFO __main__: Completed step 0 / 500
+2026-01-29 11:29:17,374 INFO __main__: Completed step 100 / 500
+2026-01-29 12:46:56,497 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-29 12:46:57,267 INFO __main__: Completed step 0 / 500
+2026-01-29 12:47:40,468 INFO __main__: Completed step 100 / 500
+2026-01-29 12:48:21,230 INFO __main__: Completed step 200 / 500
+2026-01-29 12:49:03,048 INFO __main__: Completed step 300 / 500
+2026-01-29 12:49:41,435 INFO __main__: Completed step 400 / 500
+2026-01-29 12:50:20,618 INFO __main__: Completed step 500 / 500
+2026-01-29 12:50:21,080 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-29 12:50:21,083 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1000x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-29 12:50:35,897 INFO __main__: Plotting complete at time 219.40s
+2026-01-29 13:11:43,457 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-29 13:11:44,135 INFO __main__: Completed step 0 / 500
+2026-01-29 13:12:22,657 INFO __main__: Completed step 100 / 500
+2026-01-29 13:12:59,293 INFO __main__: Completed step 200 / 500
+2026-01-29 13:13:35,229 INFO __main__: Completed step 300 / 500
+2026-01-29 13:14:13,439 INFO __main__: Completed step 400 / 500
+2026-01-29 13:14:52,489 INFO __main__: Completed step 500 / 500
+2026-01-29 13:14:52,612 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-29 13:14:52,616 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1000x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-29 13:15:07,824 INFO __main__: Plotting complete at time 204.36s
+2026-01-29 13:15:33,352 ERROR jax._src.debugging: jax.debug.callback failed
+Traceback (most recent call last):
+  File "C:\Users\C5044892\AppData\Roaming\Python\Python313\site-packages\ipykernel\iostream.py", line 142, in _event_pipe
+    event_pipe = self._local.event_pipe
+                 ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: '_thread._local' object has no attribute 'event_pipe'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "c:\Users\C5044892\AppData\Local\anaconda3\Lib\site-packages\jax\_src\debugging.py", line 98, in debug_callback_impl
+    callback(*args)
+    ~~~~~~~~^^^^^^^
+  File "c:\Users\C5044892\AppData\Local\anaconda3\Lib\site-packages\jax\_src\debugging.py", line 460, in _flat_callback
+    callback(*args, **kwargs)
+    ~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\C5044892\Documents\Code\QG\scripts\pyqg_test.py", line 214, in <lambda>
+    lambda r: print(f"  scaled output finite: {jnp.all(jnp.isfinite(r))}, range: [{jnp.min(r):.4e}, {jnp.max(r):.4e}]"),
+              ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\C5044892\AppData\Roaming\Python\Python313\site-packages\IPython\core\interactiveshell.py", line 3045, in write
+    result = original_write(data, *args, **kwargs)
+  File "C:\Users\C5044892\AppData\Roaming\Python\Python313\site-packages\ipykernel\iostream.py", line 694, in write
+    self._schedule_flush()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\C5044892\AppData\Roaming\Python\Python313\site-packages\ipykernel\iostream.py", line 590, in _schedule_flush
+    self.pub_thread.schedule(_schedule_in_thread)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\C5044892\AppData\Roaming\Python\Python313\site-packages\ipykernel\iostream.py", line 267, in schedule
+    self._event_pipe.send(b"")
+    ^^^^^^^^^^^^^^^^
+  File "C:\Users\C5044892\AppData\Roaming\Python\Python313\site-packages\ipykernel\iostream.py", line 146, in _event_pipe
+    event_pipe = ctx.socket(zmq.PUSH)
+  File "C:\Users\C5044892\AppData\Roaming\Python\Python313\site-packages\zmq\sugar\context.py", line 352, in socket
+    socket_class(  # set PYTHONTRACEMALLOC=2 to get the calling frame
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self, socket_type, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\C5044892\AppData\Roaming\Python\Python313\site-packages\zmq\sugar\socket.py", line 162, in __init__
+    super().__init__(
+    ~~~~~~~~~~~~~~~~^
+        ctx_or_socket,
+        ^^^^^^^^^^^^^^
+    ...<2 lines>...
+        copy_threshold=copy_threshold,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "zmq/backend/cython/_zmq.py", line 740, in zmq.backend.cython._zmq.Socket.__init__
+    raise ZMQError()
+    
+zmq.error.ZMQError: Too many open files
+2026-01-29 13:19:43,246 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-29 13:19:43,863 INFO __main__: Completed step 0 / 500
+2026-01-29 13:20:21,684 INFO __main__: Completed step 100 / 500
+2026-01-29 13:20:59,802 INFO __main__: Completed step 200 / 500
+2026-01-29 13:21:35,450 INFO __main__: Completed step 300 / 500
+2026-01-29 13:22:13,261 INFO __main__: Completed step 400 / 500
+2026-01-29 13:22:48,362 INFO __main__: Completed step 500 / 500
+2026-01-29 13:22:48,796 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-29 13:22:48,800 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1000x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-29 13:23:02,828 INFO __main__: Plotting complete at time 199.57s
+2026-01-29 16:05:08,943 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-29 16:05:41,711 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-29 16:06:06,384 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-29 16:06:07,006 INFO __main__: Completed step 0 / 500
+2026-01-29 16:06:43,901 INFO __main__: Completed step 100 / 500
+2026-01-29 16:07:29,135 INFO __main__: Completed step 200 / 500
+2026-01-29 16:08:28,052 INFO __main__: Completed step 300 / 500
+2026-01-29 16:09:25,042 INFO __main__: Completed step 400 / 500
+2026-01-29 16:10:22,010 INFO __main__: Completed step 500 / 500
+2026-01-29 16:10:22,874 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-01-29 16:10:22,883 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1000x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-01-29 16:10:48,071 INFO __main__: Plotting complete at time 281.68s
+2026-01-29 16:31:49,066 INFO __main__: Starting run: dt=0.0005, steps=500
+2026-01-29 16:31:49,552 INFO __main__: Completed step 0 / 500
+2026-01-29 16:32:23,883 INFO __main__: Completed step 100 / 500
+2026-01-29 16:32:53,221 INFO __main__: Completed step 200 / 500
+2026-01-29 16:33:18,297 INFO __main__: Completed step 300 / 500

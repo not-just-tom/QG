@@ -16,7 +16,12 @@ def _generic_rfftn(a):
     return jnp.fft.rfftn(a, axes=(-2, -1))
 
 def _generic_irfftn(a, shape):
-    return jnp.fft.irfftn(a, axes=(-2, -1), norm='ortho', s=None)
+    # Match pyqg-jax's approach: pass shape directly
+    # JAX FFT parameters should be static, not traced
+    if shape is not None:
+        return jnp.fft.irfftn(a, axes=(-2, -1), norm='ortho', s=shape[-2:])
+    else:
+        return jnp.fft.irfftn(a, axes=(-2, -1), norm='ortho')
 
 
 @Pytree.register_pytree_dataclass
@@ -24,11 +29,20 @@ def _generic_irfftn(a, shape):
 class State:
     """Holds the evolving state of the QG model for JAX-functional stepping."""
     qh: jnp.ndarray
-    _q_shape: tuple[int, int]
+    _q_shape: tuple[int, int] = dataclasses.field(
+        metadata={"pyqg_jax": {"static": True}}
+    )
 
     @property
     def q(self) -> jnp.ndarray:
-        return _generic_irfftn(self.qh, shape=self._q_shape)
+        # Infer the physical shape from spectral array
+        # For rfft: spectral shape is (nz, ny, nx//2+1), physical is (nz, ny, nx)
+        # where nx = 2 * (nx_spectral - 1)
+        spectral_shape = self.qh.shape
+        ny = spectral_shape[-2]
+        nx = 2 * (spectral_shape[-1] - 1)
+        physical_shape = (ny, nx)
+        return _generic_irfftn(self.qh, shape=physical_shape)
 
 
     def update(self, **kwargs) -> "State":
@@ -80,9 +94,19 @@ class TempStates:
     def q(self) -> jnp.ndarray:
         return self.state.q
 
+
+    @property
+    def q1(self) -> jnp.ndarray:
+        return self.q[0]
+
+    @property
+    def q2(self) -> jnp.ndarray:
+        return self.q[1]
+
     @property
     def p(self) -> jnp.ndarray:
-        return _generic_irfftn(self.ph, shape=self.state._q_shape)
+        # Use shape=None to let irfftn infer dimensions, avoiding tracer issues
+        return _generic_irfftn(self.ph, shape=None)
 
     @property
     def uh(self) -> jnp.ndarray:
@@ -94,7 +118,8 @@ class TempStates:
 
     @property
     def dqdt(self) -> jnp.ndarray:
-        return _generic_irfftn(self.dqhdt, shape=self.state._q_shape)
+        # Use shape=None to let irfftn infer dimensions, avoiding tracer issues
+        return _generic_irfftn(self.dqhdt, shape=None)
 
     def update(self, **kwargs) -> "TempStates":
         """Replace values stored in this state.
@@ -134,7 +159,8 @@ class TempStates:
                     name = "state"
                 case "uh" | "vh":
                     # Handle other spectral names, store as non-spectral
-                    new_val = _generic_irfftn(new_val, shape=self.state._q_shape)
+                    # Use shape=None to let irfftn infer dimensions
+                    new_val = _generic_irfftn(new_val, shape=None)
                     name = name[:-1]
                 case "p":
                     new_val = _generic_rfftn(new_val)
