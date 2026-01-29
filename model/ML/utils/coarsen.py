@@ -1,16 +1,21 @@
 from abc import ABC, abstractmethod
-import jax
+import inspect
 import jax.numpy as jnp
-import copy
+
+def model_to_args(model):
+    return {
+        arg: getattr(model, arg) for arg in inspect.signature(type(model)).parameters
+    }
 
 def coarsen(hr_model, n_lr):
     if hr_model.nx<n_lr:
         raise ValueError(f'Coarsening can only be reducing resolution! Attempted {hr_model.n} to {n_lr}')
     
-    params = copy.deepcopy(hr_model.params)
-    params['nx'] = n_lr
-    params['ny'] = n_lr
-    return type(hr_model)(params)
+    # Get params from the model (handles both Model and TwoLayerModel)
+    model_args = model_to_args(hr_model)
+    model_args["nx"] = n_lr
+    model_args["ny"] = n_lr
+    return type(hr_model)(**model_args)
 
 
 class Coarsener(ABC):
@@ -27,18 +32,20 @@ class Coarsener(ABC):
         return self.hr_model.nx / self.n_lr
 
     def coarsen_state(self, state):
+        # Avoid calling initialise (random + grid construction) inside jit
+        # Use shapes from the low-res grid directly
         lr_state = self.lr_model.initialise(42) # this doesn't need to be tracked but should I keep the seed the same as the config?
         nk = lr_state.qh.shape[0] // 2
 
         # Galerkin Truncation - something is really up here
         trunc = jnp.concatenate(
             [
-                state.qh[:nk, : nk + 1],    # positive ky
-                state.qh[-nk:, : nk + 1],   # negative ky
+                state.qh[:, :nk, :nk + 1],
+                state.qh[:, -nk:, :nk + 1],
             ],
-            axis=0,
+            axis=-2,
         )
-        filtered = trunc * self.spectral_filter[None, :] / self.ratio**2
+        filtered = trunc * self.spectral_filter / self.ratio**2
         return lr_state.update(qh = filtered)
 
     def sgs_forcing(self, state):

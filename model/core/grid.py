@@ -5,21 +5,24 @@ import model.utils.pytree as Pytree
 
 @Pytree.register_pytree_class_attrs(
     children=[],
-    static_attrs=["Lx", "Ly", "nx", "ny"],
+    static_attrs=["Lx", "Ly", "nx", "ny", "nz"],
 )
 class Grid:
     """
     I'm working on it ok
 
     """
-    def __init__(self, Lx, nx, Ly=None, ny=None):
+    def __init__(self, Lx, nx, Ly=None, ny=None, nz=1, Hi=None):
         """ Initialising the grid """
         self._Lx = Lx
         self._Ly = Ly if Ly is not None else Lx
         self._nx = nx
         self._ny = ny if ny is not None else nx
+        self._nz = nz
         self._dx = self._Lx / self._nx
         self._dy = self._Ly / self._ny
+
+        self._Hi = Hi
 
         self._kx = jnp.fft.rfftfreq(self._nx, d=self._dx) * 2*jnp.pi 
         self._ky = jnp.fft.fftfreq(self._ny, d=self._dy) * 2*jnp.pi
@@ -46,6 +49,10 @@ class Grid:
     @property
     def ny(self):
         return self._ny
+    
+    @property
+    def nz(self):
+        return self._nz
     
     @property
     def dx(self):
@@ -93,10 +100,16 @@ class Grid:
 
     # vv check these shapes carefully vv
     @property
-    def real_state_shape(self) -> tuple[int, int]:
-        return (self.ny, self.nx)
+    def real_state_shape(self) -> tuple:
+        if self.nz == 1:
+            return (self.ny, self.nx)
+        else:
+            return (self.nz, self.ny, self.nx)
 
     @property
-    def spectral_state_shape(self) -> tuple[int, int]:
-        return (self.nl, self.nk)
+    def spectral_state_shape(self) -> tuple:
+        if self.nz == 1:
+            return (self.nl, self.nk)
+        else:
+            return (self.nz, self.nl, self.nk)
 

@@ -6,9 +6,197 @@ import cmocean as cmo
 import jax.numpy as jnp
 import matplotlib.gridspec as gridspec
 
+
+def animate_two_layer(recorder, grid, cadence=100, outname="test.gif", plots: list | None = None):
+    """
+    Build an animation for two-layer model data from `recorder`.
+    
+    For 2D fields with two layers, creates side-by-side plots for each layer.
+    """
+    # Only include plots that actually exist in recorder diagnostics
+    available_plots = list(recorder.diagnostics.keys())
+    plots = plots or available_plots
+    plots = [p for p in plots if p in available_plots]
+    if not plots:
+        raise ValueError("No valid diagnostics available for animation")
+
+    # Gather series data
+    series = {}
+    max_frames = 0
+    for name in plots:
+        if name in recorder.animate_buffers:
+            arr = recorder.animate_buffers.get(name, [])
+            if len(arr) > 0:
+                series[name] = np.stack([np.array(a) for a in arr])
+                max_frames = max(max_frames, series[name].shape[0])
+            else:
+                series[name] = np.empty((0,))
+        elif name in recorder.final_buffers:
+            val = recorder.final_buffers.get(name)
+            series[name] = np.array([val]) if np.isscalar(val) else np.array(val)
+            max_frames = max(max_frames, series[name].shape[0])
+        else:
+            series[name] = np.empty((0,))
+
+    if max_frames == 0:
+        raise ValueError("No recorded data available for requested plots")
+
+    # Determine subplot layout - 2 columns for each 2-layer field
+    n_base_plots = len(plots)
+    subplot_cols = []
+    for name in plots:
+        data = series[name]
+        if data.ndim == 4:  # (time, nz=2, ny, nx) - two-layer field
+            subplot_cols.extend([1, 1])  # Two columns for two layers
+        else:
+            subplot_cols.append(1)
+    
+    n_total_cols = sum(subplot_cols)
+    fig, axs_flat = plt.subplots(1, n_total_cols, figsize=(5 * n_total_cols, 5))
+    axs_flat = [axs_flat] if n_total_cols == 1 else list(np.ravel(axs_flat))
+
+    artists = {}
+    xs = np.arange(max_frames) * cadence
+    ax_idx = 0
+
+    # Initialize plots
+    for name in plots:
+        data = series[name]
+        if name == "ke_spectrum":
+            ax = axs_flat[ax_idx]
+            ek = data[0] if len(data) > 0 else np.zeros(1)
+            k = np.arange(len(ek))
+            artists[name], = ax.plot(k, ek, lw=2)
+            ax.set_xlabel("k")
+            ax.set_ylabel("E(k)")
+            ax.set_title("KE Spectrum")
+            ax.set_yscale("log")
+            ax_idx += 1
+        elif data.ndim == 4:  # Two-layer 2D field (time, nz=2, ny, nx)
+            extent = [-grid.Lx/2, grid.Lx/2, -grid.Ly/2, grid.Ly/2] if grid else None
+            
+            # Layer 1
+            ax1 = axs_flat[ax_idx]
+            im1 = ax1.imshow(data[0, 0], origin="lower", cmap="RdBu_r", extent=extent)
+            fig.colorbar(im1, ax=ax1)
+            ax1.set_title(f"{name} - Layer 1")
+            if grid:
+                ax1.set_xlabel("x")
+                ax1.set_ylabel("y")
+            artists[f"{name}_layer1"] = im1
+            ax_idx += 1
+            
+            # Layer 2
+            ax2 = axs_flat[ax_idx]
+            im2 = ax2.imshow(data[0, 1], origin="lower", cmap="RdBu_r", extent=extent)
+            fig.colorbar(im2, ax=ax2)
+            ax2.set_title(f"{name} - Layer 2")
+            if grid:
+                ax2.set_xlabel("x")
+                ax2.set_ylabel("y")
+            artists[f"{name}_layer2"] = im2
+            ax_idx += 1
+        elif data.ndim == 3:  # Single-layer 2D field (time, ny, nx)
+            ax = axs_flat[ax_idx]
+            extent = [-grid.Lx/2, grid.Lx/2, -grid.Ly/2, grid.Ly/2] if grid else None
+            im = ax.imshow(data[0], origin="lower", cmap="RdBu_r", extent=extent)
+            fig.colorbar(im, ax=ax)
+            ax.set_title(name)
+            if grid:
+                ax.set_xlabel("x")
+                ax.set_ylabel("y")
+            artists[name] = im
+            ax_idx += 1
+        else:  # Time series scalar
+            ax = axs_flat[ax_idx]
+            line, = ax.plot([], [], lw=2)
+            artists[name] = line
+            ax.set_xlabel("Step")
+            ax.set_ylabel(name)
+            ax.set_title(name)
+            ax.set_xlim(0, max_frames * cadence)
+            ax.set_ylim(0, max(1.0, data.max() if data.size else 1.0))
+            ax_idx += 1
+
+    def update(i):
+        ax_idx = 0
+        for name in plots:
+            data = series[name]
+            if name == "ke_spectrum":
+                ek = data[min(i, len(data) - 1)]
+                k = np.arange(len(ek))
+                artists[name].set_data(k, ek)
+                ax = axs_flat[ax_idx]
+                ax.set_ylim(max(1e-12, ek.min()), max(ek.max() * 1.1, 1e-12))
+                ax.set_title(f"{name} (Step {i * cadence})")
+                ax_idx += 1
+            elif data.ndim == 4:  # Two-layer field
+                idx = min(i, data.shape[0] - 1)
+                artists[f"{name}_layer1"].set_array(data[idx, 0])
+                artists[f"{name}_layer2"].set_array(data[idx, 1])
+                axs_flat[ax_idx].set_title(f"{name} - Layer 1 (Step {i * cadence})")
+                axs_flat[ax_idx + 1].set_title(f"{name} - Layer 2 (Step {i * cadence})")
+                ax_idx += 2
+            elif data.ndim == 3:  # Single-layer field
+                idx = min(i, data.shape[0] - 1)
+                artists[name].set_array(data[idx])
+                axs_flat[ax_idx].set_title(f"{name} (Step {i * cadence})")
+                ax_idx += 1
+            else:  # Time series
+                ys = data[: min(i + 1, len(data))]
+                xi = xs[: len(ys)]
+                artists[name].set_data(xi, ys)
+                ax = axs_flat[ax_idx]
+                ax.relim()
+                ax.autoscale_view()
+                ax.set_title(f"{name} (Step {i * cadence})")
+                ax_idx += 1
+
+        return list(artists.values())
+
+    anim = FuncAnimation(fig, update, frames=max_frames, blit=False)
+    anim.save(outname, fps=10)
+    plt.close(fig)
+    print(f"Saved animation to {outname}")
+
+
 def animate(recorder, grid, cadence=100, outname="test.gif", plots: list | None = None):
     """
     Build an animation from data already stored in `recorder`.
+    
+    Automatically detects single-layer vs two-layer model and uses appropriate plotting.
+    Uses Recorder's animate_buffers and final_buffers, aligned with its diagnostics.
+    """
+    # Check if we have two-layer data
+    available_plots = list(recorder.diagnostics.keys())
+    plots = plots or available_plots
+    plots = [p for p in plots if p in available_plots]
+    
+    if not plots:
+        raise ValueError("No valid diagnostics available for animation")
+    
+    # Detect if any field has two layers (shape with nz dimension)
+    is_two_layer = False
+    for name in plots:
+        if name in recorder.animate_buffers:
+            arr = recorder.animate_buffers.get(name, [])
+            if len(arr) > 0:
+                data = np.array(arr[0])
+                # Check if it's a 3D field (nz, ny, nx) as opposed to 2D (ny, nx)
+                if data.ndim == 3 and data.shape[0] == 2:
+                    is_two_layer = True
+                    break
+    
+    # Use appropriate plotting function
+    if is_two_layer:
+        return animate_two_layer(recorder, grid, cadence, outname, plots)
+    else:
+        return animate_single_layer(recorder, grid, cadence, outname, plots)
+
+
+def animate_single_layer(recorder, grid, cadence=100, outname="test.gif", plots: list | None = None):
+    """
+    Build an animation from single-layer model data stored in `recorder`.
 
     Uses Recorder's animate_buffers and final_buffers, aligned with its diagnostics.
     """

@@ -9,14 +9,21 @@ params:
   seed: 42
   nx: 256
   Lx: 6.283185307179586  # 2π
-  beta: 50
+  beta: 10
   kmin: 3.0
   kmax: 10.0
+  n_layers: 2  # 1 for single-layer, 2 for two-layer model
+  # Two-layer model parameters (only used if n_layers == 2)
+  rd: 15000.0
+  delta: 0.25
+  H1: 500
+  U1: 0.025
+  U2: 0.0
 
 plotting:
-  nsteps: 40000
+  nsteps: 500
   dt: 0.0005
-  cadence: 100
+  cadence: 10
   animate: []
   final: []
   stepper: AB3Stepper
