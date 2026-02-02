@@ -13,7 +13,7 @@ import model.utils.pytree as Pytree
 
 
 def _generic_rfftn(a):
-    return jnp.fft.rfftn(a, axes=(-2, -1))
+    return jnp.fft.rfftn(a, axes=(-2, -1), norm='ortho')
 
 def _generic_irfftn(a, shape):
     # Match pyqg-jax's approach: pass shape directly

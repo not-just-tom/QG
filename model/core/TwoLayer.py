@@ -27,6 +27,9 @@ class TwoLayerCalling(TwoLayerKernel):
         # friction parameters
         rek=5.787e-7,
         filterfac=23.6,
+        # initialization parameters
+        kmin=0.0,
+        kmax=1.0e9,
         # constants
         f=None,
         g=9.81,
@@ -36,6 +39,8 @@ class TwoLayerCalling(TwoLayerKernel):
             ny=ny if ny is not None else nx,
             nx=nx,
             rek=rek,
+            kmin=kmin,
+            kmax=kmax,
         )
         self.Lx = Lx
         self.Ly = Ly if Ly is not None else Lx
@@ -263,12 +268,17 @@ class TwoLayerModel(TwoLayerCalling):
         H1=500,
         U1=0.025,
         U2=0.0,
+        # initialization parameters
+        kmin=0.0,
+        kmax=1.0e9,
     ):
         super().__init__(
             nz=2,
             ny=ny if ny is not None else nx,
             nx=nx,
             rek=rek,
+            kmin=kmin,
+            kmax=kmax,
         )
         self.L = L
         self.W = W if W is not None else L
@@ -314,18 +324,9 @@ class TwoLayerModel(TwoLayerCalling):
         PseudoSpectralState
             The new state with random initialization.
         """
-        state = super().create_initial_state()
-        # initial conditions (pv anomalies)
         key = jax.random.PRNGKey(seed)
-        rng_a, rng_b = jax.random.split(key, num=2)
-        q1 = 1e-7 * jax.random.uniform(
-            rng_a, shape=(self.ny, self.nx)) + 1e-6 * (
-            jnp.ones((self.ny, 1))
-            * jax.random.uniform(rng_b, shape=(1, self.nx))
-        )
-        q2 = jnp.zeros_like(self.x)
-        state = state.update(q=jnp.stack([q1, q2], axis=-3))
-        return state
+        qh = self._pseudo_random(key)
+        return states.State(qh=qh, _q_shape=(self.ny, self.nx))
 
     @property
     def U(self):
