@@ -349,3 +349,93 @@ def make_triple_gif(hr_q, lr_q, sgs_q, out_file="q_triple.gif", cadence=100):
     ani.save(out_file, fps=10)
     plt.close(fig)
     print(f"Saved GIF to {out_file}")
+
+
+def step_model_n_steps(n, stepped_model, initial_state):
+    """
+    Step the model n times from an initial state.
+    
+    Args:
+        n: Number of steps to take
+        stepped_model: SteppedModel instance
+        initial_state: Initial state to start from
+        
+    Returns:
+        Final state after n steps
+    """
+    state = initial_state
+    for _ in range(n):
+        state = stepped_model.step_model(state)
+    return state
+
+def plot_state(state, grid, title="Potential Vorticity", outname="state.png"):
+    """
+    Plot a state's potential vorticity field.
+    
+    Args:
+        state: State object with q field
+        grid: Grid object with nx, ny, Lx, Ly properties
+        title: Plot title
+        outname: Output filename for saving
+    """
+    # Create coordinate arrays from grid properties
+    x_extent = [0, grid.Lx]
+    y_extent = [0, grid.Ly]
+    q = np.array(state.q)
+    
+    # Determine if single or multi-layer
+    if q.ndim == 3 and q.shape[0] > 1:
+        n_layers = q.shape[0]
+        # Plot each layer
+        fig, axes = plt.subplots(1, n_layers, figsize=(6*n_layers, 5))
+        if n_layers == 1:
+            axes = [axes]
+        
+        for i, ax in enumerate(axes):
+            im = ax.imshow(q[i], extent=[*x_extent, *y_extent], 
+                          origin='lower', cmap='RdBu_r', aspect='auto')
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+            ax.set_title(f'{title} - Layer {i+1}')
+            plt.colorbar(im, ax=ax, label='q')
+    else:
+        # Single field or single layer
+        if q.ndim == 3:
+            q = q[0]  # Take first layer if shape is (1, ny, nx)
+        fig, ax = plt.subplots(figsize=(8, 6))
+        im = ax.imshow(q, extent=[*x_extent, *y_extent], 
+                      origin='lower', cmap='RdBu_r', aspect='auto')
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_title(title)
+        plt.colorbar(im, ax=ax, label='q')
+    
+    plt.tight_layout()
+    plt.savefig(outname, dpi=150, bbox_inches='tight')
+    print(f"Plot saved to {outname}")
+    print(f"Shape: {q.shape}, min: {np.min(q):.3e}, max: {np.max(q):.3e}")
+    plt.show()
+    
+    return fig
+
+
+
+def plot_initial_condition(n_steps, model, state):
+    """
+    Plot the initial condition (or after n_steps) from the configuration.
+    """
+
+    sm = model
+    # Step forward if requested
+    if n_steps > 0:
+        print(f"Stepping model {n_steps} steps...")
+        state = step_model_n_steps(n_steps, sm, state)
+        title = f"Potential Vorticity after {n_steps} steps"
+        outname = f"state_after_{n_steps}_steps.png"
+    else:
+        title = "Initial Potential Vorticity"
+        outname = "initial_condition.png"
+    
+    # Get full state and plot
+    full_state = sm.get_full_state(state)
+    plot_state(full_state, model.get_grid(), title=title, outname=outname)

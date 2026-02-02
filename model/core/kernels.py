@@ -167,7 +167,7 @@ class SingleLayerKernel(ABC):
 
 @Pytree.register_pytree_class_attrs(
     children=["rek"],
-    static_attrs=["nz", "ny", "nx"],
+    static_attrs=["nz", "ny", "nx", "kmin", "kmax"],
 )
 class TwoLayerKernel(ABC):
     def __init__(
@@ -177,12 +177,16 @@ class TwoLayerKernel(ABC):
         ny: int,
         nx: int,
         rek: float = 0,
+        kmin: float = 0.0,
+        kmax: float = 1.0e9,
     ):
         # Store small, fundamental properties (others will be computed on demand)
         self.nz = nz
         self.ny = ny
         self.nx = nx
         self.rek = rek
+        self.kmin = kmin
+        self.kmax = kmax
 
     def get_full_state(
         self, state: states.State
@@ -239,6 +243,22 @@ class TwoLayerKernel(ABC):
             qh=full_state.dqhdt,
             _q_shape=self.get_grid().real_state_shape[-2:],
         )
+
+    def _pseudo_random(self, key):
+        # pseudo-random PV in spectral space (two-layer)
+        key_r, key_i = jax.random.split(key)
+        noise_real = jax.random.normal(key_r, (self.nz, self.ny, self.nx // 2 + 1))
+        noise_imag = jax.random.normal(key_i, (self.nz, self.ny, self.nx // 2 + 1))
+        qh = noise_real + 1j * noise_imag
+        qh = qh.at[:, :, 0].set(jnp.real(qh[:, :, 0]))
+
+        # apply filter and bandmask
+        qh = jnp.expand_dims(self.filtr, 0) * qh
+        band_mask = (self.get_grid().Kmag >= self.kmin) & (self.get_grid().Kmag <= self.kmax)
+        qh = qh * jnp.expand_dims(band_mask, 0)
+        qh = qh.at[:, :, 0].set(0.0)
+        qh = jnp.expand_dims(self.filtr, 0) * qh
+        return qh
 
     def postprocess_state(
         self, state: states.State) -> states.State:
