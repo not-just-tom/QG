@@ -52,31 +52,6 @@ class ForcedModel:
 
     def get_updates(self, state):
         """Get updates for time-stepping `state`.
-
-        `state` is a wrapped, partial :attr:`model` state. This
-        function returns updates for time-stepping.
-
-        This function makes use of :attr:`param_func`, applying the
-        parameterization to the updates.
-
-        Parameters
-        ----------
-        state : ParameterizedModelState
-            The state which will be time stepped using the computed
-            updates.
-
-        Returns
-        -------
-        ParameterizedModelState
-            A new state object where each field corresponds to a
-            time-stepping *update* to be applied.
-
-        Note
-        ----
-        The object returned by this function has the same type of
-        `state`, but contains *updates*. This is so the time-stepping
-        can be done by mapping over the states and updates as JAX
-        pytrees with the same structure.
         """
         param_updates, new_param_aux = self.param_func(
             state.model_state, state.param_aux.value, self.model
@@ -87,25 +62,7 @@ class ForcedModel:
         )
 
     def dealias(self, state):
-        """Apply fixed filtering to `state`.
-
-        This function should be called once on each new state after
-        each time step.
-
-        :class:`~pyqg_jax.steppers.SteppedModel` handles
-        this internally.
-
-        This function defers to :attr:`model` for the post-processing.
-
-        Parameters
-        ----------
-        state : ParameterizedModelState
-            The wrapped state to be filtered.
-
-        Returns
-        -------
-        ParameterizedModelState
-            The wrapped filtered state.
+        """Dealias the wrapped model state.
         """
         return ForcedModelState(
             model_state=self.model.dealias(state.model_state),
@@ -113,62 +70,11 @@ class ForcedModel:
         )
 
     def initialise(self, key, *args, **kwargs):
-        """Create a new wrapped initial state with random
-        initialization.
-
-        This function defers to :attr:`model` to initialize the inner
-        state and makes use of :attr:`init_param_aux_func` to
-        initialize the parameterization's auxiliary state.
-
-        Parameters
-        ----------
-        key : jax.random.key
-            The PRNG state used as the random key for initialization.
-
-        *args
-            Arbitrary additional arguments for :attr:`init_param_aux_func`
-
-        **kwargs
-            Arbitrary additional arguments for :attr:`init_param_aux_func`
-
-        Returns
-        -------
-        ParameterizedModelState
-            The new wrapped state with random initialization.
-        """
         return self.initialise_param_state(
             self.model.initialise(key=key), *args, **kwargs
         )
 
     def initialise_param_state(self, state, *args, **kwargs):
-        """Wrap an existing state from :attr:`model` in a
-        :class:`ParameterizedModelState`.
-
-        This function takes an existing inner model state and wraps it
-        so that it can be used with the parameterized model.
-
-        This function uses of :attr:`init_param_aux_func` to
-        initialize the parameterization's auxiliary state.
-
-        Parameters
-        ----------
-        state
-            The inner model state to wrap. The type depends on
-            :attr:`model` but is likely to be
-            :class:`PseudoSpectralState
-            <pyqg_jax.state.PseudoSpectralState>`.
-
-        *args
-            Arbitrary additional arguments for :attr:`init_param_aux_func`
-
-        **kwargs
-            Arbitrary additional arguments for :attr:`init_param_aux_func`
-
-        Returns
-        -------
-        ParameterizedModelState
-            A wrapped copy of `state`.
-        """
         init_param_state = self.init_param_aux_func(state, self.model, *args, **kwargs)
         return ForcedModelState(
             model_state=state,

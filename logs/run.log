@@ -2599,3 +2599,5 @@ zmq.error.ZMQError: Too many open files
 2026-02-02 15:35:34,264 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
 2026-02-02 15:35:34,268 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1000x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
 2026-02-02 15:35:36,889 INFO __main__: Plotting complete at time 268.75s
+2026-02-02 20:35:40,998 INFO __main__: Starting run: dt=0.005, steps=1000
+2026-02-02 20:35:44,734 INFO __main__: Completed step 0 / 1000
