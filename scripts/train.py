@@ -1,3 +1,11 @@
+import sys
+import os
+# Ensure the workspace root is in the path
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_workspace_root = os.path.dirname(_script_dir)
+if _workspace_root not in sys.path:
+    sys.path.insert(0, _workspace_root)
+
 import functools
 import jax
 import jax.numpy as jnp
@@ -5,89 +13,40 @@ import numpy as np
 import equinox as eqx
 import optax
 import matplotlib.pyplot as plt
+import importlib
+
+# Reload all model modules in dependency order (without clearing, just reloading)
+# This ensures fresh code without breaking import paths
+_module_names = [
+    'model.core.grid',
+    'model.core.states',
+    'model.core.kernels',
+    'model.core.TwoLayer',
+    'model.core.model',
+    'model.core.steppers',
+    'model.ML.utils.utils',
+    'model.ML.utils.coarsen',
+    'model.ML.forced_model',
+]
+
+for _mod_name in _module_names:
+    if _mod_name in sys.modules:
+        importlib.reload(sys.modules[_mod_name])
+    else:
+        __import__(_mod_name)
+
 from model.core.model import create_model
 from model.core.steppers import SteppedModel, build_stepper
 from model.ML.forced_model import ForcedModel
 from model.ML.utils.utils import parameterization
-import inspect
-import abc
-
-def model_to_args(model):
-    return {
-        arg: getattr(model, arg) for arg in inspect.signature(type(model)).parameters
-    }
-
-def coarsen_model(big_model, small_nx):
-    if big_model.nx != big_model.ny:
-        raise ValueError("coarsening tested only for square shapes")
-    if small_nx >= big_model.nx:
-        raise ValueError(
-            f"coarsening output is not strictly smaller (got {big_model.nx} to {small_nx})"
-        )
-    if small_nx % 2 != 0:
-        raise ValueError(f"coarsening output should be even-valued, requested {small_nx}")
-    model_args = model_to_args(big_model)
-    model_args["nx"] = small_nx
-    model_args["ny"] = small_nx
-    return type(big_model)(**model_args)
-
-
-class SpectralCoarsener(abc.ABC):
-    def __init__(self, big_model, small_nx):
-        self.big_model = big_model
-        self.small_nx = small_nx
-
-    @property
-    def small_model(self):
-        return coarsen_model(self.big_model, self.small_nx)
-
-    @property
-    def ratio(self):
-        return self.big_model.nx / self.small_nx
-
-    def coarsen_state(self, state):
-        if (
-            jax.eval_shape(lambda s: s.q, state).shape
-            != (self.big_model.nz, self.big_model.ny, self.big_model.nx)
-        ):
-            raise ValueError(f"incorrect input size {state.qh.shape}")
-        out_state = self.small_model.create_initial_state(
-            jax.random.key(0)
-        )
-        nk = out_state.qh.shape[-2] // 2
-        trunc = jnp.concatenate(
-            [
-                state.qh[:, :nk, :nk + 1],
-                state.qh[:, -nk:, :nk + 1],
-            ],
-            axis=-2,
-        )
-        filtered = trunc * self.spectral_filter / self.ratio**2
-        return out_state.update(qh=filtered)
-
-    def compute_q_total_forcing(self, state):
-        coarsened_deriv = self.coarsen_state(self.big_model.get_updates(state))
-        small_deriv = self.small_model.get_updates(self.coarsen_state(state))
-        return coarsened_deriv.q - small_deriv.q
-
-    @property
-    @abc.abstractmethod
-    def spectral_filter(self):
-        pass
-
-    def tree_flatten(self):
-        return [self.big_model], self.small_nx
-
-    @classmethod
-    def tree_unflatten(cls, aux_data, children):
-        return cls(big_model=children[0], small_nx=aux_data)
+from model.ML.utils.coarsen import Coarsener
 
 
 @jax.tree_util.register_pytree_node_class
-class Operator1(SpectralCoarsener):
+class Operator1(Coarsener):
     @property
     def spectral_filter(self):
-        return self.small_model.filtr
+        return self.lr_model.filtr
 
 
 def param_to_single(param):
@@ -134,7 +93,7 @@ class NNParam(eqx.Module):
         return self.ops(x, key=key)
 
 DT = 36.0
-DT_GENERATE = 0.0001  # Very small dt for beta=10.0 regime (Rossby wave timescale ~ 0.016)
+DT_GENERATE = 0.001  
 LEARNING_RATE = 5e-4
 
 params = {
@@ -152,12 +111,12 @@ params = {
     "U2": 0.0,
 }
 
-big_model = SteppedModel(
+hr_model = SteppedModel(
     model=create_model(params, n_layers=2),
     stepper=build_stepper("AB3Stepper", dt=DT_GENERATE),  # Use small dt for stable generation
 )
 
-coarse_op = Operator1(big_model.model, 32)
+coarse_op = Operator1(hr_model.model, 32)
 
 # Ensure that all module weights are float32
 net = module_to_single(NNParam(key=jax.random.key(123)))
@@ -169,9 +128,9 @@ optim_state = optim.init(eqx.filter(net, eqx.is_array))
 def generate_train_data(seed, num_steps):
 
     def step(carry, _x):
-        next_state = big_model.step_model(carry)
-        small_state = coarse_op.coarsen_state(carry.state)
-        return next_state, small_state.q
+        next_state = hr_model.step_model(carry)
+        lr_state = coarse_op.coarsen_state(carry.state)
+        return next_state, lr_state.q
 
     # With dt=0.0005, we need 7,200,000 steps to reach 1 hour
     # To match the rollout timescale in training (100 steps * dt=3600 = 360,000 seconds)
@@ -179,7 +138,7 @@ def generate_train_data(seed, num_steps):
     # Instead: 100 steps at dt=0.0005 = 0.05 seconds (physical time)
     # This gives us 100 coarsened snapshots to learn from
     _final_big_state, target_q = jax.lax.scan(
-        step, big_model.initialise(seed), None, length=num_steps
+        step, hr_model.initialise(seed), None, length=num_steps
     )
     return target_q
 
@@ -205,23 +164,23 @@ def roll_out_with_net(init_q, net, num_steps):
     # Then wrap it in the network parameterization and stepper
     # Make sure to match time steps
     # CRITICAL: Use the small dt for coarsened model - it needs fine timesteps to remain stable
-    small_model = SteppedModel(
+    lr_model = SteppedModel(
         model=ForcedModel(
-            model=coarse_op.small_model,
+            model=coarse_op.lr_model,
             param_func=net_parameterization,
         ),
         stepper=build_stepper("AB3Stepper", dt=DT_GENERATE),
     )
     # Package our state
     # First, package it for the base model
-    base_state = small_model.model.model.initialise(0).update(q=init_q)
+    base_state = lr_model.model.model.initialise(0).update(q=init_q)
     # Next, wrap it for the parameterization and stepper
-    init_state = small_model.initialize_stepper_state(
-        small_model.model.initialise_param_state(base_state)
+    init_state = lr_model.initialize_stepper_state(
+        lr_model.model.initialise_param_state(base_state)
     )
 
     def step(carry, _x):
-        next_state = small_model.step_model(carry)
+        next_state = lr_model.step_model(carry)
         return next_state, carry.state.model_state.q
 
     # Roll out the state

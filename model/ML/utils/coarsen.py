@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import inspect
 import jax.numpy as jnp
+import jax
 
 def model_to_args(model):
     return {
@@ -32,10 +33,9 @@ class Coarsener(ABC):
         return self.hr_model.nx / self.n_lr
 
     def coarsen_state(self, state):
-        # Avoid calling initialise (random + grid construction) inside jit
-        # Use shapes from the low-res grid directly
-        lr_state = self.lr_model.initialise(42) # this doesn't need to be tracked but should I keep the seed the same as the config?
-        nk = lr_state.qh.shape[0] // 2
+        # Use create_initial_state which is JAX-compatible and doesn't rebuild the grid
+        lr_state = self.lr_model.create_initial_state(jax.random.key(0))
+        nk = lr_state.qh.shape[-2] // 2
 
         # Galerkin Truncation - something is really up here
         trunc = jnp.concatenate(
@@ -55,7 +55,7 @@ class Coarsener(ABC):
         coarsened_deriv = self.coarsen_state(self.hr_model.get_updates(state))
         lr_deriv = self.lr_model.get_updates(self.coarsen_state(state))
         return coarsened_deriv.q - lr_deriv.q
-    
+
     @property
     @abstractmethod
     def spectral_filter(self):
