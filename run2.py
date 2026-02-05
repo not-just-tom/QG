@@ -1,13 +1,17 @@
 import importlib 
-import model.core.model
-import model.core.states
 import model.core.grid
+import model.core.states
+import model.core.kernels
+import model.core.TwoLayer
+import model.core.model
 import model.core.steppers
 import model.utils.plotting
 import model.utils.diagnostics
-importlib.reload(model.core.states)
-importlib.reload(model.core.model)
 importlib.reload(model.core.grid)
+importlib.reload(model.core.states)
+importlib.reload(model.core.kernels)
+importlib.reload(model.core.TwoLayer)
+importlib.reload(model.core.model)
 importlib.reload(model.core.steppers)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
@@ -15,22 +19,19 @@ from model.utils.plotting import animate
 from model.utils.config import Config
 from model.utils.logging import configure_logging
 from model.core.steppers import SteppedModel, build_stepper
-from model.core.model import QGM
+from model.core.model import create_model
 from model.utils.diagnostics import Recorder
 import logging
 import jax
+import jax.numpy as jnp
 import time
 import functools
 import yaml
+import cmocean as cmo
 import os
-
-#delete
-import operator
-import functools
 import matplotlib.pyplot as plt
-import cmocean.cm as cmo
-import jax
-import jax.numpy as jnp
+from matplotlib.animation import FuncAnimation, PillowWriter
+import numpy as np
 
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -61,51 +62,54 @@ def main():
     outname = getattr(cfg.filepaths, "outname", "../outputs/qg.gif")
 
     
-
-    # Instantiate the model from configs
-    model = QGM(params=params)
+    # Instantiate the model from configs using factory
+    n_layers = params.pop('n_layers', 1)  # Extract n_layers, default to 1
+    model = create_model(params, n_layers=n_layers)
     stepper = build_stepper(cfg_stepper, dt)
     sm = SteppedModel(model=model, stepper=stepper)
-    recorder = Recorder(cfg, grid=model.get_grid())
+    recorder = Recorder(cfg, grid=model.get_grid()) # basically depreciated at this point....
     init_state = sm.initialise(params['seed'])
 
-    @jax.jit
-    def step_only(state):
-        return sm.step_model(state)
+    print(init_state.state.qh.shape)
 
 
+    @functools.partial(jax.jit, static_argnames=["nsteps", "cadence"])
     def rollout(state, nsteps, cadence):
-
         def loop_fn(carry, step):
-            next_state = step_only(carry)
-
-            # store only every `cadence` steps
+            next_state = sm.step_model(carry)
+            # record spectral qh every `cadence` steps; keep same shape
             q_snapshot = jax.lax.cond(
                 step % cadence == 0,
-                lambda s: s.state.q,   # cheap: already in real space
-                lambda _: jnp.zeros_like(carry.state.q),
+                lambda s: s.state.qh,
+                lambda s: jnp.zeros_like(s.state.qh),
                 next_state,
             )
-
             return next_state, q_snapshot
 
-        final_state, q_traj = jax.lax.scan(
-            loop_fn, state, jnp.arange(nsteps)
-        )
-
-        return q_traj
+        steps = jnp.arange(nsteps)
+        _final_carry, traj_steps = jax.lax.scan(loop_fn, state, steps)
+        return traj_steps
 
     q_traj = rollout(init_state, nsteps, cadence)
-    q_traj = jax.device_get(q_traj)
-    import matplotlib.pyplot as plt
-    from matplotlib.animation import FuncAnimation, FFMpegWriter
-    import numpy as np
+    q_traj = jax.device_get(q_traj)  # shape (nsteps, nl, nk)
+
+    # select only the frames recorded at cadence
+    indices = np.arange(0, nsteps, cadence)
+    q_traj = q_traj[indices]
+
+    # q_traj is spectral with shape (n_frames, nl, nk). Convert to physical (n_frames, ny, nx).
+    ny, nx = init_state.state._q_shape
+    phys_frames = []
+    for i in range(q_traj.shape[0]):
+        frame = np.fft.irfftn(q_traj[i], s=(ny, nx))
+        phys_frames.append(frame)
+    q_traj = np.stack(phys_frames)
 
     fig, ax = plt.subplots(figsize=(6, 5))
 
     vmax = np.max(np.abs(q_traj))
     im = ax.imshow(
-        q_traj[0],
+        q_traj[0, 0],
         origin="lower",
         cmap="RdBu_r",
         vmin=-vmax,
@@ -117,63 +121,24 @@ def main():
     plt.colorbar(im, ax=ax)
 
     def update(frame):
-        im.set_data(q_traj[frame])
-        ax.set_title(f"PV evolution (frame {frame})")
+        im.set_data(q_traj[frame, 0, :, :])
+        ax.set_title(f"PV evolution (Step {frame*cadence})")
         return (im,)
     
-    writer = FFMpegWriter(
-        fps=30,
-        metadata=dict(artist="you"),
-        bitrate=1800,
-    )
+    writer = PillowWriter(fps=10)
 
     ani = FuncAnimation(
         fig,
         update,
-        frames=len(q_traj),
+        frames=len(q_traj[:,0,:,:]),
         blit=True,
     )
 
-    ani.save("pv_evolution.mp4", writer=writer)
+    ani.save("pv_evolution.gif", writer=writer)
     plt.close(fig)
-
-
-
-
-   # === jax.jit functionality === #
-    @functools.partial(jax.jit, static_argnames=["num_steps"])
-    def roll_out_state(state, num_steps):
-
-        def loop_fn(carry, _x):
-            current_state = carry
-            next_state = sm.step_model(current_state)
-            # Note: we output the current state for ys
-            # This includes the starting step in the trajectory
-            return next_state, current_state
-
-        _final_carry, traj_steps = jax.lax.scan(
-            loop_fn, state, None, length=num_steps
-        )
-        return traj_steps
-
-    # Create initial state and set recorder
-    logger.info(type(sm.stepper))
-
-    traj = roll_out_state(init_state, num_steps=70)
-    # pick the last step in the trajectory
-    final_state = jax.tree.map(operator.itemgetter(-1), traj)  # this works because traj is a list of StepperState-like objects
-
-    # get full real-space state
-    full_final = sm.get_full_state(final_state)
-    final_q = full_final.q  # shape now (ny, nx)
-
-    # plot
-    fig, ax = plt.subplots(layout="constrained")
-    vmax = jnp.abs(final_q).max()
-    ax.set_title("Final PV")
-    ax.imshow(final_q, cmap=cmo.balance, vmin=-vmax, vmax=vmax)
-    plt.show()
 
     # ============================
 
+if __name__ == "__main__":
+    main()
      

@@ -52,33 +52,54 @@ class SingleLayerKernel(ABC):
         pass
 
     @property
+    def nl(self):
+        return self.get_grid().nl
+
+    @property
+    def nk(self):
+        return self.get_grid().nk
+
+    @property
     @abstractmethod
-    def kk(self) -> jax.Array:
+    def kx(self) -> jax.Array:
         pass
 
     @property
     def _ik(self):
-        return 1j * self.kk
+        return 1j * self.kx
 
     @property
     @abstractmethod
-    def ll(self) -> jax.Array:
+    def ky(self) -> jax.Array:
+        pass
+
+    @property
+    @abstractmethod
+    def Kmag(self) -> jax.Array:
         pass
 
     @property
     def _il(self):
-        return 1j * self.ll
+        return 1j * self.ky
+    
+    @property
+    def Qy(self) -> jax.Array:
+        """Meridional gradient of background potential vorticity.
+        For a single-layer model this is just the planetary vorticity gradient
+        `beta` (constant in y). Return an array with length `nl` so it
+        broadcasts correctly with spectral arrays.
+        """
+        return jnp.full((self.nl,), self.beta)
+
+    @property
+    def _ikQy(self):
+        return 1j * (jnp.expand_dims(self.kx, 0) * jnp.expand_dims(self.Qy, -1))
     
     @property
     @abstractmethod
     def _dealias(self) -> jax.Array:
         """Dealias filter to be applied to spectral quantities."""
         pass
-    
-    @property
-    def grid(self) -> Grid:
-        """Lazily compute the grid on demand."""
-        return Grid(self.Lx, self.nx, self.Ly, self.ny)
     
     @property
     def params(self) -> dict:
@@ -117,53 +138,57 @@ class SingleLayerKernel(ABC):
         return full_state
 
     def _invert(self, state: states.TempStates) -> states.TempStates:
-        # invert PV to streamfunction in spectral space
-        # qh lives on the state
-        ph = -state.state.qh * self.get_grid().invK2
-
-        # spectral velocities
-        uh = -1j * self.get_grid().KY * ph
-        vh =  1j * self.get_grid().KX * ph
-
-        # transform to physical
-        u = irfftn(uh, axes=(-2,-1), norm='ortho').real
-        v = irfftn(vh, axes=(-2,-1), norm='ortho').real
-
-        return state.update(ph=ph, u=u, v=v) 
+        # Set ph to zero (skip, recompute fresh from sum below)
+        # invert qh to find ph
+        ph = self._apply_a_ph(state)
+        # calculate spectral velocities
+        uh = jnp.negative(jnp.expand_dims(self._il, (0, -1))) * ph
+        vh = jnp.expand_dims(self._ik, (0, 1)) * ph
+        # Update state values
+        return state.update(ph=ph, uh=uh, vh=vh)
 
     def _pseudo_random(self, key):
         # pseudo-random PV in spectral space
         key_r, key_i = jax.random.split(key)
-        noise_real = jax.random.normal(key_r, (self.ny, self.nx//2+1))
-        noise_imag = jax.random.normal(key_i, (self.ny, self.nx//2+1))
+        noise_real = jax.random.normal(key_r, (self.nl, self.nk))
+        noise_imag = jax.random.normal(key_i, (self.nl, self.nk))
         qh = noise_real + 1j*noise_imag
         qh = qh.at[:, 0].set(jnp.real(qh[:, 0]))  
         qh = self._dealias*qh
 
         # then bandmask it
-        band_mask = (self.get_grid().Kmag >= self.kmin) & (self.get_grid().Kmag <= self.kmax)
+        band_mask = (self.Kmag >= self.kmin) & (self.Kmag <= self.kmax)
         qh = qh * band_mask
         qh = qh.at[:, 0].set(0.0)
         qh = self._dealias*qh
         return qh
 
     def _rhs_term(self, state: states.TempStates) -> states.TempStates:
-        # multiply to get advective flux in space
-        q_real = state.q
-
-        uq = state.u * q_real
-        vq = state.v * q_real
+        # multiply to get advective flux in space (single-layer)
+        uq = state.u * state.q
+        vq = state.v * state.q
         uqh = states._generic_rfftn(uq)
         vqh = states._generic_rfftn(vq)
-        
         # spectral divergence
-        beta_term = self.beta * 1j * self.grid.KX * state.ph
         dqhdt = jnp.negative(
-            1j *self.grid.KX * uqh
-            + 1j * self.grid.KY * vqh
-            + beta_term
+            jnp.expand_dims(self._ik, 0) * uqh
+            + jnp.expand_dims(self._il, 1) * vqh
+            + self._ikQy * state.ph
         )
         return state.update(dqhdt=dqhdt)
+    
+    def _apply_a_ph(self, state: states.TempStates) -> jax.Array:
+        # Single-layer inversion: phi_hat = - q_hat / K^2, with k=0 mode set to 0
+        qh = state.qh
+        # build K^2 from kx, ky (shapes: (nk,), (nl,)) -> (nl, nk)
+        K2 = (jnp.expand_dims(self.kx, 0) ** 2) + (jnp.expand_dims(self.ky, -1) ** 2)
+        # avoid divide-by-zero at k=0 by masking; use safe divisor
+        safe_K2 = jnp.where(K2 == 0.0, 1.0, K2)
+        ph = -qh / safe_K2
+        # enforce zero mean (k=0) to avoid singularity / drifting mean
+        ph = ph.at[:, 0].set(0.0)
+        return ph
+
 
 @Pytree.register_pytree_class_attrs(
     children=["rek"],
@@ -173,24 +198,22 @@ class TwoLayerKernel(ABC):
     def __init__(
         self,
         *,
-        nz: int,
-        ny: int,
         nx: int,
+        ny: int,
+        nz: int,
         rek: float = 0,
         kmin: float = 0.0,
         kmax: float = 1.0e9,
     ):
         # Store small, fundamental properties (others will be computed on demand)
-        self.nz = nz
-        self.ny = ny
         self.nx = nx
+        self.ny = ny
+        self.nz = nz
         self.rek = rek
         self.kmin = kmin
         self.kmax = kmax
 
-    def get_full_state(
-        self, state: states.State
-    ) -> states.TempStates:
+    def get_full_state(self, state: states.State) -> states.TempStates:
         def _empty_real():
             return jnp.zeros(
                 self.get_grid().real_state_shape
@@ -214,30 +237,7 @@ class TwoLayerKernel(ABC):
         full_state = self._do_friction(full_state)
         return full_state
 
-    def get_updates(
-        self, state: states.State
-    ) -> states.State:
-        """Get updates for time-stepping `state`.
-
-        Parameters
-        ----------
-        state : State
-            The state which will be time stepped using the computed updates.
-
-        Returns
-        -------
-        State
-            A new state object where each field corresponds to a
-            time-stepping *update* to be applied.
-
-        Note
-        ----
-        The object returned by this function has the same type of
-        `state`, but contains *updates*. This is so the time-stepping
-        can be done by mapping over the states and updates as JAX
-        pytrees with the same structure.
-
-        """
+    def get_updates(self, state: states.State) -> states.State:
         full_state = self.get_full_state(state)
         return states.State(
             qh=full_state.dqhdt,
@@ -247,14 +247,14 @@ class TwoLayerKernel(ABC):
     def _pseudo_random(self, key):
         # pseudo-random PV in spectral space (two-layer)
         key_r, key_i = jax.random.split(key)
-        noise_real = jax.random.normal(key_r, (self.nz, self.ny, self.nx // 2 + 1))
-        noise_imag = jax.random.normal(key_i, (self.nz, self.ny, self.nx // 2 + 1))
+        noise_real = jax.random.normal(key_r, (self.nz, self.nl, self.nk))
+        noise_imag = jax.random.normal(key_i, (self.nz, self.nl, self.nk))
         qh = noise_real + 1j * noise_imag
         qh = qh.at[:, :, 0].set(jnp.real(qh[:, :, 0]))
 
         # apply filter and bandmask
         qh = jnp.expand_dims(self.filtr, 0) * qh
-        band_mask = (self.get_grid().Kmag >= self.kmin) & (self.get_grid().Kmag <= self.kmax)
+        band_mask = (self.Kmag >= self.kmin) & (self.Kmag <= self.kmax)
         qh = qh * jnp.expand_dims(band_mask, 0)
         qh = qh.at[:, :, 0].set(0.0)
         qh = jnp.expand_dims(self.filtr, 0) * qh
@@ -262,32 +262,9 @@ class TwoLayerKernel(ABC):
 
     def postprocess_state(
         self, state: states.State) -> states.State:
-        """Apply fixed filtering to `state`.
-
-        This function should be called once on each new state after each time step.
-
-        :class:`~pyqg_jax.steppers.SteppedModel` handles
-        this internally.
-
-        Parameters
-        ----------
-        state : State
-            The state to be filtered.
-
-        Returns
-        -------
-        State
-            The filtered state.
+        """ Check this im not sure I like it
         """
         return state.update(qh=jnp.expand_dims(self.filtr, 0) * state.qh)
-
-    def create_initial_state(self, key=None) -> states.State:
-        return states.State(
-            qh=jnp.zeros(
-                self.get_grid().spectral_state_shape
-            ),
-            _q_shape=self.get_grid().real_state_shape[-2:],
-        )
 
     @abstractmethod
     def get_grid(self) -> Grid:
@@ -317,25 +294,30 @@ class TwoLayerKernel(ABC):
 
     @property
     @abstractmethod
-    def kk(self) -> jax.Array:
+    def kx(self) -> jax.Array:
         pass
 
     @property
     def _ik(self):
-        return 1j * self.kk
+        return 1j * self.kx
 
     @property
     @abstractmethod
-    def ll(self) -> jax.Array:
+    def ky(self) -> jax.Array:
+        pass
+
+    @property
+    @abstractmethod
+    def Kmag(self) -> jax.Array:
         pass
 
     @property
     def _il(self):
-        return 1j * self.ll
+        return 1j * self.ky
 
     @property
     def _k2l2(self) -> jax.Array:
-        return (jnp.expand_dims(self.kk, 0) ** 2) + (jnp.expand_dims(self.ll, -1) ** 2)
+        return (jnp.expand_dims(self.kx, 0) ** 2) + (jnp.expand_dims(self.ky, -1) ** 2)
 
     # Friction
     @property
@@ -355,7 +337,7 @@ class TwoLayerKernel(ABC):
 
     @property
     def _ikQy(self):
-        return 1j * (jnp.expand_dims(self.kk, 0) * jnp.expand_dims(self.Qy, -1))
+        return 1j * (jnp.expand_dims(self.kx, 0) * jnp.expand_dims(self.Qy, -1))
 
     def _invert(
         self, state: states.TempStates

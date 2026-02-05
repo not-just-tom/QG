@@ -33,8 +33,7 @@ class Coarsener(ABC):
         return self.hr_model.nx / self.n_lr
 
     def coarsen_state(self, state):
-        # Use create_initial_state which is JAX-compatible and doesn't rebuild the grid
-        lr_state = self.lr_model.create_initial_state(jax.random.key(0))
+        lr_state = self.lr_model.initialise(seed=0)  # Seed is irrelevant here since we're just using the grid
         nk = lr_state.qh.shape[-2] // 2
 
         # Galerkin Truncation - something is really up here

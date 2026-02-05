@@ -48,36 +48,14 @@ class TwoLayerCalling(TwoLayerKernel):
         self.g = g
         self.f = f
 
-    def get_full_state(
-        self, state: states.State
-    ) -> states.TempStates:
+    def get_full_state(self, state: states.State) -> states.TempStates:
         """Expand a partial state into a full state with all computed values.
-
-        Parameters
-        ----------
-        state : PseudoSpectralState
-            The partial state to be expanded.
-
-        Returns
-        -------
-        FullPseudoSpectralState
-            New state object with all computed fields derived from `state`.
         """
         full_state = super().get_full_state(state)
         full_state = self._do_external_forcing(full_state)
         return full_state
 
     def get_grid(self) -> Grid:
-        """Retrieve information on the model grid.
-
-        .. versionadded:: 0.8.0
-
-        Returns
-        -------
-        Grid
-            A grid instance with attributes giving information on the
-            spatial and spectral model grids.
-        """
         return Grid(
             nz=self.nz,
             ny=self.ny,
@@ -93,16 +71,6 @@ class TwoLayerCalling(TwoLayerKernel):
 
     def dealias(self, state: states.State) -> states.State:
         """Apply spectral filter to state.
-        
-        Parameters
-        ----------
-        state : State
-            The state to filter
-            
-        Returns
-        -------
-        State
-            The filtered state
         """
         return state.update(qh=jnp.expand_dims(self.filtr, 0) * state.qh)
 
@@ -114,14 +82,6 @@ class TwoLayerCalling(TwoLayerKernel):
             return None
 
     @property
-    def dk(self):
-        return self.get_grid().dk
-
-    @property
-    def dl(self):
-        return self.get_grid().dl
-
-    @property
     def dx(self):
         return self.get_grid().dx
 
@@ -130,17 +90,13 @@ class TwoLayerCalling(TwoLayerKernel):
         return self.get_grid().dy
 
     @property
-    def M(self):
-        return self.nx * self.ny
-
-    @property
     @abstractmethod
-    def Hi(self) -> jax.Array:
+    def Lz(self) -> jax.Array:
         pass
 
     @property
     def x(self):
-        return _grid_xy(
+        return grid(
             nx=self.nx,
             ny=self.ny,
             Lx=self.Lx,
@@ -149,7 +105,7 @@ class TwoLayerCalling(TwoLayerKernel):
 
     @property
     def y(self):
-        return _grid_xy(
+        return grid(
             nx=self.nx,
             ny=self.ny,
             Lx=self.Lx,
@@ -157,43 +113,37 @@ class TwoLayerCalling(TwoLayerKernel):
         )[1]
 
     @property
-    def ll(self):
-        return jnp.fft.fftfreq(
-            self.ny,
-            d=(self.Ly / (2 * jnp.pi * self.ny)),
-        )
+    def ky(self):
+        return jnp.fft.fftfreq(self.ny, d=(self.dy / (2 * jnp.pi)))
 
     @property
-    def kk(self):
-        return jnp.fft.rfftfreq(
-            self.nx,
-            d=(self.Lx / (2 * jnp.pi * self.nx)),
-        )
+    def kx(self):
+        return jnp.fft.rfftfreq(self.nx, d=(self.dx / (2 * jnp.pi)))
 
     @property
-    def k(self):
-        return _grid_kl(kk=self.kk, ll=self.ll)[0]
+    def KX(self):
+        return jnp.meshgrid(self.kx, self.ky)[0]
 
     @property
-    def l(self):
-        return _grid_kl(kk=self.kk, ll=self.ll)[1]
+    def KY(self):
+        return jnp.meshgrid(self.kx, self.ky)[1]
 
     @property
     def ik(self):
-        return 1j * self.k
+        return 1j * self.KX
 
     @property
     def il(self):
-        return 1j * self.l
+        return 1j * self.KY
 
     @property
-    def wv(self):
+    def Kmag(self):
         """Total wavenumber magnitude."""
-        return jnp.sqrt(self.k**2 + self.l**2)
+        return jnp.sqrt(self.KX**2 + self.KY**2)
 
     @property
-    def wv2(self):
-        return self.wv**2
+    def K2(self):
+        return self.Kmag**2
 
     @property
     def wv2i(self):
@@ -202,7 +152,7 @@ class TwoLayerCalling(TwoLayerKernel):
     @property
     def filtr(self):
         cphi = 0.65 * jnp.pi
-        wvx = jnp.sqrt((self.k * self.dx) ** 2 + (self.l * self.dy) ** 2)
+        wvx = jnp.sqrt((self.KX * self.dx) ** 2 + (self.KY * self.dy) ** 2)
         filtr = jnp.exp(-self.filterfac * (wvx - cphi) ** 4)
         return jnp.where(wvx <= cphi, 1, filtr)
 
@@ -253,8 +203,10 @@ class TwoLayerModel(TwoLayerCalling):
         # grid size parameters
         nx=64,
         ny=None,
-        L=1e6,
-        W=None,
+        Lx=6.28,
+        Ly=None,
+        Lz=500, #not sure if this is really a grid size param but hey
+
         # friction parameters
         rek=5.787e-7,
         filterfac=23.6,
@@ -262,26 +214,26 @@ class TwoLayerModel(TwoLayerCalling):
         f=None,
         g=9.81,
         # Additional model parameters
-        beta=1.5e-11,
+        beta=10,
         rd=15000.0,
         delta=0.25,
-        H1=500,
         U1=0.025,
         U2=0.0,
         # initialization parameters
-        kmin=0.0,
-        kmax=1.0e9,
+        kmin=3.0,
+        kmax=10,
     ):
         super().__init__(
-            nz=2,
-            ny=ny if ny is not None else nx,
             nx=nx,
+            ny=ny if ny is not None else nx,
+            nz=2,
             rek=rek,
             kmin=kmin,
             kmax=kmax,
         )
-        self.L = L
-        self.W = W if W is not None else L
+        self.Lx = Lx
+        self.Ly = Ly if Ly is not None else Lx
+        self._Lz = Lz
         self.filterfac = filterfac
         self.g = g
         self.f = f
@@ -290,21 +242,10 @@ class TwoLayerModel(TwoLayerCalling):
         self.delta = delta
         self.U1 = U1
         self.U2 = U2
-        self.H1 = H1
 
     @classmethod
     def from_params(cls, params):
         """Factory method to create TwoLayerModel from params dict.
-        
-        Parameters
-        ----------
-        params : dict
-            Configuration dictionary with all required parameters
-            
-        Returns
-        -------
-        TwoLayerModel
-            Initialized two-layer model instance
         """
         # Filter params to only include those accepted by __init__
         sig = inspect.signature(cls.__init__)
@@ -312,18 +253,6 @@ class TwoLayerModel(TwoLayerCalling):
         return cls(**valid_params)
 
     def initialise(self, seed):
-        """Create a new initial state with random initialization.
-
-        Parameters
-        ----------
-        key : jax.random.key
-            The PRNG state used as the random key for initialization.
-
-        Returns
-        -------
-        PseudoSpectralState
-            The new state with random initialization.
-        """
         key = jax.random.PRNGKey(seed)
         qh = self._pseudo_random(key)
         return states.State(qh=qh, _q_shape=(self.ny, self.nx))
@@ -333,14 +262,11 @@ class TwoLayerModel(TwoLayerCalling):
         return self.U1 - self.U2
 
     @property
-    def Hi(self):
+    def Lz(self):
+        """Layer thicknesses: [H1, H2]"""
         return jnp.array(
-            [self.H1, self.H1 / self.delta]
+            [self._Lz, self._Lz / self.delta]
         )
-
-    @property
-    def H(self):
-        return self.get_grid().H
 
     @property
     def Ubg(self):
@@ -391,12 +317,12 @@ class TwoLayerModel(TwoLayerCalling):
         return (self.delta + 1) ** -1
 
     def _apply_a_ph(self, state):
-        # Double precision inversion, mirroring pyqg_jax
+        # Double precision inversion for better stability in the inversion step
         qh = jnp.moveaxis(state.qh, 0, -1)
         qh_orig_shape = qh.shape
         qh = qh.reshape((-1, 2))
 
-        wv2 = self.wv2.astype(jnp.float64)
+        K2 = self.K2.astype(jnp.float64)
         F1 = jnp.array(self.F1, dtype=jnp.float64)
         F2 = jnp.array(self.F2, dtype=jnp.float64)
 
@@ -405,15 +331,15 @@ class TwoLayerModel(TwoLayerCalling):
                 [
                     [
                         # 0, 0
-                        -(wv2 + F1),
+                        -(K2 + F1),
                         # 0, 1
-                        jnp.full_like(wv2, F1),
+                        jnp.full_like(K2, F1),
                     ],
                     [
                         # 1, 0
-                        jnp.full_like(wv2, F2),
+                        jnp.full_like(K2, F2),
                         # 1, 1
-                        -(wv2 + F2),
+                        -(K2 + F2),
                     ],
                 ],
                 dtype=jnp.float64,
@@ -433,17 +359,12 @@ class TwoLayerModel(TwoLayerCalling):
         ph = jnp.concatenate([ph_head, ph_tail], axis=0).reshape(qh_orig_shape)
         return jnp.moveaxis(ph, -1, 0)
     
-def _grid_xy(nx, ny, Lx, Ly):
+def grid(nx, ny, Lx, Ly):
     x, y = jnp.meshgrid(
         (jnp.arange(0.5, nx, 1.0) / nx) * Lx,
         (jnp.arange(0.5, ny, 1.0) / ny) * Ly,
     )
     return x, y
-
-
-def _grid_kl(kk, ll):
-    k, l = jnp.meshgrid(kk, ll)
-    return k, l
 
 
 

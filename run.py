@@ -1,13 +1,17 @@
 import importlib 
-import model.core.model
-import model.core.states
 import model.core.grid
+import model.core.states
+import model.core.kernels
+import model.core.TwoLayer
+import model.core.model
 import model.core.steppers
 import model.utils.plotting
 import model.utils.diagnostics
-importlib.reload(model.core.states)
-importlib.reload(model.core.model)
 importlib.reload(model.core.grid)
+importlib.reload(model.core.states)
+importlib.reload(model.core.kernels)
+importlib.reload(model.core.TwoLayer)
+importlib.reload(model.core.model)
 importlib.reload(model.core.steppers)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
@@ -62,6 +66,7 @@ def main():
     sm = SteppedModel(model=model, stepper=stepper)
     recorder = Recorder(cfg, grid=model.get_grid()) # basically depreciated at this point....
     state = sm.initialise(params['seed'])
+    print(state.state.qh.shape)
 
 
     # Time loop
@@ -69,6 +74,7 @@ def main():
     start = time.time()
     for n in range(nsteps+1):
         state = sm.step_model(state) 
+        #print(state.state.qh.shape)
         if n % cadence == 0:
             full = sm.get_full_state(state)
             recorder.sample(full)
