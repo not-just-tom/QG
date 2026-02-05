@@ -9,31 +9,20 @@ import model.utils.pytree as Pytree
 )
 class Grid:
     """
-    I'm working on it ok
+    I can't believe im back here after all this time - geometry only. No work with fft. Bare minimum
 
     """
-    def __init__(self, Lx, nx, Ly=None, ny=None, nz=1, Hi=None):
+    def __init__(self, Lx, nx, Ly=None, ny=None, nz=1, Lz=None):
         """ Initialising the grid """
         self._Lx = Lx
         self._Ly = Ly if Ly is not None else Lx
+        self._Lz = Lz
         self._nx = nx
         self._ny = ny if ny is not None else nx
         self._nz = nz
         self._dx = self._Lx / self._nx
         self._dy = self._Ly / self._ny
-
-        self._Hi = Hi
-
-        self._kx = jnp.fft.rfftfreq(self._nx, d=self._dx) * 2*jnp.pi 
-        self._ky = jnp.fft.fftfreq(self._ny, d=self._dy) * 2*jnp.pi
-
-        # rfft-shaped meshgrid: shape (ny, nx//2+1)
-        self._KX, self._KY = jnp.meshgrid(self._kx, self._ky, indexing='xy')
-        self._K2 = self._KX**2 + self._KY**2
-        self._invK2 = jnp.where(self._K2 == 0.0, 0.0, 1.0 / self._K2)
-        self._Kmag = jnp.sqrt(self._K2)
-
-
+    
     @property
     def Lx(self):
         return self._Lx
@@ -41,6 +30,10 @@ class Grid:
     @property
     def Ly(self):
         return self._Ly
+    
+    @property
+    def Lz(self):
+        return self._Lz
     
     @property
     def nx(self):
@@ -63,53 +56,25 @@ class Grid:
         return self._dy
     
     @property
-    def kx(self):
-        return self._kx
-    
-    @property
-    def ky(self):
-        return self._ky
-
-    @property
-    def KX(self):
-        return self._KX
-    
-    @property
-    def KY(self):
-        return self._KY
-    
-    @property
-    def K2(self):
-        return self._K2
-    
-    @property
-    def invK2(self):
-        return self._invK2
-    
-    @property
-    def Kmag(self):
-        return self._Kmag
-    
-    @property
     def nl(self) -> int:
-        return self.ny
+        return self._ny
 
     @property
     def nk(self) -> int:
-        return (self.nx // 2) + 1
+        return (self._nx // 2) + 1
 
     # vv check these shapes carefully vv
     @property
     def real_state_shape(self) -> tuple:
-        if self.nz == 1:
-            return (self.ny, self.nx)
+        if self._nz == 1:
+            return (self._ny, self._nx)
         else:
-            return (self.nz, self.ny, self.nx)
+            return (self._nz, self._ny, self._nx)
 
     @property
     def spectral_state_shape(self) -> tuple:
-        if self.nz == 1:
+        if self._nz == 1:
             return (self.nl, self.nk)
         else:
-            return (self.nz, self.nl, self.nk)
+            return (self._nz, self.nl, self.nk)
 

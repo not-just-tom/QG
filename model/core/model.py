@@ -52,16 +52,13 @@ def create_model(params, n_layers=1):
         raise ValueError(f"Unsupported n_layers={n_layers}. Use 1 or 2.")
 
 
-def _grid_xy(nx, ny, Lx, Ly):
+def grid(nx, ny, Lx, Ly):
     dx = Lx / nx
     dy = Ly / ny
     x = jnp.linspace(-Lx/2 + dx/2, Lx/2 - dx/2, nx)
     y = jnp.linspace(-Ly/2 + dy/2, Ly/2 - dy/2, ny)
     return jnp.meshgrid(x, y)
 
-def _grid_kl(kk, ll):
-    k, l = jnp.meshgrid(kk, ll)
-    return k, l
 
 @Pytree.register_pytree_class_attrs(
     children=[],
@@ -79,11 +76,6 @@ class SingleLayerModel(SingleLayerKernel):
     
     def __init__(self, params):
         """Initialize model from params dict.
-        
-        Parameters
-        ----------
-        params : dict
-            Configuration dictionary with model parameters
         """
         super().__init__(params=params)
 
@@ -126,26 +118,21 @@ class SingleLayerModel(SingleLayerKernel):
         return self.get_grid().dy
     
     @property
-    def kk(self):
+    def kx(self):
         return jnp.fft.rfftfreq(self.nx, d=self.dx / (2 * jnp.pi))
 
     @property
-    def ll(self):
+    def ky(self):
         return jnp.fft.fftfreq(self.ny, d=self.dy / (2 * jnp.pi))
 
     @property
     def Kmag(self):
-        KX, KY = jnp.meshgrid(self.kk, self.ll)
+        KX, KY = jnp.meshgrid(self.kx, self.ky)
         return jnp.sqrt(KX**2 + KY**2)
-
-
-    @property
-    def M(self):
-        return self.nx * self.ny
 
     @property
     def x(self):
-        return _grid_xy(
+        return grid(
             nx=self.nx,
             ny=self.ny,
             Lx=self.Lx,
@@ -154,23 +141,9 @@ class SingleLayerModel(SingleLayerKernel):
 
     @property
     def y(self):
-        return _grid_xy(
+        return grid(
             nx=self.nx,
             ny=self.ny,
             Lx=self.Lx,
             Ly=self.Ly,
         )[1]
-        
-    @property
-    def ll(self):
-        return jnp.fft.fftfreq(
-            self.ny,
-            d=(self.Ly / (2 * jnp.pi * self.ny)),
-        )
-
-    @property
-    def kk(self):
-        return jnp.fft.rfftfreq(
-            self.nx,
-            d=(self.Lx / (2 * jnp.pi * self.nx)),
-        )

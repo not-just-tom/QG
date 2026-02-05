@@ -271,26 +271,25 @@ def animate_single_layer(recorder, grid, cadence=100, outname="test.gif", plots:
             ax.set_ylim(0, max(1.0, data.max() if data.size else 1.0))
 
     def update(i):
-        for name in plots:
+        # iterate over axes and plot names together to keep indices consistent
+        for ax, name in zip(axs, plots):
             data = series[name]
             if name == "ke_spectrum":
                 ek = data[min(i, len(data) - 1)]
                 k = np.arange(len(ek))
                 artists[name].set_data(k, ek)
-                ax = axs[plots.index(name)]
                 ax.set_ylim(max(1e-12, ek.min()), max(ek.max() * 1.1, 1e-12))
             elif data.ndim == 3:  # 2D field
                 idx = min(i, data.shape[0] - 1)
-                artists[name].set_data(data[idx])
+                # use set_array for AxesImage updates to avoid shape/broadcast issues
+                artists[name].set_array(data[idx])
             else:  # time series scalar
                 ys = data[: min(i + 1, len(data))]
                 xi = xs[: len(ys)]
                 artists[name].set_data(xi, ys)
-                ax = axs[plots.index(name)]
                 ax.relim()
                 ax.autoscale_view()
 
-            ax = axs[plots.index(name)]
             ax.set_title(f"{name} (Step {i * cadence})")
 
         return list(artists.values())
