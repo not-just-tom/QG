@@ -11,9 +11,9 @@ Add initialise function which can clear field variables <---
 
 
 """
-from abc import abstractmethod
+
+import jax
 import jax.numpy as jnp
-from jax.numpy.fft import rfftn, irfftn
 import importlib
 import model.core.TwoLayer
 importlib.reload(model.core.TwoLayer)
@@ -99,7 +99,78 @@ class SingleLayerModel(SingleLayerKernel):
         # put machine leanring here?
         return state
     
-    def _get_dealias_filter(self, alpha=36.0, p=8):
+    def initialise(self, seed, *, tune=False, target_Lr=None, cfl=0.1, nspin=50, dt_spin=1e-4, tol=0.05, max_iter=10):
+        """Initialize state. Optionally tune initial PV amplitude so Rhines length matches target.
+
+        Parameters
+        ----------
+        seed : int
+            RNG seed for initial condition
+        tune : bool
+            If True, perform bisection on amplitude with short spin-ups to match `target_Lr`.
+        target_Lr : float or None
+            Desired Rhines length. If None and `tune` is True, uses Lx/8.
+        cfl : float
+            CFL fraction used for suggested dt estimate (returned via `estimate_cfl_dt`).
+        nspin : int
+            Number of short spin-up steps per trial amplitude.
+        dt_spin : float
+            Time step used during short Euler spin-ups.
+        tol : float
+            Relative tolerance for matching target Rhines length.
+        max_iter : int
+            Maximum bisection iterations.
+
+        Returns
+        -------
+        State
+            Tuned initial `State` (spectral `qh`)
+        """
+        base_state = super().initialise(seed)
+        if not tune:
+            return base_state
+
+        # determine default target Rhines length if not provided
+        grid = self.get_grid()
+        if target_Lr is None:
+            target_Lr = float(grid.Lx) / 8.0
+
+        # bisection bracket for amplitude
+        a_lo, a_hi = 1e-6, 1e3
+
+        def spin_up(state, dt, nsteps):
+            s = state
+            for _ in range(int(nsteps)):
+                updates = self.get_updates(s)
+                # simple explicit Euler step for spin-up
+                s = s.update(qh=(s.qh + dt * updates.qh))
+            return s
+
+        best_state = base_state
+        for _ in range(max_iter):
+            a_mid = float((a_lo * a_hi) ** 0.5)
+            trial = base_state.update(qh=base_state.qh * a_mid)
+            spun = spin_up(trial, dt_spin, nspin)
+            Lr, U = self.rhines_length(spun)
+            if abs(Lr - target_Lr) / target_Lr < tol:
+                best_state = spun
+                break
+            # if Lr < target -> increase amplitude (U too small)
+            if Lr < target_Lr:
+                a_lo = a_mid
+            else:
+                a_hi = a_mid
+            best_state = spun
+
+        # Optionally compute suggested dt from CFL using the spun-up state
+        dt_suggest, umax, vmax = self.estimate_cfl_dt(best_state, cfl=cfl)
+        print(dt_suggest)
+
+        return best_state
+        
+
+    
+    def _get_dealias_filter(self, alpha=36, p=8):
         """Apply a precomputed dealias mask from the grid if available.
         """
         return jnp.exp(-alpha * (self.Kmag / jnp.max(self.Kmag)) ** p)
@@ -147,3 +218,34 @@ class SingleLayerModel(SingleLayerKernel):
             Lx=self.Lx,
             Ly=self.Ly,
         )[1]
+
+    def rhines_length(self, state: states.State):
+        """Estimate Rhines length from a `State` by computing U_rms and Lr = sqrt(U/beta).
+
+        Returns (Lr, U_rms) as floats.
+        """
+        full = self.get_full_state(state)
+        u = full.u
+        v = full.v
+        U_rms = float(jnp.sqrt(jnp.mean(u ** 2 + v ** 2)))
+        beta = float(self.beta)
+        if beta == 0:
+            return float('inf'), U_rms
+        Lr = float(jnp.sqrt(U_rms / beta))
+        return Lr, U_rms
+
+    def estimate_cfl_dt(self, state: states.State, cfl=0.1):
+        """Estimate a stable `dt` based on CFL: dt = cfl * min(dx/umax, dy/vmax).
+
+        Returns (dt, umax, vmax).
+        """
+        full = self.get_full_state(state)
+        u = full.u
+        v = full.v
+        umax = float(jnp.max(jnp.abs(u)))
+        vmax = float(jnp.max(jnp.abs(v)))
+        dx = float(self.dx)
+        dy = float(self.dy)
+        eps = 1e-12
+        dt = float(cfl * min(dx / (umax + eps), dy / (vmax + eps))) #is min best here?
+        return dt, umax, vmax

@@ -23,12 +23,15 @@ from model.core.model import create_model
 from model.utils.diagnostics import Recorder
 import logging
 import jax
+import jax.numpy as jnp
 import time
 import functools
 import yaml
+import cmocean as cmo
 import os
-
-jax.config.update("jax_enable_x64", True)
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation, PillowWriter
+import numpy as np
 
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -39,7 +42,6 @@ with open(CONFIG_DEFAULT_PATH) as f:
     cfg_dict = yaml.safe_load(f)
 
 params = dict(cfg_dict["params"])   # pure dict for JAX  
-
 
 # =========================================
 # Main loop to run from Command Line 
@@ -57,6 +59,7 @@ def main():
     cadence = cfg.plotting.cadence
     cfg_stepper = cfg.plotting.stepper
     outname = getattr(cfg.filepaths, "outname", "../outputs/qg.gif")
+    spinup = getattr(cfg.plotting, 'spinup', 0)
 
     
     # Instantiate the model from configs using factory
@@ -64,32 +67,74 @@ def main():
     model = create_model(params, n_layers=n_layers)
     stepper = build_stepper(cfg_stepper, dt)
     sm = SteppedModel(model=model, stepper=stepper)
-    recorder = Recorder(cfg, grid=model.get_grid()) # basically depreciated at this point....
-    state = sm.initialise(params['seed'])
-    print(state.state.qh.shape)
+    init_state = sm.initialise(params['seed'])
 
+    @functools.partial(jax.jit, static_argnames=["nsteps", "cadence"])
+    def rollout(state, nsteps, cadence):
+        def loop_fn(carry, step):
+            next_state = sm.step_model(carry)
+            # record spectral qh every cadence steps
+            q_snapshot = jax.lax.cond(
+                step % cadence == 0,
+                lambda s: s.state.qh,
+                lambda s: jnp.zeros_like(s.state.qh),
+                next_state,
+            )
+            return next_state, q_snapshot
 
-    # Time loop
-    logger.info("Starting run: dt=%s, steps=%d", float(dt), nsteps)
-    start = time.time()
-    for n in range(nsteps+1):
-        state = sm.step_model(state) 
-        #print(state.state.qh.shape)
-        if n % cadence == 0:
-            full = sm.get_full_state(state)
-            recorder.sample(full)
-        if n % (10*cadence) == 0:
-            logger.info("Completed step %d / %d", n, nsteps)
+        steps = jnp.arange(nsteps)
+        _final_carry, traj_steps = jax.lax.scan(loop_fn, state, steps)
+        return traj_steps
 
-    # Run animation if requested in config
-    animate_list = list(getattr(getattr(cfg, "diagnostics", {}), "animate", []))
-    animate(recorder, model.get_grid(), cadence=cadence, outname=outname, plots=animate_list)
-    logger.info("Plotting complete at time %.2fs", time.time() - start)
+    q_traj = rollout(init_state, nsteps, cadence)
+    q_traj = jax.device_get(q_traj)  # shape (nsteps, nl, nk)
 
+    # select only the frames recorded at cadence
+    indices = np.arange(0, nsteps, cadence)
+    q_traj = q_traj[indices]
+
+    # q_traj is spectral with shape (n_frames, nl, nk). Convert to physical (n_frames, ny, nx).
+    ny, nx = init_state.state._q_shape
+    phys_frames = []
+    for i in range(q_traj.shape[0]):
+        frame = np.fft.irfftn(q_traj[i], s=(ny, nx))
+        phys_frames.append(frame)
+    q_traj = np.stack(phys_frames)
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+
+    vmax = np.max(np.abs(q_traj))
+    im = ax.imshow(
+        q_traj[0, 0],
+        origin="lower",
+        cmap="RdBu_r",
+        vmin=-vmax,
+        vmax=vmax,
+        animated=True,
+    )
+
+    ax.set_title("PV evolution")
+    plt.colorbar(im, ax=ax)
+
+    def update(frame):
+        im.set_data(q_traj[frame, 0, :, :])
+        ax.set_title(f"PV evolution (Step {frame*cadence})")
+        return (im,)
     
+    writer = PillowWriter(fps=10)
+
+    ani = FuncAnimation(
+        fig,
+        update,
+        frames=len(q_traj[:,0,:,:]),
+        blit=True,
+    )
+
+    ani.save(outname, writer=writer)
+    plt.close(fig)
+
+    # ============================
 
 if __name__ == "__main__":
     main()
-
-
-    
+     

@@ -66,15 +66,11 @@ class Grid:
     # vv check these shapes carefully vv
     @property
     def real_state_shape(self) -> tuple:
-        if self._nz == 1:
-            return (self._ny, self._nx)
-        else:
-            return (self._nz, self._ny, self._nx)
+        # Always include the layer axis for consistency across kernels.
+        return (self._nz, self._ny, self._nx)
 
     @property
     def spectral_state_shape(self) -> tuple:
-        if self._nz == 1:
-            return (self.nl, self.nk)
-        else:
-            return (self._nz, self.nl, self.nk)
+        # Always include the layer axis for consistency across kernels.
+        return (self._nz, self.nl, self.nk)
 

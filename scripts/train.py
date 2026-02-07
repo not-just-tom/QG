@@ -53,7 +53,7 @@ CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "config", "default.yaml")
 class Operator1(Coarsener):
     @property
     def spectral_filter(self):
-        return self.lr_model.filtr
+        return self.lr_model._dealias
 
 
 def param_to_single(param):
@@ -77,7 +77,7 @@ class NNParam(eqx.Module):
         self.ops = eqx.nn.Sequential(
             [
                 eqx.nn.Conv2d(
-                    in_channels=2,
+                    in_channels=1,
                     out_channels=5,
                     kernel_size=3,
                     padding="SAME",
@@ -87,7 +87,7 @@ class NNParam(eqx.Module):
                 eqx.nn.Lambda(jax.nn.relu),
                 eqx.nn.Conv2d(
                     in_channels=5,
-                    out_channels=2,
+                    out_channels=1,
                     kernel_size=3,
                     padding="SAME",
                     key=key2,
@@ -113,10 +113,11 @@ dt = cfg.plotting.dt
 learning_rate = cfg.ml.learning_rate
 batch_size = cfg.ml.batch_size
 batch_steps = cfg.ml.batch_steps
+n_layers = cfg.params.n_layers
 
 hr_model = SteppedModel(
     model=create_model(params, n_layers=2),
-    stepper=build_stepper("AB3Stepper", dt=dt),  # Use small dt for stable generation
+    stepper=build_stepper("AB3Stepper", dt=dt),  # build stepper is definitely defunct now. remove at convenience. 
 )
 
 coarse_op = Operator1(hr_model.model, 32)

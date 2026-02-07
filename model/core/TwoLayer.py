@@ -72,7 +72,7 @@ class TwoLayerCalling(TwoLayerKernel):
     def dealias(self, state: states.State) -> states.State:
         """Apply spectral filter to state.
         """
-        return state.update(qh=jnp.expand_dims(self.filtr, 0) * state.qh)
+        return state.update(qh=jnp.expand_dims(self._dealias, 0) * state.qh)
 
     @property
     def f2(self):
@@ -150,11 +150,12 @@ class TwoLayerCalling(TwoLayerKernel):
         return jnp.where((self.wv2 != 0), jnp.power(self.wv2, -1), self.wv2)
 
     @property
-    def filtr(self):
-        cphi = 0.65 * jnp.pi
-        wvx = jnp.sqrt((self.KX * self.dx) ** 2 + (self.KY * self.dy) ** 2)
-        filtr = jnp.exp(-self.filterfac * (wvx - cphi) ** 4)
-        return jnp.where(wvx <= cphi, 1, filtr)
+    def _dealias(self):
+        """Dealias for 2/3 strict rn
+        """
+        Kmag = jnp.sqrt(self.KX ** 2 + self.KY ** 2)
+        kcut = (2.0 / 3.0) * jnp.max(Kmag)
+        return jnp.where(Kmag <= kcut, 1.0, 0.0)
 
 
 
@@ -164,45 +165,14 @@ class TwoLayerCalling(TwoLayerKernel):
 )
 class TwoLayerModel(TwoLayerCalling):
     """Two-layer quasi-geostrophic model.
-    
-    Parameters
-    ----------
-    nx : int, optional
-        Number of grid points in x direction (default: 64)
-    ny : int, optional
-        Number of grid points in y direction (default: nx)
-    L : float, optional
-        Domain length in x direction (default: 1e6)
-    W : float, optional
-        Domain length in y direction (default: L)
-    rek : float, optional
-        Linear drag in lower layer (default: 5.787e-7)
-    filterfac : float, optional
-        Amplitude of spectral filter (default: 23.6)
-    f : float, optional
-        Coriolis parameter (default: None)
-    g : float, optional
-        Gravitational acceleration (default: 9.81)
-    beta : float, optional
-        Gradient of Coriolis parameter (default: 1.5e-11)
-    rd : float, optional
-        Deformation radius (default: 15000.0)
-    delta : float, optional
-        Layer thickness ratio H1/H2 (default: 0.25)
-    H1 : float, optional
-        Upper layer thickness (default: 500)
-    U1 : float, optional
-        Upper layer flow (default: 0.025)
-    U2 : float, optional
-        Lower layer flow (default: 0.0)
     """
-    
     def __init__(
         self,
         *,
         # grid size parameters
         nx=64,
         ny=None,
+        nz=1,
         Lx=6.28,
         Ly=None,
         Lz=500, #not sure if this is really a grid size param but hey
@@ -215,9 +185,9 @@ class TwoLayerModel(TwoLayerCalling):
         g=9.81,
         # Additional model parameters
         beta=10,
-        rd=15000.0,
+        rd=15.0,
         delta=0.25,
-        U1=0.025,
+        U1=0.0,
         U2=0.0,
         # initialization parameters
         kmin=3.0,
@@ -226,7 +196,7 @@ class TwoLayerModel(TwoLayerCalling):
         super().__init__(
             nx=nx,
             ny=ny if ny is not None else nx,
-            nz=2,
+            nz=nz, # atm this is where im changing the layers from. works for single but not for more. Something to do with the NNParams. 
             rek=rek,
             kmin=kmin,
             kmax=kmax,
@@ -242,6 +212,8 @@ class TwoLayerModel(TwoLayerCalling):
         self.delta = delta
         self.U1 = U1
         self.U2 = U2
+
+    
 
     @classmethod
     def from_params(cls, params):
