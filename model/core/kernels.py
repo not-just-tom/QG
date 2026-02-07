@@ -45,6 +45,8 @@ class SingleLayerKernel(ABC):
         qh = self._pseudo_random(key)
         # Ensure _q_shape is Python ints, not JAX arrays
         ny, nx = int(self.ny), int(self.nx)
+        # ensure single-layer qh has a leading layer axis: (layers, nl, nk)
+        qh = jnp.expand_dims(qh, 0) # i just added this and im not sure if it will cause issues but it should make the shape consistent with two-layer states which always have a leading layer axis
         return states.State(qh=qh, _q_shape=(ny, nx))
         
     @abstractmethod
@@ -150,8 +152,8 @@ class SingleLayerKernel(ABC):
     def _pseudo_random(self, key):
         # pseudo-random PV in spectral space
         key_r, key_i = jax.random.split(key)
-        noise_real = jax.random.normal(key_r, (self.nl, self.nk))
-        noise_imag = jax.random.normal(key_i, (self.nl, self.nk))
+        noise_real = 10*jax.random.normal(key_r, (self.nl, self.nk)) # ive got an arbitrary 10x multiplier here.
+        noise_imag = 10*jax.random.normal(key_i, (self.nl, self.nk))
         qh = noise_real + 1j*noise_imag
         qh = qh.at[:, 0].set(jnp.real(qh[:, 0]))  
         qh = self._dealias*qh
@@ -169,7 +171,12 @@ class SingleLayerKernel(ABC):
         vq = state.v * state.q
         uqh = states._generic_rfftn(uq)
         vqh = states._generic_rfftn(vq)
-        # spectral divergence
+        # apply dealias mask only to the nonlinear spectral products
+        dmask = jnp.expand_dims(self._dealias, 0)
+        uqh = uqh * dmask
+        vqh = vqh * dmask
+
+        # spectral divergence (include beta / Qy term)
         dqhdt = jnp.negative(
             jnp.expand_dims(self._ik, 0) * uqh
             + jnp.expand_dims(self._il, 1) * vqh
@@ -202,8 +209,8 @@ class TwoLayerKernel(ABC):
         ny: int,
         nz: int,
         rek: float = 0,
-        kmin: float = 0.0,
-        kmax: float = 1.0e9,
+        kmin: float = 3.0,
+        kmax: float = 10,
     ):
         # Store small, fundamental properties (others will be computed on demand)
         self.nx = nx
@@ -243,28 +250,38 @@ class TwoLayerKernel(ABC):
             qh=full_state.dqhdt,
             _q_shape=self.get_grid().real_state_shape[-2:],
         )
+    
+    def initialise(self, seed) -> states.State:
+        # pseudo-random initial condition
+        key = jax.random.PRNGKey(seed)
+        qh = self._pseudo_random(key)
+        # Ensure _q_shape is Python ints, not JAX arrays
+        ny, nx = int(self.ny), int(self.nx)
+        # ensure single-layer qh has a leading layer axis: (layers, nl, nk)
+        qh = jnp.expand_dims(qh, 0) # i just added this and im not sure if it will cause issues but it should make the shape consistent with two-layer states which always have a leading layer axis
+        return states.State(qh=qh, _q_shape=(ny, nx))
 
     def _pseudo_random(self, key):
         # pseudo-random PV in spectral space (two-layer)
         key_r, key_i = jax.random.split(key)
-        noise_real = jax.random.normal(key_r, (self.nz, self.nl, self.nk))
-        noise_imag = jax.random.normal(key_i, (self.nz, self.nl, self.nk))
+        noise_real = 10*jax.random.normal(key_r, (self.nz, self.nl, self.nk))
+        noise_imag = 10*jax.random.normal(key_i, (self.nz, self.nl, self.nk))
         qh = noise_real + 1j * noise_imag
         qh = qh.at[:, :, 0].set(jnp.real(qh[:, :, 0]))
 
         # apply filter and bandmask
-        qh = jnp.expand_dims(self.filtr, 0) * qh
+        qh = jnp.expand_dims(self._dealias, 0) * qh
         band_mask = (self.Kmag >= self.kmin) & (self.Kmag <= self.kmax)
         qh = qh * jnp.expand_dims(band_mask, 0)
         qh = qh.at[:, :, 0].set(0.0)
-        qh = jnp.expand_dims(self.filtr, 0) * qh
+        qh = jnp.expand_dims(self._dealias, 0) * qh
         return qh
 
     def postprocess_state(
         self, state: states.State) -> states.State:
         """ Check this im not sure I like it
         """
-        return state.update(qh=jnp.expand_dims(self.filtr, 0) * state.qh)
+        return state.update(qh=jnp.expand_dims(self._dealias, 0) * state.qh)
 
     @abstractmethod
     def get_grid(self) -> Grid:
@@ -327,7 +344,7 @@ class TwoLayerKernel(ABC):
 
     @property
     @abstractmethod
-    def filtr(self) -> jax.Array:
+    def _dealias(self) -> jax.Array:
         pass
 
     @property
@@ -342,8 +359,19 @@ class TwoLayerKernel(ABC):
     def _invert(
         self, state: states.TempStates
     ) -> states.TempStates:
-        # Set ph to zero (skip, recompute fresh from sum below)
-        # invert qh to find ph
+        # If kernel configured as single-layer (nz == 1), perform scalar inversion
+        if getattr(self, "nz", None) == 1:
+            qh = state.qh
+            K2 = jnp.array(self.K2, dtype=qh.dtype)
+            safe_K2 = jnp.where(K2 == 0, 1.0, K2)
+            ph = -qh / safe_K2
+            try:
+                ph = ph.at[..., 0].set(0.0)
+            except Exception:
+                pass
+            return state.update(ph=ph)
+
+        # Existing two-layer inversion follows
         ph = self._apply_a_ph(state)
         # calculate spectral velocities
         uh = jnp.negative(jnp.expand_dims(self._il, (0, -1))) * ph
@@ -359,7 +387,12 @@ class TwoLayerKernel(ABC):
         vq = state.v * state.q
         uqh = states._generic_rfftn(uq)
         vqh = states._generic_rfftn(vq)
-        # spectral divergence
+        # apply dealias mask to nonlinear spectral products (broadcasts to layers)
+        dmask = jnp.expand_dims(self._dealias, 0)
+        uqh = uqh * dmask
+        vqh = vqh * dmask
+
+        # spectral divergence (two-layer); keep PV-gradient coupling if present
         dqhdt = jnp.negative(
             jnp.expand_dims(self._ik, (0, 1)) * uqh
             + jnp.expand_dims(self._il, (0, -1)) * vqh
