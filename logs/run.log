@@ -2785,3 +2785,12 @@ zmq.error.ZMQError: Too many open files
 2026-02-07 10:22:21,501 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
 2026-02-07 10:27:21,462 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
 2026-02-07 10:33:02,167 INFO jax._src.xla_bridge: Unable to initialize backend 'tpu': UNIMPLEMENTED: LoadPjrtPlugin is not implemented on windows yet.
+2026-02-07 10:33:39,212 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-07 10:39:46,840 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-07 16:13:55,080 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-07 16:16:02,064 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-07 16:20:46,543 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-07 16:23:07,160 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-07 16:48:29,945 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-07 16:58:35,655 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-07 16:58:59,769 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
