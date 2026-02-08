@@ -1,16 +1,16 @@
 import importlib 
 import model.core.grid
 import model.core.states
-import model.core.kernels
-import model.core.TwoLayer
+import model.core.kernel
+import model.core.model
 import model.core.model
 import model.core.steppers
 import model.utils.plotting
 import model.utils.diagnostics
 importlib.reload(model.core.grid)
 importlib.reload(model.core.states)
-importlib.reload(model.core.kernels)
-importlib.reload(model.core.TwoLayer)
+importlib.reload(model.core.kernel)
+importlib.reload(model.core.model)
 importlib.reload(model.core.model)
 importlib.reload(model.core.steppers)
 importlib.reload(model.utils.diagnostics)
@@ -19,12 +19,11 @@ from model.utils.plotting import animate
 from model.utils.config import Config
 from model.utils.logging import configure_logging
 from model.core.steppers import SteppedModel, build_stepper
-from model.core.model import create_model
+from model.core.model import QGM
 from model.utils.diagnostics import Recorder
 import logging
 import jax
 import jax.numpy as jnp
-import time
 import functools
 import yaml
 import cmocean as cmo
@@ -63,9 +62,8 @@ def main():
 
     
     # Instantiate the model from configs using factory
-    n_layers = params.pop('n_layers', 1)  # Extract n_layers, default to 1
-    model = create_model(params, n_layers=n_layers)
-    stepper = build_stepper(cfg_stepper, dt)
+    model = QGM(params)
+    stepper = build_stepper(cfg_stepper, dt) # not used really, maybe in future
     sm = SteppedModel(model=model, stepper=stepper)
     init_state = sm.initialise(params['seed'])
 

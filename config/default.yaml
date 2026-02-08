@@ -12,7 +12,7 @@ params:
   beta: 5
   kmin: 3.0
   kmax: 10.0
-  n_layers: 2  # 1 for single-layer, 2 for two-layer model
+  nz: 1  # 1 for single-layer, 2 for two-layer model
   # Two-layer model parameters (only used if n_layers == 2)
   Lz: 50
   rek: 5.787e-7 # this might balls up with the number stuff - check if i should remove config file and just yaml it 
