@@ -63,37 +63,33 @@ class Kernel(ABC):
             _q_shape=self.get_grid().real_state_shape[-2:],
         )
     
-    def initialise(self, seed) -> states.State:
-        # pseudo-random initial condition
+    def initialise(self, seed, n_jets=6) -> states.State:
         key = jax.random.PRNGKey(seed)
-        qh = self._pseudo_random(key)
-        # Ensure _q_shape is Python ints, not JAX arrays
-        ny, nx = int(self.ny), int(self.nx)
-        # ensure single-layer qh has a leading layer axis: (layers, nl, nk)
-        qh = jnp.expand_dims(qh, 0) # i just added this and im not sure if it will cause issues but it should make the shape consistent with two-layer states which always have a leading layer axis
-        return states.State(qh=qh, _q_shape=(ny, nx))
+        qh = self._pseudo_random(key, n_jets)
+        return states.State(qh=qh, _q_shape=(self.ny, self.nx))
 
-    def _pseudo_random(self, key):
+    def _pseudo_random(self, key, n_jets):
         # pseudo-random PV in spectral space (two-layer)
         key_r, key_i = jax.random.split(key)
-        noise_real = 10*jax.random.normal(key_r, (self.nz, self.nl, self.nk))
-        noise_imag = 10*jax.random.normal(key_i, (self.nz, self.nl, self.nk))
+        noise_real = jax.random.normal(key_r, (self.nz, self.nl, self.nk))
+        noise_imag = jax.random.normal(key_i, (self.nz, self.nl, self.nk))
         qh = noise_real + 1j * noise_imag
         qh = qh.at[:, :, 0].set(jnp.real(qh[:, :, 0]))
+        
+        # band-limit around kR
+        kR = 2 * jnp.pi * n_jets / self.get_grid().Ly
+        band_mask = (self.Kmag >= kR / 2) & (self.Kmag <= 2 * kR)
 
-        # apply filter and bandmask
-        qh = jnp.expand_dims(self._dealias, 0) * qh
-        band_mask = (self.Kmag >= self.kmin) & (self.Kmag <= self.kmax)
+        # anisotropy toward zonal modes?
+        l0 = kR / 2
+        #anisotropy = jnp.exp(-(self.kx[None, :] / l0) ** 2)
+
+        # combine all masks once
         qh = qh * jnp.expand_dims(band_mask, 0)
-        qh = qh.at[:, :, 0].set(0.0)
         qh = jnp.expand_dims(self._dealias, 0) * qh
+        #qh = qh * jnp.expand_dims(anisotropy, 0)
+        qh = qh.at[:, 0, 0].set(0.0)
         return qh
-
-    def postprocess_state(
-        self, state: states.State) -> states.State:
-        """ Check this im not sure I like it
-        """
-        return state.update(qh=jnp.expand_dims(self._dealias, 0) * state.qh)
 
     @abstractmethod
     def get_grid(self) -> Grid:
@@ -127,10 +123,6 @@ class Kernel(ABC):
         pass
 
     @property
-    def _ik(self):
-        return 1j * self.kx
-
-    @property
     @abstractmethod
     def ky(self) -> jax.Array:
         pass
@@ -139,10 +131,6 @@ class Kernel(ABC):
     @abstractmethod
     def Kmag(self) -> jax.Array:
         pass
-
-    @property
-    def _il(self):
-        return 1j * self.ky
 
     @property
     def _k2l2(self) -> jax.Array:
@@ -175,19 +163,21 @@ class Kernel(ABC):
         if getattr(self, "nz", None) == 1:
             qh = state.qh
             K2 = jnp.array(self.K2, dtype=qh.dtype)
-            safe_K2 = jnp.where(K2 == 0, 1.0, K2)
-            ph = -qh / safe_K2
-            try:
-                ph = ph.at[..., 0].set(0.0)
-            except Exception:
-                pass
-            return state.update(ph=ph)
+            K2 = jnp.where(K2 == 0, 1.0, K2)
+            ph = -qh / K2
+            ph = ph.at[..., 0].set(0.0)
+
+            # ensure wavenumber arrays broadcast correctly to spectral shape
+            uh = -jnp.expand_dims(1j * self.ky, (0, -1)) * ph
+            vh =  jnp.expand_dims(1j * self.kx, (0, 1)) * ph
+
+            return state.update(ph=ph, uh=uh, vh=vh)
 
         # Existing two-layer inversion follows
         ph = self._apply_a_ph(state)
         # calculate spectral velocities
-        uh = jnp.negative(jnp.expand_dims(self._il, (0, -1))) * ph
-        vh = jnp.expand_dims(self._ik, (0, 1)) * ph
+        uh = jnp.negative(jnp.expand_dims(1j * self.ky, (0, -1))) * ph
+        vh = jnp.expand_dims(1j * self.kx, (0, 1)) * ph
         # Update state values
         return state.update(ph=ph, uh=uh, vh=vh)
 
@@ -206,8 +196,8 @@ class Kernel(ABC):
 
         # spectral divergence (two-layer); keep PV-gradient coupling if present
         dqhdt = jnp.negative(
-            jnp.expand_dims(self._ik, (0, 1)) * uqh
-            + jnp.expand_dims(self._il, (0, -1)) * vqh
+            jnp.expand_dims(1j * self.kx, (0, 1)) * uqh
+            + jnp.expand_dims(1j * self.ky, (0, -1)) * vqh
             + jnp.expand_dims(self._ikQy[: self.nz], 1) * state.ph
         )
         return state.update(dqhdt=dqhdt)

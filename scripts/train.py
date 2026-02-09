@@ -21,8 +21,7 @@ import yaml
 _module_names = [
     'model.core.grid',
     'model.core.states',
-    'model.core.kernels',
-    'model.core.TwoLayer',
+    'model.core.kernel',
     'model.core.model',
     'model.core.steppers',
     'model.ML.utils.utils',
@@ -37,7 +36,7 @@ for _mod_name in _module_names:
     else:
         __import__(_mod_name)
 
-from model.core.model import create_model
+from model.core.model import QGM
 from model.core.steppers import SteppedModel, build_stepper
 from model.ML.forced_model import ForcedModel
 from model.ML.utils.utils import parameterization
@@ -113,10 +112,9 @@ dt = cfg.plotting.dt
 learning_rate = cfg.ml.learning_rate
 batch_size = cfg.ml.batch_size
 batch_steps = cfg.ml.batch_steps
-n_layers = cfg.params.n_layers
 
 hr_model = SteppedModel(
-    model=create_model(params, n_layers=2),
+    model=QGM(params),
     stepper=build_stepper("AB3Stepper", dt=dt),  # build stepper is definitely defunct now. remove at convenience. 
 )
 

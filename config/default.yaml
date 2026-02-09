@@ -9,28 +9,27 @@ params:
   seed: 42
   nx: 128
   Lx: 6.283185307179586  # 2π
-  beta: 5
-  kmin: 3.0
+  beta: 10
+  kmin: 10.0
   kmax: 10.0
-  nz: 1  # 1 for single-layer, 2 for two-layer model
-  # Two-layer model parameters (only used if n_layers == 2)
+  nz: 1
+  # multi-layer model parameters (only used if nz>1)
   Lz: 50
   rek: 5.787e-7 # this might balls up with the number stuff - check if i should remove config file and just yaml it 
   rd: 15.0
   delta: 0.25
-  U1: 0.025
+  U1: 0.0
   U2: 0.0
 
 plotting:
   nsteps: 10000
-  dt: 0.0006
+  dt: 0.001
   cadence: 100
-  spinup: 0
-  animate: [energy]
+  animate: ['zonal']
   final: []
   stepper: AB3Stepper
   auto_dt: false
-  cfl: 0.1
+  cfl: 0.5
 
 
 forcing:

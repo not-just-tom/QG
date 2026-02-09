@@ -13,6 +13,7 @@ from abc import ABC, abstractmethod
 def build_diagnostic(name: str):
     mapping = {
         "PV": VorticityDiagnostic,
+        "zonal": ZonalMeanVelocity,
         "ke_spectrum": KESpectrumDiagnostic,
         "energy": EnergyDiagnostic,
         "enstrophy": EnstrophyDiagnostic,
@@ -68,6 +69,48 @@ class Recorder:
             if name in self.final_names:
                 self.final_buffers[name] = value
 
+    def sample_full_state(self, model, stepper_state):
+        """Sample from a stepped model state by expanding to full state on host.
+
+        Args:
+            model: model instance implementing `get_full_state(state)`
+            stepper_state: the StepperState or object containing `.state` (inner State)
+        """
+        full_state = model.get_full_state(stepper_state.state)
+        for name, d in self.diagnostics.items():
+            # sanity check
+            for field in d.requires():
+                self._get_field(full_state, field)
+            value = d.retrieve(full_state, grid=self.grid)
+            value = jax.device_get(value)
+
+            if name in self.animate_names:
+                self.animate_buffers[name].append(value)
+
+            if name in self.final_names:
+                self.final_buffers[name] = value
+
+    def finalize_from_spectral(self, q_traj):
+        """Convert a batch of spectral PV snapshots into physical-space frames
+
+        q_traj: array-like with shape (n_frames, ...) where the final two axes
+                are the spectral axes produced by rfftn (i.e. (nl, nk) or
+                (nz, nl, nk)). The function uses the Recorder's `grid` to
+                perform irfftn and stores the resulting physical frames under
+                the 'PV' animate buffer.
+        """
+        if self.grid is None:
+            raise ValueError("Recorder.grid must be set to finalize spectral data")
+
+        # Perform vectorized inverse rfft over the trailing two axes
+        q_traj_jax = jnp.asarray(q_traj)
+        phys = jnp.fft.irfftn(q_traj_jax, s=(self.grid.ny, self.grid.nx), axes=(-2, -1))
+        phys = jax.device_get(phys)
+
+        # Store under the PV diagnostic name (consistent with Recorder defaults)
+        # Overwrite previous animate buffer for PV with the processed frames
+        self.animate_buffers["PV"] = list(phys)
+
     def _get_field(self, full_state, field):
         # first try TempStates
         if hasattr(full_state, field):
@@ -80,8 +123,6 @@ class Recorder:
         raise AttributeError(f"Field '{field}' not found in TempStates or State")
 
 
-
-
 class VorticityDiagnostic(Diagnostic):
     name = "PV"
 
@@ -90,6 +131,20 @@ class VorticityDiagnostic(Diagnostic):
 
     def retrieve(self, state, grid=None):
         return state.q
+
+
+class ZonalMeanVelocity(Diagnostic):
+    name = "zonal"
+
+    def requires(self):
+        return {"u"}
+
+    def retrieve(self, state, grid=None):
+        # state.u expected shape (nz, ny, nx) or (ny, nx)
+        u = state.u
+        # mean over zonal (x/last) axis
+        um = jnp.mean(u, axis=-1)
+        return um
 
 # the rest need working on vvv
 

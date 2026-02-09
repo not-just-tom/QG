@@ -51,81 +51,39 @@ class QGM(Kernel):
             kmax=kmax,
         )
 
-    def initialise(self, seed, *, tune=False, target_Lr=None, cfl=0.1, nspin=50, dt_spin=1e-4, tol=0.05, max_iter=10):
-        """Initialize state. Optionally tune initial PV amplitude so Rhines length matches target.
-
-        Parameters
-        ----------
-        seed : int
-            RNG seed for initial condition
-        tune : bool
-            If True, perform bisection on amplitude with short spin-ups to match `target_Lr`.
-        target_Lr : float or None
-            Desired Rhines length. If None and `tune` is True, uses Lx/8.
-        cfl : float
-            CFL fraction used for suggested dt estimate (returned via `estimate_cfl_dt`).
-        nspin : int
-            Number of short spin-up steps per trial amplitude.
-        dt_spin : float
-            Time step used during short Euler spin-ups.
-        tol : float
-            Relative tolerance for matching target Rhines length.
-        max_iter : int
-            Maximum bisection iterations.
-
-        Returns
-        -------
-        State
-            Tuned initial `State` (spectral `qh`)
+    def initialise(
+        self,
+        seed,
+        n_jets=None,
+        *,
+        tune=False,
+    ):
+        """This still needs a lot of work - i need an auto replacing dt with the suggested dt from cfl, 
+        and probably change to a energy level ? figure whether i should step the model/filter out some noise later
         """
+        
         base_state = super().initialise(seed)
         if not tune:
             return base_state
+        
+        if n_jets is None:
+            raise ValueError("n_jets must be specified when tune=True")
 
-        # determine default target Rhines length if not provided
-        grid = self.get_grid()
-        if target_Lr is None:
-            target_Lr = float(grid.Lx) / 8.0
-
-        # bisection bracket for amplitude
-        a_lo, a_hi = 1e-6, 1e3
-
-        def spin_up(state, dt, nsteps):
-            s = state
-            for _ in range(int(nsteps)):
-                updates = self.get_updates(s)
-                # simple explicit Euler step for spin-up
-                s = s.update(qh=(s.qh + dt * updates.qh))
-            return s
-
-        best_state = base_state
-        for _ in range(max_iter):
-            a_mid = float((a_lo * a_hi) ** 0.5)
-            trial = base_state.update(qh=base_state.qh * a_mid)
-            spun = spin_up(trial, dt_spin, nspin)
-            Lr, U = self.rhines_length(spun)
-            if abs(Lr - target_Lr) / target_Lr < tol:
-                best_state = spun
-                break
-            # if Lr < target -> increase amplitude (U too small)
-            if Lr < target_Lr:
-                a_lo = a_mid
-            else:
-                a_hi = a_mid
-            best_state = spun
-
-        # Optionally compute suggested dt from CFL using the spun-up state
-        dt_suggest, umax, vmax = self.estimate_cfl_dt(best_state, cfl=cfl)
-        print(dt_suggest)
-
-        return best_state
+        U_target = self.beta * (self.Ly / (jnp.pi * n_jets))**2
+        U_rms = self.rhines_length(base_state)[1]
 
 
-    def initialise(self, seed):
-        key = jax.random.PRNGKey(seed)
-        qh = self._pseudo_random(key)
-        return states.State(qh=qh, _q_shape=(self.ny, self.nx))
+        scale = U_target / (U_rms + 1e-12)
+        qh = base_state.qh * scale
+        print(f"Initialised state with U_rms={U_rms:.3f}, scaled to U_target={U_target:.3f} with scale factor {scale:.3f}")
 
+        # Compute suggested dt on the scaled state (was previously using base_state)
+        scaled_state = base_state.update(qh=qh)
+        suggest_dt = self.estimate_cfl_dt(scaled_state)
+        print(f"Suggested initial dt for stability: {suggest_dt:.3f}")
+
+        return scaled_state
+    
     def get_full_state(self, state: states.State) -> states.TempStates:
         """Expand a partial state into a full state with all computed values.
         """
@@ -342,11 +300,11 @@ class QGM(Kernel):
         dy = float(self.dy)
         eps = 1e-12
         dt = float(cfl * min(dx / (umax + eps), dy / (vmax + eps))) #is min best here?
-        return dt, umax, vmax
+        return dt
 
     @classmethod
     def from_params(cls, params):
-        """Factory method to create TwoLayerModel from params dict.
+        """Factory method to create `QGM` from a params dict.
         """
         # Filter params to only include those accepted by __init__
         sig = inspect.signature(cls.__init__)
