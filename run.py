@@ -58,20 +58,19 @@ def main():
     cadence = cfg.plotting.cadence
     cfg_stepper = cfg.plotting.stepper
     outname = getattr(cfg.filepaths, "outname", "../outputs/qg.gif")
-    spinup = getattr(cfg.plotting, 'spinup', 0)
-
     
     # Instantiate the model from configs using factory
     model = QGM(params)
     stepper = build_stepper(cfg_stepper, dt) # not used really, maybe in future
     sm = SteppedModel(model=model, stepper=stepper)
-    init_state = sm.initialise(params['seed'])
+    init_state = sm.initialise(params['seed'], tune=True, n_jets=5)
+    recorder = Recorder(cfg, grid=model.get_grid())
 
     @functools.partial(jax.jit, static_argnames=["nsteps", "cadence"])
     def rollout(state, nsteps, cadence):
         def loop_fn(carry, step):
             next_state = sm.step_model(carry)
-            # record spectral qh every cadence steps
+            # record spectral qh every cadence steps 
             q_snapshot = jax.lax.cond(
                 step % cadence == 0,
                 lambda s: s.state.qh,
@@ -85,51 +84,17 @@ def main():
         return traj_steps
 
     q_traj = rollout(init_state, nsteps, cadence)
-    q_traj = jax.device_get(q_traj)  # shape (nsteps, nl, nk)
+    q_traj = jax.device_get(q_traj)  # shape (nsteps, nz, nl, nk)
 
     # select only the frames recorded at cadence
     indices = np.arange(0, nsteps, cadence)
     q_traj = q_traj[indices]
 
-    # q_traj is spectral with shape (n_frames, nl, nk). Convert to physical (n_frames, ny, nx).
-    ny, nx = init_state.state._q_shape
-    phys_frames = []
-    for i in range(q_traj.shape[0]):
-        frame = np.fft.irfftn(q_traj[i], s=(ny, nx))
-        phys_frames.append(frame)
-    q_traj = np.stack(phys_frames)
+    # Post-process spectral snapshots on host and populate recorder buffers
+    recorder.finalize_from_spectral(q_traj)
 
-    fig, ax = plt.subplots(figsize=(6, 5))
-
-    vmax = np.max(np.abs(q_traj))
-    im = ax.imshow(
-        q_traj[0, 0],
-        origin="lower",
-        cmap="RdBu_r",
-        vmin=-vmax,
-        vmax=vmax,
-        animated=True,
-    )
-
-    ax.set_title("PV evolution")
-    plt.colorbar(im, ax=ax)
-
-    def update(frame):
-        im.set_data(q_traj[frame, 0, :, :])
-        ax.set_title(f"PV evolution (Step {frame*cadence})")
-        return (im,)
-    
-    writer = PillowWriter(fps=10)
-
-    ani = FuncAnimation(
-        fig,
-        update,
-        frames=len(q_traj[:,0,:,:]),
-        blit=True,
-    )
-
-    ani.save(outname, writer=writer)
-    plt.close(fig)
+    # Build animation from recorder (handles single/two-layer internally)
+    animate(recorder, model.get_grid(), cadence=cadence, outname=outname)
 
     # ============================
 

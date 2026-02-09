@@ -4,19 +4,58 @@ import jax.numpy as jnp
 import jax
 
 def model_to_args(model):
-    return {
-        arg: getattr(model, arg) for arg in inspect.signature(type(model)).parameters
-    }
+    # Inspect the class __init__ signature and pull attributes from the
+    # instance for any constructor parameters (excluding 'self').
+    sig = inspect.signature(type(model).__init__)
+    params = [p for p in sig.parameters if p != "self"]
+    return {p: getattr(model, p) for p in params if hasattr(model, p)}
 
 def coarsen(hr_model, n_lr):
     if hr_model.nx<n_lr:
         raise ValueError(f'Coarsening can only be reducing resolution! Attempted {hr_model.n} to {n_lr}')
     
-    # Get params from the model (handles both Model and TwoLayerModel)
+    # Get params from the model (handles both Model and QGM)
+    cls = type(hr_model)
+    # Inspect the constructor to see if it expects a single `params` dict
+    sig = inspect.signature(cls.__init__)
+    ctor_params = [p for p in sig.parameters if p != "self"]
+
+    # If constructor expects a single `params` dict, build that dict
+    if len(ctor_params) == 1 and ctor_params[0] == "params":
+        # Build a params dict from common model attributes
+        param_dict = {}
+        candidate_attrs = [
+            "nx",
+            "ny",
+            "nz",
+            "rek",
+            "kmin",
+            "kmax",
+            "beta",
+            "Lx",
+            "Ly",
+            "Lz",
+            "filterfac",
+            "g",
+            "f",
+            "rd",
+            "delta",
+            "U1",
+            "U2",
+        ]
+        for a in candidate_attrs:
+            if hasattr(hr_model, a):
+                param_dict[a] = getattr(hr_model, a)
+        # Ensure square grid at the target resolution
+        param_dict["nx"] = n_lr
+        param_dict["ny"] = n_lr
+        return cls(param_dict)
+
+    # Otherwise fall back to old behaviour of passing individual args
     model_args = model_to_args(hr_model)
     model_args["nx"] = n_lr
     model_args["ny"] = n_lr
-    return type(hr_model)(**model_args)
+    return cls(**model_args)
 
 
 class Coarsener(ABC):
