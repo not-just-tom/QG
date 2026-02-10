@@ -75,7 +75,7 @@ class State:
 
 @Pytree.register_pytree_dataclass
 @dataclasses.dataclass(frozen=True, kw_only=True)
-class TempStates:
+class FullState:
     """Temporary states including calculated values, beyond the single truth 
     q/qh which are required for doing a physics step in kernel before being discarded
     """
@@ -121,7 +121,7 @@ class TempStates:
         # Use shape=None to let irfftn infer dimensions, avoiding tracer issues
         return _generic_irfftn(self.dqhdt, shape=None)
 
-    def update(self, **kwargs) -> "TempStates":
+    def update(self, **kwargs) -> "FullState":
         """Replace values stored in this state.
 
         This function produces a *new* state object, with specified

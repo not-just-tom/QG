@@ -23,10 +23,10 @@ params:
 
 plotting:
   nsteps: 10000
-  dt: 0.001
+  dt: 0.01
   cadence: 100
-  animate: ['zonal']
-  final: []
+  animate: []
+  final: ['energy', 'enstrophy']
   stepper: AB3Stepper
   auto_dt: false
   cfl: 0.5

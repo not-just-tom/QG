@@ -2843,3 +2843,37 @@ zmq.error.ZMQError: Too many open files
 2026-02-09 13:53:39,686 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1000x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
 2026-02-09 13:54:55,531 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
 2026-02-09 13:54:55,534 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-02-09 17:00:18,677 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-02-09 17:00:18,681 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-02-09 17:14:40,884 INFO jax._src.xla_bridge: Unable to initialize backend 'tpu': UNIMPLEMENTED: LoadPjrtPlugin is not implemented on windows yet.
+2026-02-09 17:14:47,276 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-02-09 17:14:47,280 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-02-09 17:18:00,608 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-02-09 17:18:00,610 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 500x500 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y ../outputs/qg.gif
+2026-02-09 17:32:13,131 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 17:35:09,678 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:07:23,175 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:19:23,377 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:19:46,979 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:26:47,644 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:29:56,430 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:38:41,871 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:39:28,507 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:39:47,158 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:40:24,457 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:40:46,147 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:43:14,247 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:44:33,241 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:45:01,711 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:45:38,687 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 19:52:06,924 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 20:02:58,764 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-09 20:05:26,251 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-10 09:28:38,577 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-10 09:30:33,028 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-10 09:37:16,748 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-10 10:00:27,696 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-10 10:05:40,320 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-10 10:07:52,386 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-10 10:10:21,482 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-10 10:13:31,114 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>

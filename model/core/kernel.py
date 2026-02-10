@@ -32,7 +32,7 @@ class Kernel(ABC):
         # describe this 
         return state.update(qh=self._dealias*state.qh)
 
-    def get_full_state(self, state: states.State) -> states.TempStates:
+    def get_full_state(self, state: states.State) -> states.FullState:
         def _empty_real():
             return jnp.zeros(
                 self.get_grid().real_state_shape
@@ -44,7 +44,7 @@ class Kernel(ABC):
             )
 
         self._state_shape_check(state)
-        full_state = states.TempStates(
+        full_state = states.FullState(
             state=state,
             ph=_empty_com(),
             u=_empty_real(),
@@ -156,9 +156,7 @@ class Kernel(ABC):
     def _ikQy(self):
         return 1j * (jnp.expand_dims(self.kx, 0) * jnp.expand_dims(self.Qy, -1))
 
-    def _invert(
-        self, state: states.TempStates
-    ) -> states.TempStates:
+    def _invert(self, state: states.FullState) -> states.FullState:
         # If kernel configured as single-layer (nz == 1), perform scalar inversion
         if getattr(self, "nz", None) == 1:
             qh = state.qh
@@ -181,9 +179,7 @@ class Kernel(ABC):
         # Update state values
         return state.update(ph=ph, uh=uh, vh=vh)
 
-    def _do_advection(
-        self, state: states.TempStates
-    ) -> states.TempStates:
+    def _do_advection(self, state: states.FullState) -> states.FullState:
         # multiply to get advective flux in space
         uq = (state.u + jnp.expand_dims(self.Ubg[: self.nz], (-1, -2))) * state.q
         vq = state.v * state.q
@@ -202,9 +198,7 @@ class Kernel(ABC):
         )
         return state.update(dqhdt=dqhdt)
 
-    def _do_friction(
-        self, state: states.TempStates
-    ) -> states.TempStates:
+    def _do_friction(self, state: states.FullState) -> states.FullState:
         # Apply Beckman friction to lower layer tendency
 
         def compute_friction(state):
@@ -227,7 +221,7 @@ class Kernel(ABC):
         )
 
     @abstractmethod
-    def _apply_a_ph(self, state: states.TempStates) -> jax.Array:
+    def _apply_a_ph(self, state: states.FullState) -> jax.Array:
         pass
 
     def __repr__(self):
