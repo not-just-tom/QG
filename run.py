@@ -15,7 +15,6 @@ importlib.reload(model.core.model)
 importlib.reload(model.core.steppers)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
-from model.utils.plotting import animate
 from model.utils.config import Config
 from model.utils.logging import configure_logging
 from model.core.steppers import SteppedModel, build_stepper
@@ -57,14 +56,13 @@ def main():
     nsteps = cfg.plotting.nsteps
     cadence = cfg.plotting.cadence
     cfg_stepper = cfg.plotting.stepper
-    outname = getattr(cfg.filepaths, "outname", "../outputs/qg.gif")
     
     # Instantiate the model from configs using factory
     model = QGM(params)
     stepper = build_stepper(cfg_stepper, dt) # not used really, maybe in future
     sm = SteppedModel(model=model, stepper=stepper)
-    init_state = sm.initialise(params['seed'], tune=True, n_jets=5)
-    recorder = Recorder(cfg, grid=model.get_grid())
+    init_state = sm.initialise(params['seed'], tune=True, n_jets=16)
+    recorder = Recorder(cfg, sm)
 
     @functools.partial(jax.jit, static_argnames=["nsteps", "cadence"])
     def rollout(state, nsteps, cadence):
@@ -81,20 +79,19 @@ def main():
 
         steps = jnp.arange(nsteps)
         _final_carry, traj_steps = jax.lax.scan(loop_fn, state, steps)
-        return traj_steps
+        return _final_carry, traj_steps
 
-    q_traj = rollout(init_state, nsteps, cadence)
+    _, q_traj = rollout(init_state, nsteps, cadence)
     q_traj = jax.device_get(q_traj)  # shape (nsteps, nz, nl, nk)
 
     # select only the frames recorded at cadence
     indices = np.arange(0, nsteps, cadence)
     q_traj = q_traj[indices]
 
-    # Post-process spectral snapshots on host and populate recorder buffers
+    # recorder and animation 
     recorder.finalize_from_spectral(q_traj)
-
-    # Build animation from recorder (handles single/two-layer internally)
-    animate(recorder, model.get_grid(), cadence=cadence, outname=outname)
+    recorder.animate(cfg, q_traj)
+    recorder.plot_final()
 
     # ============================
 

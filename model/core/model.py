@@ -84,7 +84,7 @@ class QGM(Kernel):
 
         return scaled_state
     
-    def get_full_state(self, state: states.State) -> states.TempStates:
+    def get_full_state(self, state: states.State) -> states.FullState:
         """Expand a partial state into a full state with all computed values.
         """
         full_state = super().get_full_state(state)
