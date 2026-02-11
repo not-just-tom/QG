@@ -81,6 +81,7 @@ def main():
         _final_carry, traj_steps = jax.lax.scan(loop_fn, state, steps)
         return _final_carry, traj_steps
 
+    #init_state, _ = rollout(init_state, 100000, cadence)
     _, q_traj = rollout(init_state, nsteps, cadence)
     q_traj = jax.device_get(q_traj)  # shape (nsteps, nz, nl, nk)
 

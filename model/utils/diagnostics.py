@@ -138,7 +138,7 @@ class Recorder:
         self,
         cfg,
         q_traj,
-        outname: str = "../diagnostics.gif",
+        outname: str = "../outputs/diagnostics.gif",
         plots: list | None = None,
         cadence: int | None = None,
     ):
@@ -217,34 +217,116 @@ class Recorder:
                 # update final buffer with last-seen value
                 self.final_buffers[name] = val
 
-        # minimal plotting: stack diagnostics vertically and defer to each Diagnostic
+        # minimal plotting: handle multi-layer (nz>1) cases specially.
         plots = plots or list(self.animate_names)
         plots = [p for p in plots if p in self.animate_buffers]
         if not plots:
             raise ValueError("No plots available to animate")
 
-        n_plots = len(plots)
-        first = self.animate_buffers[plots[0]]
-        n_anim_frames = len(first)
+        # detect a layered diagnostic (with first axis = nz > 1). Prefer PV if present.
+        layered_name = None
+        for cand in ("PV",) + tuple(plots):
+            if cand in self.animate_buffers:
+                sample0 = np.asarray(self.animate_buffers[cand][0])
+                if sample0.ndim >= 2 and sample0.shape[0] > 1:
+                    layered_name = cand
+                    break
 
-        fig, axes = plt.subplots(n_plots, 1, figsize=(6, 3 * n_plots))
-        if n_plots == 1:
-            axes = [axes]
+        if layered_name is None:
+            # default: stack vertically as before
+            n_plots = len(plots)
+            first = self.animate_buffers[plots[0]]
+            n_anim_frames = len(first)
+            fig, axes = plt.subplots(n_plots, 1, figsize=(6, 3 * n_plots))
+            if n_plots == 1:
+                axes = [axes]
 
+            artists = []
+            for ax, name in zip(axes, plots):
+                diag = self.diagnostics[name]
+                sample0 = np.asarray(self.animate_buffers[name][0])
+                arts = diag.init_plot(ax, sample0, grid=self.grid)
+                artists.append((diag, arts))
+
+            def _update(i):
+                out = []
+                for diag, arts in artists:
+                    sample = np.asarray(self.animate_buffers[diag.name][i])
+                    diag.update_plot(arts, sample)
+                    if "artists" in arts:
+                        out.extend(arts["artists"])
+                return out
+
+            anim = FuncAnimation(fig, _update, frames=n_anim_frames, blit=False)
+            try:
+                writer = PillowWriter(fps=10)
+                anim.save(outname, writer=writer)
+            finally:
+                plt.close(fig)
+            return
+
+        # We have a layered diagnostic. Top row: one axis per layer for that diagnostic.
+        # Bottom row: one axis per remaining diagnostic (the "rest")
+        layered_sample0 = np.asarray(self.animate_buffers[layered_name][0])
+        nz = int(layered_sample0.shape[0])
+
+        rest = [p for p in plots if p != layered_name]
+
+        # build gridspec: 2 rows, top with nz cols, bottom with max(1, len(rest)) cols
+        from matplotlib.gridspec import GridSpec
+
+        n_bottom = max(1, len(rest))
+        fig = plt.figure(figsize=(4 * max(nz, n_bottom), 3 * 2))
+        gs = GridSpec(2, max(nz, n_bottom), figure=fig)
+
+        top_axes = [fig.add_subplot(gs[0, i]) for i in range(nz)]
+
+        # bottom axes: place in the first len(rest) columns
+        bottom_axes = []
+        for i in range(n_bottom):
+            bottom_axes.append(fig.add_subplot(gs[1, i]))
+
+        # init artists: layered diagnostic per layer
         artists = []
-        for ax, name in zip(axes, plots):
+        layered_diag = self.diagnostics[layered_name]
+        for ax_idx, ax in enumerate(top_axes):
+            layer_sample = np.asarray(layered_sample0[ax_idx])
+            layer_arts = layered_diag.init_plot(ax, layer_sample, grid=self.grid)
+            # annotate with layer index for updates
+            layer_arts["layer"] = ax_idx
+            artists.append((layered_diag, layer_arts))
+
+        # init bottom (rest) diagnostics
+        bottom_artists = []
+        for ax, name in zip(bottom_axes, rest if rest else [plots[0]]):
             diag = self.diagnostics[name]
             sample0 = np.asarray(self.animate_buffers[name][0])
             arts = diag.init_plot(ax, sample0, grid=self.grid)
-            artists.append((diag, arts))
+            bottom_artists.append((diag, arts))
+
+        # determine number of animation frames from layered diagnostic
+        n_anim_frames = len(self.animate_buffers[layered_name])
 
         def _update(i):
             out = []
+            # update layered top row
+            layer_frame = np.asarray(self.animate_buffers[layered_name][i])
             for diag, arts in artists:
-                sample = np.asarray(self.animate_buffers[diag.name][i])
+                idx = arts.get("layer", None)
+                if idx is None:
+                    continue
+                sample = layer_frame[idx]
                 diag.update_plot(arts, sample)
                 if "artists" in arts:
                     out.extend(arts["artists"])
+
+            # update bottom row diagnostics with their respective frame
+            for diag, arts in bottom_artists:
+                sample = np.asarray(self.animate_buffers[diag.name][i if i < len(self.animate_buffers[diag.name]) else -1])
+                diag.update_plot(arts, sample)
+                if "artists" in arts:
+                    out.extend(arts["artists"])
+
             return out
 
         anim = FuncAnimation(fig, _update, frames=n_anim_frames, blit=False)
@@ -257,36 +339,42 @@ class Recorder:
         # animation done; final plots are handled by `plot_final`
         return
 
-    def plot_final(self, outname: str = "diagnostics_final.gif"):
+    def plot_final(self, outname: str = "../outputs/diagnostics_final.gif"):
         """Save final time-series plots for selected diagnostics (energy, enstrophy).
 
         `outname` is used as a base; PNGs are written as `<base>_energy.png` etc.
         """
-        # Combine energy and enstrophy on a single final figure if available
-        names = [n for n in ("energy", "enstrophy") if n in self.animate_buffers and len(self.animate_buffers[n]) > 0]
-        if not names:
+        # Create two subplots (energy, enstrophy) on one figure.
+        has_energy = "energy" in self.animate_buffers and len(self.animate_buffers["energy"]) > 0
+        has_enst = "enstrophy" in self.animate_buffers and len(self.animate_buffers["enstrophy"]) > 0
+        if not (has_energy or has_enst):
             return
 
-        series = {n: np.asarray(self.animate_buffers[n]) for n in names}
+        fig, axes = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
 
-        # Align lengths (use minimum length if mismatch)
-        lengths = [s.shape[0] for s in series.values()]
-        nframe = min(lengths)
-        x = np.arange(nframe)
+        # Energy subplot
+        if has_energy:
+            E = np.asarray(self.animate_buffers["energy"]).reshape(-1)
+            xE = np.arange(E.shape[0])
+            axes[0].plot(xE, E, color="C0")
+            axes[0].set_ylabel("Energy")
+            axes[0].set_title("Energy (final)")
+        else:
+            axes[0].axis("off")
 
-        fig, ax = plt.subplots(figsize=(8, 4))
-        colors = {"energy": "C0", "enstrophy": "C1"}
-        for name, s in series.items():
-            arr = np.asarray(s[:nframe])
-            # flatten in case scalar per frame
-            arr = arr.reshape(-1)
-            ax.plot(x, arr, label=name, color=colors.get(name, None))
-
-        ax.set_xlabel("frame")
-        ax.set_title("Energy and Enstrophy (final)")
-        ax.legend()
+        # Enstrophy subplot
+        if has_enst:
+            Z = np.asarray(self.animate_buffers["enstrophy"]).reshape(-1)
+            xZ = np.arange(Z.shape[0])
+            axes[1].plot(xZ, Z, color="C1")
+            axes[1].set_ylabel("Enstrophy")
+            axes[1].set_xlabel("frame")
+            axes[1].set_title("Enstrophy (final)")
+        else:
+            axes[1].axis("off")
 
         out_png = outname.replace('.gif', '_energy_enstrophy.png')
+        fig.tight_layout()
         fig.savefig(out_png, bbox_inches='tight')
         plt.close(fig)
 
