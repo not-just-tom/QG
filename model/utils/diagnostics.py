@@ -15,16 +15,50 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import model.core.states as states
 
-def build_diagnostic(name: str):
-    mapping = {
+
+class ReconstructedState:
+    """
+    Lightweight offline stand-in for a live model state.
+
+    Attributes mirror what diagnostics expect: `qh`, `q`, `psi`, `u`, `v`, `zeta`.
+    """
+
+    def __init__(self, qh, q, psi, u, v, zeta=None):
+        self.qh = qh
+        self.q = q
+        self.psi = psi
+        self.u = u
+        self.v = v
+        self.zeta = q if zeta is None else zeta
+
+def build_diagnostic(name: str, *, nz: int):
+    """
+    Factory for diagnostics.
+
+    Args:
+        name: diagnostic name (string from config)
+        nz: number of vertical layers
+
+    Returns:
+        Diagnostic instance
+
+    Raises:
+        ValueError if diagnostic name is unknown
+    """
+    registry = {
         "PV": VorticityDiagnostic,
-        "zonal": ZonalMeanVelocity,
+        "zonal": ZonalMeanVelocityDiagnostic,
         "ke_spectrum": KESpectrumDiagnostic,
         "energy": EnergyDiagnostic,
         "enstrophy": EnstrophyDiagnostic,
+        "cfl": CFLDiagnostic,
     }
-    cls = mapping.get(name)
-    return cls() if cls is not None else None
+
+    cls = registry.get(name)
+    if cls is None:
+        raise ValueError(f"Unknown diagnostic '{name}'")
+
+    return cls(nz=nz)
 
 class Diagnostic(ABC):
     name: str
@@ -51,115 +85,63 @@ class Diagnostic(ABC):
         raise NotImplementedError()
 
 class Recorder:
-    def __init__(self, cfg, stepped_model):
-        self.stepped_model = stepped_model
+    """
+    Recorder orchestrates
+      - buffering diagnostic outputs
+      - animation layout
+      - final plot layout
+    """
+
+    def __init__(self, cfg, model):
+        self.model = model
         self.grid = Grid(cfg.params.Lx, cfg.params.nx)
+        self.nz = int(cfg.params.nz)
+
         diag_cfg = cfg.plotting
-        self.cadence = int(getattr(diag_cfg, "cadence", 100))
+        self.cadence = int(getattr(diag_cfg, "cadence", 1))
+        self.animate_names = set(diag_cfg.animate)
+        self.final_names = set(diag_cfg.final)
 
-        animate = set(getattr(diag_cfg, "animate", []))
-        final = set(getattr(diag_cfg, "final", []))
-
-        animate.add('PV')
-        self.animate_names = animate
-        self.final_names = final 
-
+        # instantiate diagnostics
         self.diagnostics = {}
-        for name in self.animate_names | self.final_names:
-            d = build_diagnostic(name)
-            if d is None:
-                raise ValueError(f"Unknown diagnostic: {name}")
-            self.diagnostics[name] = d
+        for name in set(self.animate_names) | set(self.final_names):
+            diag = build_diagnostic(name, nz=self.nz)
+            if diag is None:
+                raise ValueError(f"Unknown diagnostic '{name}'")
+            self.diagnostics[name] = diag
 
-        self.animate_buffers = defaultdict(list)
-        self.final_buffers   = {}
+        # buffers[name] = list of snapshot values
+        self.buffers = {name: [] for name in set(self.animate_names) | set(self.final_names)}
+
+    # ------------------------------------------------------------------
+    # sampling
+    # ------------------------------------------------------------------
 
     def sample(self, state):
-        for name, d in self.diagnostics.items():
-            # sanity check
-            for field in d.requires():
+        """
+        Sample diagnostics from a FULL physical-space state.
+        """
+        for name, diag in self.diagnostics.items():
+            for field in diag.requires():
                 self._get_field(state, field)
-            value = d.retrieve(state, grid=self.grid)
-            value = jax.device_get(value)
 
-            if name in self.animate_names:
-                self.animate_buffers[name].append(value)
+            val = diag.retrieve(state, grid=self.grid)
+            self.buffers[name].append(jax.device_get(val))
 
-            if name in self.final_names:
-                self.final_buffers[name] = value
+    # ------------------------------------------------------------------
+    # reconstruction (offline)
+    # ------------------------------------------------------------------
 
-    def sample_full_state(self, model, stepper_state):
-        """Sample from a stepped model state by expanding to full state on host.
-
-        Args:
-            model: model instance implementing `get_full_state(state)`
-            stepper_state: the StepperState or object containing `.state` (inner State)
+    def reconstruct_states(self, q_traj):
         """
-        full_state = model.get_full_state(stepper_state.state)
-        for name, d in self.diagnostics.items():
-            # sanity check
-            for field in d.requires():
-                self._get_field(full_state, field)
-            value = d.retrieve(full_state, grid=self.grid)
-            value = jax.device_get(value)
-
-            if name in self.animate_names:
-                self.animate_buffers[name].append(value)
-
-            if name in self.final_names:
-                self.final_buffers[name] = value
-
-    def finalize_from_spectral(self, q_traj):
-        """Convert a batch of spectral PV snapshots into physical-space frames
-
-        q_traj: spectral array-like with shape (n_frames, ...) 
+        Batch-reconstruct a list/array of spectral PV frames into
+        a list of `ReconstructedState` objects using the model's
+        inversion machinery. This avoids redoing the expensive
+        invert step for each frame when a batch is available.
         """
-        if self.grid is None:
-            raise ValueError("Recorder.grid must be set to finalize spectral data")
-
-        phys = jnp.fft.irfftn(q_traj, s=(self.grid.ny, self.grid.nx), axes=(-2, -1))
-        phys = jax.device_get(phys)
-        
-
-        try:
-            # q_traj expected shape (n_frames, ...). Compute per-frame max.
-            magnitudes = jnp.max(jnp.abs(q_traj).reshape((q_traj.shape[0], -1)), axis=1)
-            nonzero_mask = jnp.asarray(magnitudes > 0)
-            phys_kept = phys[nonzero_mask]
-            phys_kept = jax.device_get(phys_kept)
-        except Exception:
-            # Fall back to keeping all frames if indexing fails for some reason
-            phys_kept = jax.device_get(phys)
-
-        # Overwrite previous animate buffer for PV with the processed frames
-        self.animate_buffers["PV"] = list(phys_kept)
-
-    def animate(
-        self,
-        cfg,
-        q_traj,
-        outname: str = "../outputs/diagnostics.gif",
-        plots: list | None = None,
-        cadence: int | None = None,
-    ):
-        """Create a minimal animation: compute diagnostics per selected
-        spectral frame, store into `animate_buffers`, then animate by
-        delegating plotting to each Diagnostic implementation.
-        Also produce final static plots for energy and enstrophy (if present).
-        """
-        cadence = int(cadence or getattr(cfg.diagnostics, "cadence", self.cadence))
-
-        q_traj = jnp.asarray(q_traj)
-        n_frames = q_traj.shape[0]
-        indices = np.arange(0, n_frames, cadence)
-
-        # selected spectral frames and FFT axes
-        selected = q_traj[indices]
-        spec_axes = (-2, -1)
-
-        # Build batched FullState and perform a single batched inversion call.
+        selected = jnp.asarray(q_traj)
+        # assume selected shape (nt, nz, ny, nk)
         nsel = selected.shape[0]
-
         spec_shape = tuple(self.grid.spectral_state_shape)
         real_shape = tuple(self.grid.real_state_shape)
 
@@ -177,249 +159,324 @@ class Recorder:
             v=v_zeros,
             dqhdt=dqhdt_zeros,
         )
+        #print('diagnostic: ', full.qh.shape)
 
-        inv_fn = jax.jit(self.stepped_model.model._invert)
+        inv_fn = jax.jit(self.model.model._invert)
         full_inv = inv_fn(full)
 
         ph_spec = full_inv.ph
-        psi_phys = jnp.fft.irfftn(ph_spec, s=(self.grid.ny, self.grid.nx), axes=spec_axes)
-        q_phys = jnp.fft.irfftn(selected, s=(self.grid.ny, self.grid.nx), axes=spec_axes)
+        psi_phys = jnp.fft.irfftn(ph_spec, s=(self.grid.ny, self.grid.nx), axes=(-2, -1))
+        q_phys = jnp.fft.irfftn(selected, s=(self.grid.ny, self.grid.nx), axes=(-2, -1))
 
-        from types import SimpleNamespace
-
-        # ensure buffers exist for animations and final diagnostics
-        for name in (self.animate_names | self.final_names):
-            self.animate_buffers.setdefault(name, [])
-
-        # compute diagnostics per selected (cadence) frame
+        states_out = []
         for i in range(psi_phys.shape[0]):
             psi_f = psi_phys[i]
             q_f = q_phys[i]
 
-            # compute u,v from psi: u = dψ/dy, v = -dψ/dx
             u = jnp.gradient(psi_f, self.grid.dy, axis=-2)
             v = -jnp.gradient(psi_f, self.grid.dx, axis=-1)
 
             zeta = q_f
-            state = SimpleNamespace(q=q_f, psi=psi_f, u=u, v=v, zeta=zeta)
+            states_out.append(ReconstructedState(qh=selected[i], q=q_f, psi=psi_f, u=u, v=v, zeta=zeta))
 
-            for name, d in self.diagnostics.items():
+        return states_out
+
+    def reconstruct_state(self, qh):
+        """
+        Reconstruct a single spectral frame into a `ReconstructedState`.
+        Uses the same machinery as `reconstruct_states` but for one frame.
+        """
+        qh = jnp.asarray(qh)
+        spec_shape = tuple(self.grid.spectral_state_shape)
+        real_shape = tuple(self.grid.real_state_shape)
+
+        ph_zeros = jnp.zeros(spec_shape, dtype=qh.dtype)
+        u_zeros = jnp.zeros(real_shape, dtype=qh.dtype)
+        v_zeros = jnp.zeros(real_shape, dtype=qh.dtype)
+        dqhdt_zeros = jnp.zeros(spec_shape, dtype=qh.dtype)
+
+        inner = states.State(qh=qh, _q_shape=(self.grid.ny, self.grid.nx))
+
+        full = states.FullState(
+            state=inner,
+            ph=ph_zeros,
+            u=u_zeros,
+            v=v_zeros,
+            dqhdt=dqhdt_zeros,
+        )
+
+        inv_fn = jax.jit(self.model.model._invert)
+        full_inv = inv_fn(full)
+
+        ph_spec = full_inv.ph
+        psi_phys = jnp.fft.irfftn(ph_spec, s=(self.grid.ny, self.grid.nx), axes=(-2, -1))
+        q_phys = jnp.fft.irfftn(qh, s=(self.grid.ny, self.grid.nx), axes=(-2, -1))
+
+        u = jnp.gradient(psi_phys, self.grid.dy, axis=-2)
+        v = -jnp.gradient(psi_phys, self.grid.dx, axis=-1)
+        zeta = q_phys
+
+        return ReconstructedState(qh=qh, q=q_phys, psi=psi_phys, u=u, v=v, zeta=zeta)
+
+    # ------------------------------------------------------------------
+    # animation
+    # ------------------------------------------------------------------
+
+    def animate(self, cfg, q_traj=None, outname: str = "../outputs/diagnostics.gif", fps: int = 10):
+        """
+        Animate diagnostics listed in cfg.diagnostics.animate.
+        """
+        # If a spectral trajectory is provided, reconstruct pseudo-states
+        # (batched) and populate diagnostic buffers from those reconstructed states.
+        if q_traj is not None:
+            # assume q_traj already contains only the cadence frames (run.py slices)
+            recon_states = self.reconstruct_states(q_traj)
+
+            # ensure buffers exist
+            for name in (self.animate_names | self.final_names):
+                self.buffers.setdefault(name, [])
+
+            # compute diagnostics per reconstructed (cadence) frame
+            for state in recon_states:
+                for name, d in self.diagnostics.items():
+                    try:
+                        val = d.retrieve(state, grid=self.grid)
+                    except Exception:
+                        continue
+                    val = jax.device_get(val)
+                    self.buffers.setdefault(name, []).append(val)
+
+                # record CFL if requested (use cfg.plotting.dt if present)
                 try:
-                    val = d.retrieve(state, grid=self.grid)
+                    dt = float(getattr(cfg.plotting, "dt", None))
                 except Exception:
-                    continue
-                val = jax.device_get(val)
-                # record into animate buffers when requested for animation
-                # or when it's listed as a 'final' diagnostic (we want a
-                # time-series for final diagnostics so we can plot them)
-                if name in self.animate_names or name in self.final_names:
-                    self.animate_buffers[name].append(val)
-                # update final buffer with last-seen value
-                self.final_buffers[name] = val
+                    dt = None
 
-        # minimal plotting: handle multi-layer (nz>1) cases specially.
-        plots = plots or list(self.animate_names)
-        plots = [p for p in plots if p in self.animate_buffers]
+                if dt is not None and "cfl" in self.diagnostics:
+                    umax = float(jnp.max(jnp.abs(state.u)))
+                    vmax = float(jnp.max(jnp.abs(state.v)))
+                    cfl_val = dt * (umax / getattr(self.grid, "dx", 1.0) + vmax / getattr(self.grid, "dy", 1.0))
+                    self.buffers.setdefault("cfl", []).append(cfl_val)
+
+        plots = [
+            name for name in self.animate_names
+            if name in self.diagnostics
+            and getattr(self.diagnostics[name], "visualize", "frame") == "frame"
+        ]
+
         if not plots:
-            raise ValueError("No plots available to animate")
-
-        # detect a layered diagnostic (with first axis = nz > 1). Prefer PV if present.
-        layered_name = None
-        for cand in ("PV",) + tuple(plots):
-            if cand in self.animate_buffers:
-                sample0 = np.asarray(self.animate_buffers[cand][0])
-                if sample0.ndim >= 2 and sample0.shape[0] > 1:
-                    layered_name = cand
-                    break
-
-        if layered_name is None:
-            # default: stack vertically as before
-            n_plots = len(plots)
-            first = self.animate_buffers[plots[0]]
-            n_anim_frames = len(first)
-            fig, axes = plt.subplots(n_plots, 1, figsize=(6, 3 * n_plots))
-            if n_plots == 1:
-                axes = [axes]
-
-            artists = []
-            for ax, name in zip(axes, plots):
-                diag = self.diagnostics[name]
-                sample0 = np.asarray(self.animate_buffers[name][0])
-                arts = diag.init_plot(ax, sample0, grid=self.grid)
-                artists.append((diag, arts))
-
-            def _update(i):
-                out = []
-                for diag, arts in artists:
-                    sample = np.asarray(self.animate_buffers[diag.name][i])
-                    diag.update_plot(arts, sample)
-                    if "artists" in arts:
-                        out.extend(arts["artists"])
-                return out
-
-            anim = FuncAnimation(fig, _update, frames=n_anim_frames, blit=False)
-            try:
-                writer = PillowWriter(fps=10)
-                anim.save(outname, writer=writer)
-            finally:
-                plt.close(fig)
             return
 
-        # We have a layered diagnostic. Top row: one axis per layer for that diagnostic.
-        # Bottom row: one axis per remaining diagnostic (the "rest")
-        layered_sample0 = np.asarray(self.animate_buffers[layered_name][0])
-        nz = int(layered_sample0.shape[0])
+        # determine layout
+        axes_per_diag = {
+            name: self.diagnostics[name].n_axes()
+            for name in plots
+        }
 
-        rest = [p for p in plots if p != layered_name]
+        total_axes = sum(axes_per_diag.values())
 
-        # build gridspec: 2 rows, top with nz cols, bottom with max(1, len(rest)) cols
-        from matplotlib.gridspec import GridSpec
+        fig, axes = plt.subplots(
+            total_axes, 1,
+            figsize=(6, 3 * total_axes),
+            squeeze=False,
+        )
 
-        n_bottom = max(1, len(rest))
-        fig = plt.figure(figsize=(4 * max(nz, n_bottom), 3 * 2))
-        gs = GridSpec(2, max(nz, n_bottom), figure=fig)
-
-        top_axes = [fig.add_subplot(gs[0, i]) for i in range(nz)]
-
-        # bottom axes: place in the first len(rest) columns
-        bottom_axes = []
-        for i in range(n_bottom):
-            bottom_axes.append(fig.add_subplot(gs[1, i]))
-
-        # init artists: layered diagnostic per layer
+        axes = axes[:, 0]  # flatten
         artists = []
-        layered_diag = self.diagnostics[layered_name]
-        for ax_idx, ax in enumerate(top_axes):
-            layer_sample = np.asarray(layered_sample0[ax_idx])
-            layer_arts = layered_diag.init_plot(ax, layer_sample, grid=self.grid)
-            # annotate with layer index for updates
-            layer_arts["layer"] = ax_idx
-            artists.append((layered_diag, layer_arts))
+        ax_idx = 0
 
-        # init bottom (rest) diagnostics
-        bottom_artists = []
-        for ax, name in zip(bottom_axes, rest if rest else [plots[0]]):
+        # initialize plots
+        # ensure buffers were populated
+        empty = [name for name in plots if len(self.buffers.get(name, [])) == 0]
+        if empty:
+            raise ValueError(
+                f"No buffered samples for diagnostics: {empty}. "
+                "Pass a cadence-sliced `q_traj` to `animate` or call `sample()` before animating."
+            )
+
+        for name in plots:
             diag = self.diagnostics[name]
-            sample0 = np.asarray(self.animate_buffers[name][0])
-            arts = diag.init_plot(ax, sample0, grid=self.grid)
-            bottom_artists.append((diag, arts))
+            sample0 = self.buffers[name][0]
 
-        # determine number of animation frames from layered diagnostic
-        n_anim_frames = len(self.animate_buffers[layered_name])
+            for layer in range(diag.n_axes()):
+                ax = axes[ax_idx]
+                arts = diag.init_plot(
+                    ax, sample0, grid=self.grid, layer=layer
+                )
+                artists.append((name, diag, arts))
+                ax_idx += 1
+
+        n_frames = min(len(self.buffers[name]) for name in plots)
 
         def _update(i):
             out = []
-            # update layered top row
-            layer_frame = np.asarray(self.animate_buffers[layered_name][i])
-            for diag, arts in artists:
-                idx = arts.get("layer", None)
-                if idx is None:
-                    continue
-                sample = layer_frame[idx]
+            for name, diag, arts in artists:
+                sample = self.buffers[name][i]
                 diag.update_plot(arts, sample)
-                if "artists" in arts:
-                    out.extend(arts["artists"])
-
-            # update bottom row diagnostics with their respective frame
-            for diag, arts in bottom_artists:
-                sample = np.asarray(self.animate_buffers[diag.name][i if i < len(self.animate_buffers[diag.name]) else -1])
-                diag.update_plot(arts, sample)
-                if "artists" in arts:
-                    out.extend(arts["artists"])
-
+                out.extend(arts.get("artists", []))
             return out
 
-        anim = FuncAnimation(fig, _update, frames=n_anim_frames, blit=False)
+        anim = FuncAnimation(fig, _update, frames=n_frames, blit=False)
+
         try:
-            writer = PillowWriter(fps=10)
-            anim.save(outname, writer=writer)
+            anim.save(outname, writer=PillowWriter(fps=fps))
         finally:
             plt.close(fig)
 
-        # animation done; final plots are handled by `plot_final`
-        return
+    # ------------------------------------------------------------------
+    # final plots
+    # ------------------------------------------------------------------
 
-    def plot_final(self, outname: str = "../outputs/diagnostics_final.gif"):
-        """Save final time-series plots for selected diagnostics (energy, enstrophy).
-
-        `outname` is used as a base; PNGs are written as `<base>_energy.png` etc.
+    def plot_final(self, outbase: str):
         """
-        # Create two subplots (energy, enstrophy) on one figure.
-        has_energy = "energy" in self.animate_buffers and len(self.animate_buffers["energy"]) > 0
-        has_enst = "enstrophy" in self.animate_buffers and len(self.animate_buffers["enstrophy"]) > 0
-        if not (has_energy or has_enst):
-            return
+        Produce final plots for diagnostics listed in cfg.diagnostics.final.
+        """
+        for name in self.final_names:
+            diag = self.diagnostics.get(name)
+            if diag is None:
+                continue
 
-        fig, axes = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+            samples = self.buffers[name]
+            if not samples:
+                continue
 
-        # Energy subplot
-        if has_energy:
-            E = np.asarray(self.animate_buffers["energy"]).reshape(-1)
-            xE = np.arange(E.shape[0])
-            axes[0].plot(xE, E, color="C0")
-            axes[0].set_ylabel("Energy")
-            axes[0].set_title("Energy (final)")
-        else:
-            axes[0].axis("off")
+            reduced = diag.reduce(samples, grid=self.grid)
 
-        # Enstrophy subplot
-        if has_enst:
-            Z = np.asarray(self.animate_buffers["enstrophy"]).reshape(-1)
-            xZ = np.arange(Z.shape[0])
-            axes[1].plot(xZ, Z, color="C1")
-            axes[1].set_ylabel("Enstrophy")
-            axes[1].set_xlabel("frame")
-            axes[1].set_title("Enstrophy (final)")
-        else:
-            axes[1].axis("off")
+            n_axes = diag.n_axes()
+            fig, axes = plt.subplots(
+                n_axes, 1,
+                figsize=(6, 3 * n_axes),
+                squeeze=False,
+            )
+            axes = axes[:, 0]
 
-        out_png = outname.replace('.gif', '_energy_enstrophy.png')
-        fig.tight_layout()
-        fig.savefig(out_png, bbox_inches='tight')
-        plt.close(fig)
+            for layer in range(n_axes):
+                diag.plot_final(
+                    axes[layer],
+                    reduced,
+                    grid=self.grid,
+                    layer=layer,
+                )
 
-    def _get_field(self, full_state, field):
-        # first try TempStates
-        if hasattr(full_state, field):
-            return getattr(full_state, field)
+            fig.tight_layout()
+            fig.savefig(f"{outbase}_{name}.png", bbox_inches="tight")
+            plt.close(fig)
 
-        # then try inner State
-        if hasattr(full_state.state, field):
-            return getattr(full_state.state, field)
+    # ------------------------------------------------------------------
+    # helpers
+    # ------------------------------------------------------------------
 
-        raise AttributeError(f"Field '{field}' not found in TempStates or State")
+    def _get_field(self, state, field):
+        if hasattr(state, field):
+            return getattr(state, field)
+        if hasattr(state.state, field):
+            return getattr(state.state, field)
+        raise AttributeError(f"Field '{field}' not found in state")
+
 
 
 class VorticityDiagnostic(Diagnostic):
+    """
+    Potential vorticity / vorticity diagnostic.
+
+    Produces a (nz, ny, nx) field in physical space.
+    Handles both single-layer and multi-layer cases uniformly.
+    """
+
     name = "PV"
 
-    def requires(self):
-        return {"q"}  # vorticity
+    # semantic metadata (used by Recorder)
+    kind = "field"                 # "field" | "scalar" | "spectrum"
+    temporal = "instant"           # "instant" | "timeseries"
+    cmap = "RdBu_r"
+
+    def __init__(self, nz: int):
+        self.nz = int(nz)
+
+    # ------------------------------------------------------------------
+    # data interface
+    # ------------------------------------------------------------------
+
+    def requires(self) -> set[str]:
+        return {"q"}   # physical-space vorticity
 
     def retrieve(self, state, grid=None):
-        return state.q
+        """
+        Returns:
+            q with shape (nz, ny, nx)
+        """
+        q = state.q
 
-    def init_plot(self, ax, sample, grid=None):
-        # sample: (nz, ny, nx) or (ny, nx)
-        if sample.ndim == 3:
-            frame = sample[0]
-        else:
-            frame = sample
-        im = ax.imshow(np.asarray(frame), origin="lower", extent=(0, getattr(grid, "Lx", 1), 0, getattr(grid, "Ly", 1)), cmap="RdBu_r")
-        ax.set_title("Potential Vorticity")
-        cb = ax.figure.colorbar(im, ax=ax)
-        return {"im": im, "cbar": cb, "artists": [im]}
+        # enforce (nz, ny, nx) shape
+        if q.ndim == 2:
+            q = q[None, ...]   # (1, ny, nx)
+
+        if q.shape[0] != self.nz:
+            raise ValueError(
+                f"{self.name}: expected nz={self.nz}, got {q.shape[0]}"
+            )
+
+        return q
+
+    # ------------------------------------------------------------------
+    # plotting interface
+    # ------------------------------------------------------------------
+
+    def n_axes(self) -> int:
+        """
+        Number of matplotlib axes required for animation.
+
+        Recorder uses this to allocate subplots.
+        """
+        return self.nz
+
+    def init_plot(self, ax, sample, grid=None, layer: int = 0):
+        """
+        Initialize artists for ONE layer on ONE axis.
+
+        Args:
+            ax: matplotlib axis
+            sample: (nz, ny, nx) array
+            layer: which layer this axis represents
+        """
+        field = sample[layer]
+
+        im = ax.imshow(
+            field,
+            origin="lower",
+            extent=(0, grid.Lx, 0, grid.Ly),
+            cmap=self.cmap,
+        )
+
+        ax.set_title(f"PV (layer {layer})" if self.nz > 1 else "PV")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+
+        cbar = ax.figure.colorbar(im, ax=ax)
+
+        return {
+            "im": im,
+            "cbar": cbar,
+            "layer": layer,
+            "artists": [im],
+        }
 
     def update_plot(self, artists: dict, sample):
-        if sample.ndim == 3:
-            frame = sample[0]
-        else:
-            frame = sample
-        artists["im"].set_data(np.asarray(frame))
+        """
+        Update artists for ONE frame.
+
+        Args:
+            artists: dict returned by init_plot
+            sample: (nz, ny, nx)
+        """
+        layer = artists["layer"]
+        artists["im"].set_data(sample[layer])
 
 
-class ZonalMeanVelocity(Diagnostic):
+class ZonalMeanVelocityDiagnostic(Diagnostic):
     name = "zonal"
+    def __init__(self, nz: int):
+        self.nz = int(nz)
 
     def requires(self):
         return {"u"}
@@ -429,87 +486,266 @@ class ZonalMeanVelocity(Diagnostic):
         u = state.u
         # mean over zonal direction
         um = jnp.mean(u, axis=1)
+
+        if um.ndim == 1:
+            um = um[None, ...]
+
+        if um.shape[0] != self.nz:
+            raise ValueError(f"{self.name}: expected nz={self.nz}, got {um.shape[0]}")
+
         return um
 
-    def init_plot(self, ax, sample, grid=None):
-        # sample: (nz, ny) or (ny,)
-        nx = sample.shape[-1]
-        grid_y = np.linspace(0, getattr(grid, "Ly", 1), nx)
-        if sample.ndim == 2:
-            line, = ax.plot(grid_y, np.asarray(np.real(sample[0])), color="k")
-        else:
-            line, = ax.plot(grid_y, np.asarray(np.real(sample)), color="k")
-        ax.set_title("Zonal Mean Velocity")
+    def n_axes(self) -> int:
+        return self.nz
+
+    def init_plot(self, ax, sample, grid=None, layer: int = 0):
+        # sample: (nz, ny)
+        ny = sample.shape[-1]
+        grid_y = np.linspace(0, getattr(grid, "Ly", 1), ny)
+        y0 = np.asarray(np.real(sample[layer]))
+        (line,) = ax.plot(grid_y, y0, color="k")
+        ax.set_title(f"Zonal Mean Velocity (layer {layer})" if self.nz > 1 else "Zonal Mean Velocity")
         ax.set_xlabel("y")
         ax.set_ylabel("u")
-        return {"line": line, "artists": [line], "grid_y": grid_y}
+        return {"line": line, "artists": [line], "grid_y": grid_y, "layer": layer}
 
     def update_plot(self, artists: dict, sample):
-        # use grid_y saved during init_plot to keep axes consistent
-        if "grid_y" in artists:
-            grid_y = artists["grid_y"]
-        else:
-            # fallback: infer from sample length
-            if sample.ndim == 2:
-                nx = np.asarray(sample[0]).shape[0]
-            else:
-                nx = np.asarray(sample).shape[0]
-            grid_y = np.linspace(0, 1, nx)
+        layer = artists.get("layer", 0)
+        grid_y = artists.get("grid_y")
+        if grid_y is None:
+            ny = sample.shape[-1]
+            grid_y = np.linspace(0, 1, ny)
 
-        if sample.ndim == 2:
-            ydata = np.asarray(np.real(sample[0]))
-        else:
-            ydata = np.asarray(np.real(sample))
-
+        ydata = np.asarray(np.real(sample[layer]))
         artists["line"].set_data(grid_y, ydata)
 
-# the rest need working on vvv
+    def reduce(self, samples, grid=None):
+        # samples: list of (nz, ny)
+        arr = jnp.stack(samples, axis=0)  # (nt, nz, ny)
+        mean = jnp.mean(arr, axis=0)     # (nz, ny)
+        return mean
 
-class KESpectrumDiagnostic(Diagnostic):
-    name = "ke_spectrum"
+    def plot_final(self, ax, reduced, grid=None, layer: int = 0):
+        # reduced: (nz, ny)
+        ny = reduced.shape[-1]
+        grid_y = np.linspace(0, getattr(grid, "Ly", 1), ny)
+        ax.plot(grid_y, np.asarray(reduced[layer]), color="k")
+        ax.set_title(f"Zonal Mean Velocity (mean, layer {layer})" if self.nz > 1 else "Zonal Mean Velocity (mean)")
+        ax.set_xlabel("y")
+        ax.set_ylabel("u")
+
+
+class CFLDiagnostic(Diagnostic):
+    name = "cfl"
+    kind = "scalar"
+    temporal = "timeseries"
+    title = "CFL estimate"
+    ylabel = "CFL"
 
     def requires(self):
-        return {"psi"}
-
-    def compute(self, fields, grid):
-        psi = fields["psi"]
-        psih = rfftn(psi, axes=(-2, -1), norm="ortho")
-
-        uh = -1j * grid.KY * psih
-        vh =  1j * grid.KX * psih
-
-        KE2D = 0.5 * (jnp.abs(uh)**2 + jnp.abs(vh)**2)
-
-        return KE2D
-    
-    def reduce(self, KE2D, grid):
-        kmag = np.asarray(grid.Kmag).astype(int)
-        KE = np.asarray(KE2D)
-
-        kmax = kmag.max()
-        E_k = np.bincount(kmag.ravel(), weights=KE.ravel(), minlength=kmax+1)
-        return E_k
+        return {"u", "v"}
 
     def retrieve(self, state, grid=None):
-        # Expect `state` to expose `psi` in physical space
-        fields = {"psi": state.psi}
-        KE2D = self.compute(fields, grid)
-        E_k = self.reduce(KE2D, grid)
-        return jnp.asarray(E_k)
+        # compute per-layer CFL if u,v are layered
+        u = state.u
+        v = state.v
 
-    def init_plot(self, ax, sample, grid=None):
-        spec = np.asarray(sample)
-        k = np.arange(spec.shape[0])
-        line, = ax.loglog(k + 1e-8, spec)
-        ax.set_title("Kinetic Energy Spectrum")
-        ax.set_xlabel("k")
-        ax.set_ylabel("E(k)")
-        return {"line": line, "artists": [line]}
+        # grid may carry dt; fallback to grid.dt if present else 1.0
+        dt = getattr(grid, "dt", None)
+        if dt is None:
+            dt = 1.0
+
+        umax = jnp.max(jnp.abs(u), axis=(-2, -1))
+        vmax = jnp.max(jnp.abs(v), axis=(-2, -1))
+
+        cfl = dt * (umax / getattr(grid, "dx", 1.0) + vmax / getattr(grid, "dy", 1.0))
+
+        # ensure shape (nz,) for multi-layer
+        if cfl.ndim == 0:
+            cfl = cfl[None]
+
+        return cfl
+
+    def __init__(self, nz: int):
+        self.nz = int(nz)
+
+    def n_axes(self) -> int:
+        return self.nz
+
+    def init_plot(self, ax, sample, grid=None, layer: int = 0):
+        # sample: (nz,) or scalar
+        y0 = np.asarray(sample[layer])
+        (line,) = ax.plot([0], [y0], color="C3")
+        ax.set_title(self.title)
+        ax.set_xlabel("frame")
+        ax.set_ylabel(self.ylabel)
+        return {"line": line, "artists": [line], "layer": layer}
 
     def update_plot(self, artists: dict, sample):
-        spec = np.asarray(sample)
-        k = np.arange(spec.shape[0])
-        artists["line"].set_data(k, spec)
+        layer = artists.get("layer", 0)
+        y = float(np.asarray(sample[layer]))
+        line = artists["line"]
+        xd = np.asarray(line.get_xdata())
+        yd = np.asarray(line.get_ydata())
+        xd = np.append(xd, xd.size)
+        yd = np.append(yd, y)
+        line.set_data(xd, yd)
+
+    def reduce(self, samples, grid=None):
+        # samples: list of (nz,) -> (nt, nz) -> return (nz, nt)
+        arr = jnp.stack(samples, axis=0)
+        return arr.T
+
+    def plot_final(self, ax, reduced, grid=None, layer: int = 0):
+        data = np.asarray(reduced[layer])
+        x = np.arange(data.shape[0])
+        ax.plot(x, data, color="C3")
+        ax.set_title(self.title)
+        ax.set_xlabel("frame")
+        ax.set_ylabel(self.ylabel)
+
+class KESpectrumDiagnostic(Diagnostic):
+    """
+    Kinetic Energy spectrum diagnostic.
+
+    Produces an isotropic KE spectrum E(k) for each vertical layer.
+
+    - animate: instantaneous spectrum per frame
+    - final: time-averaged spectrum
+    """
+
+    name = "ke_spectrum"
+    kind = "spectrum"
+    temporal = "instant"
+    xlabel = "k"
+    ylabel = "E(k)"
+
+    def __init__(self, nz: int):
+        self.nz = int(nz)
+
+    # ------------------------------------------------------------------
+    # data interface
+    # ------------------------------------------------------------------
+
+    def requires(self) -> set[str]:
+        return {"u", "v"}
+
+    def retrieve(self, state, grid=None):
+        """
+        Returns:
+            E : array of shape (nz, nk)
+            k : array of shape (nk,)
+        """
+        u = state.u
+        v = state.v
+
+        # enforce (nz, ny, nx)
+        if u.ndim == 2:
+            u = u[None, ...]
+            v = v[None, ...]
+
+        nz, ny, nx = u.shape
+
+        # Fourier transforms
+        uh = rfftn(u, axes=(-2, -1))
+        vh = rfftn(v, axes=(-2, -1))
+
+        # spectral KE density
+        ke_spec = 0.5 * (jnp.abs(uh) ** 2 + jnp.abs(vh) ** 2)
+
+        # wavenumbers
+        kx = jnp.fft.rfftfreq(nx, d=getattr(grid, "dx", 1.0))
+        ky = jnp.fft.fftfreq(ny, d=getattr(grid, "dy", 1.0))
+        kx2, ky2 = jnp.meshgrid(kx, ky, indexing="xy")
+        kmag = jnp.sqrt(kx2**2 + ky2**2)
+
+        # isotropic binning
+        kmax = int(jnp.max(kmag))
+        nbins = kmax + 1
+
+        E = []
+        for layer in range(nz):
+            spec = ke_spec[layer]
+            Ek = jnp.zeros(nbins)
+
+            for i in range(nbins):
+                mask = (kmag >= i) & (kmag < i + 1)
+                Ek = Ek.at[i].set(jnp.sum(spec[mask]))
+
+            E.append(Ek)
+
+        E = jnp.stack(E, axis=0)  # (nz, nk)
+        k = jnp.arange(nbins)
+
+        return {"E": E, "k": k}
+
+    # ------------------------------------------------------------------
+    # plotting interface
+    # ------------------------------------------------------------------
+
+    def n_axes(self) -> int:
+        return self.nz
+
+    def init_plot(self, ax, sample, grid=None, layer: int = 0):
+        """
+        Initialize KE spectrum plot for one layer.
+        """
+        E = np.asarray(sample["E"][layer])
+        k = np.asarray(sample["k"])
+
+        (line,) = ax.loglog(k[1:], E[1:], color="k")
+
+        ax.set_title(
+            f"KE Spectrum (layer {layer})" if self.nz > 1 else "KE Spectrum"
+        )
+        ax.set_xlabel(self.xlabel)
+        ax.set_ylabel(self.ylabel)
+        ax.grid(True, which="both", ls=":")
+
+        return {
+            "line": line,
+            "layer": layer,
+            "artists": [line],
+        }
+
+    def update_plot(self, artists: dict, sample):
+        layer = artists["layer"]
+        line = artists["line"]
+
+        E = np.asarray(sample["E"][layer])
+        k = np.asarray(sample["k"])
+
+        line.set_data(k[1:], E[1:])
+
+    # ------------------------------------------------------------------
+    # reduction for final plots
+    # ------------------------------------------------------------------
+
+    def reduce(self, samples, grid=None):
+        """
+        Time-average KE spectrum.
+
+        samples: list of dicts with keys {"E", "k"}
+        """
+        E_stack = jnp.stack([s["E"] for s in samples], axis=0)
+        E_mean = jnp.mean(E_stack, axis=0)
+        k = samples[0]["k"]
+
+        return {"E": E_mean, "k": k}
+
+    def plot_final(self, ax, reduced, grid=None, layer: int = 0):
+        E = np.asarray(reduced["E"][layer])
+        k = np.asarray(reduced["k"])
+
+        ax.loglog(k[1:], E[1:], color="k")
+        ax.set_title(
+            f"Mean KE Spectrum (layer {layer})" if self.nz > 1 else "Mean KE Spectrum"
+        )
+        ax.set_xlabel(self.xlabel)
+        ax.set_ylabel(self.ylabel)
+        ax.grid(True, which="both", ls=":")
+
+
 
 
 class EnergyDiagnostic(Diagnostic):
@@ -526,28 +762,56 @@ class EnergyDiagnostic(Diagnostic):
         return value
 
     def retrieve(self, state, grid=None):
-        fields = {"psi": state.psi}
-        val = self.compute(fields, grid)
-        return jnp.asarray(val)
+        psi = state.psi
+
+        if psi.ndim == 2:
+            val = compute_ke(psi, grid)
+            arr = jnp.asarray([val])
+        else:
+            # per-layer energies
+            vals = [compute_ke(psi[layer], grid) for layer in range(psi.shape[0])]
+            arr = jnp.asarray(vals)
+
+        return arr
 
     def init_plot(self, ax, sample, grid=None):
-        arr = np.asarray(sample)
-        if arr.ndim == 0:
-            arr = np.array([arr])
-        x = np.arange(arr.shape[0])
-        line, = ax.plot(x, arr)
+        # sample: (nz,) per-frame energies
+        nz = sample.shape[0]
+        (line,) = ax.plot([], [])
         ax.set_title("Energy")
         ax.set_xlabel("frame")
         ax.set_ylabel("energy")
         return {"line": line, "artists": [line]}
 
     def update_plot(self, artists: dict, sample):
+        # sample: (nz,) - this artist corresponds to a single layer
+        layer = artists.get("layer", 0)
+        y = float(np.asarray(sample[layer]))
         line = artists["line"]
         xd = np.asarray(line.get_xdata())
         yd = np.asarray(line.get_ydata())
         xd = np.append(xd, xd.size)
-        yd = np.append(yd, np.asarray(sample))
+        yd = np.append(yd, y)
         line.set_data(xd, yd)
+
+    def __init__(self, nz: int):
+        self.nz = int(nz)
+
+    def n_axes(self) -> int:
+        return self.nz
+
+    def reduce(self, samples, grid=None):
+        # samples: list of (nz,) -> (nt, nz) -> return (nz, nt)
+        arr = jnp.stack(samples, axis=0)
+        return arr.T
+
+    def plot_final(self, ax, reduced, grid=None, layer: int = 0):
+        data = np.asarray(reduced[layer])
+        x = np.arange(data.shape[0])
+        ax.plot(x, data, color="C0")
+        ax.set_title("Energy (final)")
+        ax.set_xlabel("frame")
+        ax.set_ylabel("energy")
 
 
 class EnstrophyDiagnostic(Diagnostic):
@@ -564,28 +828,54 @@ class EnstrophyDiagnostic(Diagnostic):
         return value
 
     def retrieve(self, state, grid=None):
-        fields = {"zeta": state.zeta}
-        val = self.compute(fields, grid)
-        return jnp.asarray(val)
+        zeta = state.zeta
+
+        if zeta.ndim == 2:
+            val = compute_enstrophy(zeta, grid)
+            arr = jnp.asarray([val])
+        else:
+            vals = [compute_enstrophy(zeta[layer], grid) for layer in range(zeta.shape[0])]
+            arr = jnp.asarray(vals)
+
+        return arr
 
     def init_plot(self, ax, sample, grid=None):
         arr = np.asarray(sample)
         if arr.ndim == 0:
             arr = np.array([arr])
-        x = np.arange(arr.shape[0])
-        line, = ax.plot(x, arr)
+        (line,) = ax.plot([], [])
         ax.set_title("Enstrophy")
         ax.set_xlabel("frame")
         ax.set_ylabel("enstrophy")
         return {"line": line, "artists": [line]}
 
     def update_plot(self, artists: dict, sample):
+        layer = artists.get("layer", 0)
+        y = float(np.asarray(sample[layer]))
         line = artists["line"]
         xd = np.asarray(line.get_xdata())
         yd = np.asarray(line.get_ydata())
         xd = np.append(xd, xd.size)
-        yd = np.append(yd, np.asarray(sample))
+        yd = np.append(yd, y)
         line.set_data(xd, yd)
+
+    def __init__(self, nz: int):
+        self.nz = int(nz)
+
+    def n_axes(self) -> int:
+        return self.nz
+
+    def reduce(self, samples, grid=None):
+        arr = jnp.stack(samples, axis=0)
+        return arr.T
+
+    def plot_final(self, ax, reduced, grid=None, layer: int = 0):
+        data = np.asarray(reduced[layer])
+        x = np.arange(data.shape[0])
+        ax.plot(x, data, color="C1")
+        ax.set_title("Enstrophy (final)")
+        ax.set_xlabel("frame")
+        ax.set_ylabel("enstrophy")
 
 
 def compute_ke(psi: jnp.ndarray, grid) -> float:

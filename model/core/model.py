@@ -70,7 +70,7 @@ class QGM(Kernel):
             raise ValueError("n_jets must be specified when tune=True")
 
         U_target = self.beta * (self.Ly / (jnp.pi * n_jets))**2
-        U_rms = self.rhines_length(base_state)[1]
+        U_rms = self.rhines_length(base_state)[1] # i actually think im not using rhines here despite the name - just U_rms
 
 
         scale = U_target / (U_rms + 1e-12)
@@ -230,46 +230,51 @@ class QGM(Kernel):
 
     def _apply_a_ph(self, state):
         # Double precision inversion for better stability in the inversion step
-        qh = jnp.moveaxis(state.qh, 0, -1)
-        qh_orig_shape = qh.shape
+        qh = state.qh  # shape (..., nz, nl, nk) or (nz, nl, nk)
+
+        # find which axis corresponds to the layer dimension (nz)
+        qh_shape = qh.shape
+        try:
+            layer_axis = next(i for i, s in enumerate(qh_shape) if s == self.nz)
+        except StopIteration:
+            raise ValueError("Could not find layer axis in state.qh")
+
+        # move layer axis to the last position: (..., nl, nk, nz)
+        qh_last = jnp.moveaxis(qh, layer_axis, -1)
+
+        # build the 2x2 coefficient matrix per (nl, nk)
+        #print('model, before: ', qh.shape)
         qh = qh.reshape((-1, 2))
+        #print('model, after: ', qh.shape)
 
         K2 = self.K2.astype(jnp.float64)
         F1 = jnp.array(self.F1, dtype=jnp.float64)
         F2 = jnp.array(self.F2, dtype=jnp.float64)
 
-        inv_mat2 = jnp.moveaxis(
-            jnp.array(
-                [
-                    [
-                        # 0, 0
-                        -(K2 + F1),
-                        # 0, 1
-                        jnp.full_like(K2, F1),
-                    ],
-                    [
-                        # 1, 0
-                        jnp.full_like(K2, F2),
-                        # 1, 1
-                        -(K2 + F2),
-                    ],
-                ],
-                dtype=jnp.float64,
-            ),
-            (0, 1),
-            (-2, -1),
-        ).reshape((-1, 2, 2))[1:]
+        a00 = -(K2 + F1)
+        a01 = jnp.full_like(K2, F1)
+        a10 = jnp.full_like(K2, F2)
+        a11 = -(K2 + F2)
 
-        ph_tail = jnp.squeeze(
-            jnp.linalg.solve(
-                inv_mat2,
-                jnp.expand_dims(qh[1:].astype(jnp.complex128), -1),
-            ).astype(state.qh.dtype),
-            -1,
+        # inv_mat shape (nl, nk, 2, 2)
+        inv_mat = jnp.stack(
+            [jnp.stack([a00, a01], axis=-1), jnp.stack([a10, a11], axis=-1)],
+            axis=-2,
         )
-        ph_head = jnp.expand_dims(jnp.zeros_like(qh[0]), 0)
-        ph = jnp.concatenate([ph_head, ph_tail], axis=0).reshape(qh_orig_shape)
-        return jnp.moveaxis(ph, -1, 0)
+
+        # RHS for solve: shape (..., nl, nk, 2, 1)
+        rhs = jnp.expand_dims(qh_last.astype(jnp.complex128), axis=-1)
+
+        # Solve per-wavenumber: inv_mat broadcasts over any leading dims
+        sol = jnp.linalg.solve(inv_mat, rhs).astype(state.qh.dtype)
+
+        # sol shape (..., nl, nk, 2, 1) -> squeeze last dim -> (..., nl, nk, 2)
+        sol = jnp.squeeze(sol, axis=-1)
+
+        # move layer dimension (size 2) back to its original position
+        ph = jnp.moveaxis(sol, -1, layer_axis)
+
+        return ph
 
     def rhines_length(self, state: states.State):
         """Estimate Rhines length from a `State` by computing U_rms and Lr = sqrt(U/beta).

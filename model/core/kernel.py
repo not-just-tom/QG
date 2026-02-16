@@ -170,14 +170,14 @@ class Kernel(ABC):
             vh =  jnp.expand_dims(1j * self.kx, (0, 1)) * ph
 
             return state.update(ph=ph, uh=uh, vh=vh)
-
-        # Existing two-layer inversion follows
-        ph = self._apply_a_ph(state)
-        # calculate spectral velocities
-        uh = jnp.negative(jnp.expand_dims(1j * self.ky, (0, -1))) * ph
-        vh = jnp.expand_dims(1j * self.kx, (0, 1)) * ph
-        # Update state values
-        return state.update(ph=ph, uh=uh, vh=vh)
+        else:
+            # Existing two-layer inversion follows
+            ph = self._apply_a_ph(state)
+            # calculate spectral velocities
+            uh = jnp.negative(jnp.expand_dims(1j * self.ky, (0, -1))) * ph
+            vh = jnp.expand_dims(1j * self.kx, (0, 1)) * ph
+            # Update state values
+            return state.update(ph=ph, uh=uh, vh=vh)
 
     def _do_advection(self, state: states.FullState) -> states.FullState:
         # multiply to get advective flux in space

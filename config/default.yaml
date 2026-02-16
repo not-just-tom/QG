@@ -26,7 +26,7 @@ plotting:
   dt: 0.01
   cadence: 100
   animate: []
-  final: ['energy', 'enstrophy']
+  final: ['zonal']
   stepper: AB3Stepper
   auto_dt: false
   cfl: 0.5
