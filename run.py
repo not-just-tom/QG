@@ -25,10 +25,7 @@ import jax
 import jax.numpy as jnp
 import functools
 import yaml
-import cmocean as cmo
 import os
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation, PillowWriter
 import numpy as np
 
 
@@ -81,7 +78,7 @@ def main():
         _final_carry, traj_steps = jax.lax.scan(loop_fn, state, steps)
         return _final_carry, traj_steps
 
-    #init_state, _ = rollout(init_state, 100000, cadence)
+    init_state, _ = rollout(init_state, 100000, cadence)
     _, q_traj = rollout(init_state, nsteps, cadence)
     q_traj = jax.device_get(q_traj)  # shape (nsteps, nz, nl, nk)
 
@@ -89,10 +86,10 @@ def main():
     indices = np.arange(0, nsteps, cadence)
     q_traj = q_traj[indices]
 
-    # recorder and animation 
-    recorder.finalize_from_spectral(q_traj)
+    # recorder and animation
     recorder.animate(cfg, q_traj)
-    recorder.plot_final()
+    outbase = os.path.join(cfg.filepaths.out_dir, "diagnostics")
+    recorder.plot_final(outbase)
 
     # ============================
 
