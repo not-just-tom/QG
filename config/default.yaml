@@ -38,6 +38,7 @@ forcing:
   epsilon: 0.001     # energy injection rate
 
 ml:
+  hr_nx: 1024
   enabled: true
   model: zero
   spin_up: 10.0

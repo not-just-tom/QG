@@ -16,8 +16,6 @@ import matplotlib.pyplot as plt
 import importlib
 import yaml
 
-# Reload all model modules in dependency order (without clearing, just reloading)
-# This ensures fresh code without breaking import paths
 _module_names = [
     'model.core.grid',
     'model.core.states',
@@ -37,7 +35,7 @@ for _mod_name in _module_names:
         __import__(_mod_name)
 
 from model.core.model import QGM
-from model.core.steppers import SteppedModel, build_stepper
+from model.core.steppers import SteppedModel, AB3Stepper
 from model.ML.forced_model import ForcedModel
 from model.ML.utils.utils import parameterization
 from model.ML.utils.coarsen import Coarsener
@@ -115,7 +113,7 @@ batch_steps = cfg.ml.batch_steps
 
 hr_model = SteppedModel(
     model=QGM(params),
-    stepper=build_stepper("AB3Stepper", dt=dt),  # build stepper is definitely defunct now. remove at convenience. 
+    stepper=AB3Stepper(dt=dt),  # build stepper is definitely defunct now. remove at convenience. 
 )
 
 coarse_op = Operator1(hr_model.model, 32)
@@ -159,7 +157,7 @@ def roll_out_with_net(init_q, net, num_steps):
             model=coarse_op.lr_model,
             param_func=net_parameterization,
         ),
-        stepper=build_stepper("AB3Stepper", dt=dt),
+        stepper=AB3Stepper(dt=dt),
     )
     # Package our state
     # Convert init_q from physical to spectral space (State only stores qh!)
