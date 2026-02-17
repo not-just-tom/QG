@@ -7,12 +7,10 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from jax.numpy.fft import rfftn
-from collections import defaultdict
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 from model.core.grid import Grid
 from matplotlib.animation import FuncAnimation, PillowWriter
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import model.core.states as states
 
 

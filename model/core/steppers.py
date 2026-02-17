@@ -8,15 +8,6 @@ import model.utils.pytree as Pytree
 
 P = typing.TypeVar("P")
 
-def build_stepper(stepper_name: str, dt: float):
-    mapping = {
-        "AB3Stepper":AB3Stepper
-    }
-    cls = mapping.get(stepper_name)
-    if cls is None:
-        raise ValueError(f"Unknown stepper '{stepper_name}' in cfg.plotting.stepper")
-    return cls(dt=dt)
-
 @Pytree.register_pytree_dataclass
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class StepperState(typing.Generic[P]):
