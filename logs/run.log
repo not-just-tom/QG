@@ -2916,3 +2916,27 @@ zmq.error.ZMQError: Too many open files
 2026-02-12 14:28:50,572 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
 2026-02-12 14:32:52,522 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
 2026-02-12 14:34:10,888 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-17 15:55:28,602 INFO jax._src.xla_bridge: Unable to initialize backend 'tpu': UNIMPLEMENTED: LoadPjrtPlugin is not implemented on windows yet.
+2026-02-17 16:06:05,404 INFO jax._src.xla_bridge: Unable to initialize backend 'tpu': UNIMPLEMENTED: LoadPjrtPlugin is not implemented on windows yet.
+2026-02-17 16:55:13,947 INFO jax._src.xla_bridge: Unable to initialize backend 'tpu': UNIMPLEMENTED: LoadPjrtPlugin is not implemented on windows yet.
+2026-02-17 16:56:03,013 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-17 16:57:36,968 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-02-17 23:14:41,022 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data_hr1024_nx128_rr
+2026-02-17 23:22:13,366 INFO __main__: Running with params: {
+    "seed": 42,
+    "nx": 128,
+    "Lx": 6.283185307179586,
+    "beta": 10,
+    "kmin": 10.0,
+    "kmax": 10.0,
+    "nz": 1,
+    "Lz": 50,
+    "rek": 5.787e-07,
+    "rd": 15.0,
+    "delta": 0.25,
+    "U1": 0.0,
+    "U2": 0.0,
+    "hr_nx": 1024
+}
+2026-02-17 23:22:13,561 INFO __main__: Initialised model with seed 42
+2026-02-17 23:22:13,563 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_rb.zarr

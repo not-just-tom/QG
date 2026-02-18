@@ -69,7 +69,7 @@ class Kernel(ABC):
         return states.State(qh=qh, _q_shape=(self.ny, self.nx))
 
     def _pseudo_random(self, key, n_jets):
-        # pseudo-random PV in spectral space (two-layer)
+        # pseudo-random PV in spectral space
         key_r, key_i = jax.random.split(key)
         noise_real = jax.random.normal(key_r, (self.nz, self.nl, self.nk))
         noise_imag = jax.random.normal(key_i, (self.nz, self.nl, self.nk))
@@ -80,14 +80,9 @@ class Kernel(ABC):
         kR = 2 * jnp.pi * n_jets / self.get_grid().Ly
         band_mask = (self.Kmag >= kR / 2) & (self.Kmag <= 2 * kR)
 
-        # anisotropy toward zonal modes?
-        l0 = kR / 2
-        #anisotropy = jnp.exp(-(self.kx[None, :] / l0) ** 2)
-
         # combine all masks once
         qh = qh * jnp.expand_dims(band_mask, 0)
         qh = jnp.expand_dims(self._dealias, 0) * qh
-        #qh = qh * jnp.expand_dims(anisotropy, 0)
         qh = qh.at[:, 0, 0].set(0.0)
         return qh
 

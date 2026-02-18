@@ -17,7 +17,7 @@ importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
 from model.utils.config import Config
 from model.utils.logging import configure_logging
-from model.core.steppers import SteppedModel, build_stepper
+from model.core.steppers import SteppedModel, AB3Stepper
 from model.core.model import QGM
 from model.utils.diagnostics import Recorder
 import logging
@@ -56,7 +56,7 @@ def main():
     
     # Instantiate the model from configs using factory
     model = QGM(params)
-    stepper = build_stepper(cfg_stepper, dt) # not used really, maybe in future
+    stepper = AB3Stepper(dt) # not used really, maybe in future
     sm = SteppedModel(model=model, stepper=stepper)
     init_state = sm.initialise(params['seed'], tune=True, n_jets=16)
 
