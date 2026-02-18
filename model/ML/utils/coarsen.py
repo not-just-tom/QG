@@ -42,6 +42,7 @@ def coarsen(hr_model, n_lr):
             "delta",
             "U1",
             "U2",
+            "hr_nx",
         ]
         for a in candidate_attrs:
             if hasattr(hr_model, a):

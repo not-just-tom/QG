@@ -55,14 +55,14 @@ class QGM(Kernel):
         self,
         seed,
         n_jets=None,
-        *,
         tune=False,
+        scale=1
     ):
         """This still needs a lot of work - i need an auto replacing dt with the suggested dt from cfl, 
         and probably change to a energy level ? figure whether i should step the model/filter out some noise later
         """
         
-        base_state = super().initialise(seed)
+        base_state = super().initialise(seed, n_jets)
         if not tune:
             return base_state
         
@@ -73,16 +73,20 @@ class QGM(Kernel):
         U_rms = self.rhines_length(base_state)[1] # i actually think im not using rhines here despite the name - just U_rms
 
 
-        scale = U_target / (U_rms + 1e-12)
-        qh = base_state.qh * scale
-        print(f"Initialised state with U_rms={U_rms:.3f}, scaled to U_target={U_target:.3f} with scale factor {scale:.3f}")
+        scaler = U_target / (U_rms + 1e-12)
+        qh = base_state.qh * scaler
+        print(f"Initialised state with U_rms={U_rms:.3f}, scaled to U_target={U_target:.3f} with scale factor {scaler:.3f}")
 
-        # Compute suggested dt on the scaled state (was previously using base_state)
+        # Compute suggested dt on the scaled state 
         scaled_state = base_state.update(qh=qh)
         suggest_dt = self.estimate_cfl_dt(scaled_state)
         print(f"Suggested initial dt for stability: {suggest_dt:.3f}")
 
         return scaled_state
+    
+    def set_initial(self, qh):
+        """Set the initial state from a given spectral PV array `qh`."""
+        return states.State(qh=qh)
     
     def get_full_state(self, state: states.State) -> states.FullState:
         """Expand a partial state into a full state with all computed values.

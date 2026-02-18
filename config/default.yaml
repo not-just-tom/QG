@@ -20,14 +20,14 @@ params:
   delta: 0.25
   U1: 0.0
   U2: 0.0
+  hr_nx: 1024
 
 plotting:
   nsteps: 10000
   dt: 0.01
   cadence: 100
-  animate: []
-  final: ['zonal']
-  stepper: AB3Stepper
+  animate: ['PV']
+  final: []
   auto_dt: false
   cfl: 0.5
 
@@ -38,7 +38,6 @@ forcing:
   epsilon: 0.001     # energy injection rate
 
 ml:
-  hr_nx: 1024
   enabled: true
   model: zero
   spin_up: 10.0
