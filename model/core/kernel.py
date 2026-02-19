@@ -4,6 +4,10 @@ import jax.numpy as jnp
 import model.core.states as states
 import model.utils.pytree as Pytree
 from model.core.grid import Grid
+import logging
+
+# Module logger for Kernel
+logger = logging.getLogger(__name__)
 
 @Pytree.register_pytree_class_attrs(
     children=["rek"],
@@ -63,8 +67,7 @@ class Kernel(ABC):
             _q_shape=self.get_grid().real_state_shape[-2:],
         )
     
-    def initialise(self, seed, n_jets=6) -> states.State:
-        key = jax.random.PRNGKey(seed)
+    def initialise(self, key, n_jets) -> states.State:
         qh = self._pseudo_random(key, n_jets)
         return states.State(qh=qh, _q_shape=(self.ny, self.nx))
 
@@ -75,6 +78,11 @@ class Kernel(ABC):
         noise_imag = jax.random.normal(key_i, (self.nz, self.nl, self.nk))
         qh = noise_real + 1j * noise_imag
         qh = qh.at[:, :, 0].set(jnp.real(qh[:, :, 0]))
+        
+        if n_jets is None:
+            qh = jnp.expand_dims(self._dealias, 0) * qh
+            qh = qh.at[:, 0, 0].set(0.0)
+            return qh
         
         # band-limit around kR
         kR = 2 * jnp.pi * n_jets / self.get_grid().Ly

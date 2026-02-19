@@ -1,12 +1,14 @@
 """Two-layer quasi-geostrophic model implementation."""
 
 import inspect
-import jax
+import logging
 import jax.numpy as jnp
 from model.core.kernel import Kernel
 import model.core.states as states
 import model.utils.pytree as Pytree
 from model.core.grid import Grid
+
+logger = logging.getLogger(__name__)
 
 def grid(nx, ny, Lx, Ly):
     x, y = jnp.meshgrid(
@@ -53,21 +55,22 @@ class QGM(Kernel):
 
     def initialise(
         self,
-        seed,
+        key,
         n_jets=None,
         tune=False,
-        scale=1
+        pseudo=False,
     ):
         """This still needs a lot of work - i need an auto replacing dt with the suggested dt from cfl, 
         and probably change to a energy level ? figure whether i should step the model/filter out some noise later
         """
+        if pseudo and n_jets is None:
+            raise ValueError("n_jets must be specified for pseudo random initialisation.")
+        if tune and n_jets is None:
+            raise ValueError("n_jets must be specified for tuning.")
         
-        base_state = super().initialise(seed, n_jets)
+        base_state = super().initialise(key, n_jets)
         if not tune:
             return base_state
-        
-        if n_jets is None:
-            raise ValueError("n_jets must be specified when tune=True")
 
         U_target = self.beta * (self.Ly / (jnp.pi * n_jets))**2
         U_rms = self.rhines_length(base_state)[1] # i actually think im not using rhines here despite the name - just U_rms
@@ -75,18 +78,18 @@ class QGM(Kernel):
 
         scaler = U_target / (U_rms + 1e-12)
         qh = base_state.qh * scaler
-        print(f"Initialised state with U_rms={U_rms:.3f}, scaled to U_target={U_target:.3f} with scale factor {scaler:.3f}")
+        #logger.info(f"Initialised state with U_rms={U_rms:.3f}, scaled to U_target={U_target:.3f} with scale factor {scaler:.3f}")
 
         # Compute suggested dt on the scaled state 
         scaled_state = base_state.update(qh=qh)
         suggest_dt = self.estimate_cfl_dt(scaled_state)
-        print(f"Suggested initial dt for stability: {suggest_dt:.3f}")
+        #logger.info(f"Suggested initial dt for stability: {suggest_dt:.3f}")
 
         return scaled_state
     
-    def set_initial(self, qh):
+    def set_initial(self, qh, _q_shape=None):
         """Set the initial state from a given spectral PV array `qh`."""
-        return states.State(qh=qh)
+        return states.State(qh=qh, _q_shape=_q_shape)
     
     def get_full_state(self, state: states.State) -> states.FullState:
         """Expand a partial state into a full state with all computed values.
@@ -288,11 +291,11 @@ class QGM(Kernel):
         full = self.get_full_state(state)
         u = full.u
         v = full.v
-        U_rms = float(jnp.sqrt(jnp.mean(u ** 2 + v ** 2)))
-        beta = float(self.beta)
+        U_rms = jnp.sqrt(jnp.mean(u ** 2 + v ** 2)).astype(jnp.float64)
+        beta = self.beta
         if beta == 0:
             return float('inf'), U_rms
-        Lr = float(jnp.sqrt(U_rms / beta))
+        Lr = jnp.sqrt(U_rms / beta).astype(jnp.float64)
         return Lr, U_rms
 
     def estimate_cfl_dt(self, state: states.State, cfl=0.1):
