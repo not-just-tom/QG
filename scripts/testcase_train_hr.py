@@ -123,21 +123,21 @@ net = module_to_single(NNParam(key=jax.random.key(123)))
 
 optim = optax.adam(learning_rate)
 optim_state = optim.init(eqx.filter(net, eqx.is_array))
-key = jax.random.PRNGKey(42)
+
 @functools.partial(jax.jit, static_argnames=["num_steps"])
 def generate_train_data(key, num_steps):
 
     def step(carry, _x):
         next_state = hr_model.step_model(carry)
         lr_state = coarse_op.coarsen_state(carry.state)
-        return next_state, lr_state.q
+        return next_state, next_state.state.q
     
     _final_big_state, target_q = jax.lax.scan(
         step, hr_model.initialise(key), None, length=num_steps
     )
     return target_q
 
-target_q = generate_train_data(key, num_steps=100)
+target_q = generate_train_data(jax.random.PRNGKey(42), num_steps=100)
 
 def roll_out_with_net(init_q, net, num_steps):
     
@@ -148,29 +148,27 @@ def roll_out_with_net(init_q, net, num_steps):
         q_param = net(q.astype(jnp.float32))
         return q_param.astype(q.dtype), None
 
-    # Extrace the small model from the coarsener
+    # Use the HR model directly with network parameterization
     # Then wrap it in the network parameterization and stepper
-    # Make sure to match time steps
-    # CRITICAL: Use the small dt for coarsened model - it needs fine timesteps to remain stable
-    lr_model = SteppedModel(
+    hr_rolled_model = SteppedModel(
         model=ForcedModel(
-            model=coarse_op.lr_model,
+            model=hr_model.model,
             param_func=net_parameterization,
         ),
         stepper=AB3Stepper(dt=dt),
     )
-    # Package our state
+    # Package our state for HR model
     # Convert init_q from physical to spectral space (State only stores qh!)
     init_qh = jnp.fft.rfftn(init_q, axes=(-2, -1), norm='ortho')
-    base_state = lr_model.model.model.initialise(jax.random.PRNGKey(0)).update(qh=init_qh)
+    base_state = hr_rolled_model.model.model.initialise(jax.random.PRNGKey(0)).update(qh=init_qh)
     # Next, wrap it for the parameterization and stepper
-    init_state = lr_model.initialize_stepper_state(
-        lr_model.model.initialise_param_state(base_state)
+    init_state = hr_rolled_model.initialize_stepper_state(
+        hr_rolled_model.model.initialise_param_state(base_state)
     )
 
     def step(carry, _x):
-        next_state = lr_model.step_model(carry)
-        return next_state, carry.state.model_state.q
+        next_state = hr_rolled_model.step_model(carry)
+        return next_state, next_state.state.model_state.q
 
     # Roll out the state
     _final_step, traj = jax.lax.scan(

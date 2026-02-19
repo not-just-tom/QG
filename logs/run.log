@@ -2940,3 +2940,145 @@ zmq.error.ZMQError: Too many open files
 }
 2026-02-17 23:22:13,561 INFO __main__: Initialised model with seed 42
 2026-02-17 23:22:13,563 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_rb.zarr
+2026-02-18 12:13:42,833 INFO model.core.kernel: Proceeding with band masked noise with annulus around n_jets.
+2026-02-18 12:13:43,166 INFO model.core.kernel: No n_jets specified for pseudo-random initialisation - cold-starting with unfiltered noise.
+2026-02-18 12:18:44,163 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_cd.zarr
+2026-02-18 12:18:46,565 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_sz.zarr
+2026-02-18 12:19:51,949 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_jy.zarr
+2026-02-18 12:52:40,052 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_ch.zarr
+2026-02-18 12:55:37,588 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_xt.zarr
+2026-02-18 12:56:33,671 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_60.zarr
+2026-02-18 12:59:01,098 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_y5.zarr
+2026-02-18 12:59:02,093 INFO __main__: Finished generating training data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_y5
+2026-02-18 13:02:18,384 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_la.zarr
+2026-02-18 13:23:19,775 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_6y.zarr
+2026-02-18 13:23:28,840 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_pd.zarr
+2026-02-18 13:23:29,907 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_2o.zarr
+2026-02-18 13:25:34,298 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_ef.zarr.zarr
+2026-02-18 13:26:01,927 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_sw.zarr.zarr
+2026-02-18 13:32:02,623 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_fy.zarr.zarr
+2026-02-18 13:32:29,444 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_fj.zarr.zarr
+2026-02-18 13:32:34,527 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_wn.zarr.zarr
+2026-02-18 13:33:18,111 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_ar.zarr
+2026-02-18 16:33:04,319 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_n1
+2026-02-18 16:33:35,082 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_7u
+2026-02-18 16:34:25,897 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_sz
+2026-02-18 16:35:40,548 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_ni
+2026-02-18 16:41:16,453 INFO __main__: No existing run found, generating new train data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_t6
+2026-02-18 16:57:08,619 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 16:57:26,920 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 16:57:41,907 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 16:57:45,340 INFO jax._src.xla_bridge: Unable to initialize backend 'tpu': UNIMPLEMENTED: LoadPjrtPlugin is not implemented on windows yet.
+2026-02-18 16:57:45,494 INFO model.ML.generate_data: Generating trajectory 1/10
+2026-02-18 16:57:50,804 INFO model.ML.generate_data: Generating trajectory 2/10
+2026-02-18 17:04:42,423 INFO model.ML.generate_data: Generating trajectory 3/10
+2026-02-18 17:13:07,425 INFO model.ML.generate_data: Generating trajectory 4/10
+2026-02-18 17:21:08,310 INFO model.ML.generate_data: Generating trajectory 5/10
+2026-02-18 17:23:27,807 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-18 17:50:11,899 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-18 17:50:23,190 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 17:50:23,192 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (warmup: 1000, cadence: 100)
+2026-02-18 17:50:26,458 INFO jax._src.xla_bridge: Unable to initialize backend 'tpu': UNIMPLEMENTED: LoadPjrtPlugin is not implemented on windows yet.
+2026-02-18 17:50:26,585 INFO model.ML.generate_data: Trajectory 1/10, attempt 1/3
+2026-02-18 18:02:40,115 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-18 18:03:33,302 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 18:03:33,306 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (warmup: 1000, cadence: 100)
+2026-02-18 18:03:33,382 INFO model.ML.generate_data: Trajectory 1/10, attempt 1/3
+2026-02-18 18:09:00,652 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-18 18:09:11,525 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 18:09:11,529 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100)
+2026-02-18 18:09:11,574 INFO model.ML.generate_data: Trajectory 1/10, attempt 1/3
+2026-02-18 18:10:59,535 WARNING model.ML.generate_data: Trajectory 0 attempt 1 failed: 'AB3State' object has no attribute 'qh'
+2026-02-18 18:10:59,538 INFO model.ML.generate_data: Trajectory 1/10, attempt 2/3
+2026-02-18 18:11:00,077 WARNING model.ML.generate_data: Trajectory 0 attempt 2 failed: 'AB3State' object has no attribute 'qh'
+2026-02-18 18:11:00,080 INFO model.ML.generate_data: Trajectory 1/10, attempt 3/3
+2026-02-18 18:11:00,655 WARNING model.ML.generate_data: Trajectory 0 attempt 3 failed: 'AB3State' object has no attribute 'qh'
+2026-02-18 18:11:00,657 ERROR model.ML.generate_data: Exhausted 3 attempts for trajectory 0
+2026-02-18 18:12:56,939 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-18 18:13:08,409 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 18:13:08,415 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100)
+2026-02-18 18:13:08,516 INFO model.ML.generate_data: Trajectory 1/10, attempt 1/3
+2026-02-18 18:20:42,497 WARNING model.ML.generate_data: Trajectory 0 attempt 1: detected NaN/inf, retrying...
+2026-02-18 18:20:42,500 INFO model.ML.generate_data: Trajectory 1/10, attempt 2/3
+2026-02-18 18:21:41,239 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-18 18:21:48,304 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 18:21:48,307 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100)
+2026-02-18 18:21:48,417 INFO model.ML.generate_data: Trajectory 1/10, attempt 1/3
+2026-02-18 18:33:35,041 WARNING model.ML.generate_data: Trajectory 0 attempt 1 failed: module 'zarr' has no attribute 'Blosc'
+2026-02-18 18:33:35,044 INFO model.ML.generate_data: Trajectory 1/10, attempt 2/3
+2026-02-18 18:39:51,932 WARNING model.ML.generate_data: Trajectory 0 attempt 2 failed: module 'zarr' has no attribute 'Blosc'
+2026-02-18 18:39:51,935 INFO model.ML.generate_data: Trajectory 1/10, attempt 3/3
+2026-02-18 18:46:34,199 WARNING model.ML.generate_data: Trajectory 0 attempt 3 failed: module 'zarr' has no attribute 'Blosc'
+2026-02-18 18:46:34,201 ERROR model.ML.generate_data: Exhausted 3 attempts for trajectory 0
+2026-02-18 21:46:35,467 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-18 21:46:48,159 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 21:46:48,164 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100)
+2026-02-18 21:49:45,972 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-18 21:49:52,652 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 21:49:52,657 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100)
+2026-02-18 22:00:09,402 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-18 22:00:17,150 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 22:00:17,153 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100)
+2026-02-18 22:01:12,769 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-18 22:01:19,626 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 22:01:19,630 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100)
+2026-02-18 22:10:38,501 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 22:10:38,506 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100)
+2026-02-18 22:12:26,464 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-18 22:12:33,876 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 22:12:33,880 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100)
+2026-02-18 22:56:14,367 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 22:56:14,370 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100)
+2026-02-18 22:56:14,373 INFO model.ML.generate_data: Compiled trajectory generation function with JIT.
+2026-02-18 22:56:14,375 INFO model.ML.generate_data: Vectorized trajectory generation with vmap and JIT.
+2026-02-18 22:56:14,663 INFO jax._src.xla_bridge: Unable to initialize backend 'tpu': UNIMPLEMENTED: LoadPjrtPlugin is not implemented on windows yet.
+2026-02-18 22:56:22,556 INFO model.ML.generate_data: Initialised batch of 8 trajectories
+2026-02-18 22:57:04,490 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-18 22:57:12,619 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 22:57:12,622 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100)
+2026-02-18 22:57:12,624 INFO model.ML.generate_data: Compiled trajectory generation function with JIT.
+2026-02-18 23:00:55,979 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 23:00:55,981 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100)
+2026-02-18 23:00:56,200 INFO jax._src.xla_bridge: Unable to initialize backend 'tpu': UNIMPLEMENTED: LoadPjrtPlugin is not implemented on windows yet.
+2026-02-18 23:01:03,936 INFO model.ML.generate_data: Initialised batch of 8 trajectories
+2026-02-18 23:01:04,651 INFO model.ML.generate_data: Generated batch of 8 trajectories, shape: (8, 100, 1, 128, 128)
+2026-02-18 23:26:27,515 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 23:26:27,517 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100)
+2026-02-18 23:28:11,936 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-18 23:28:11,940 INFO model.ML.generate_data: Generating 1 trajectories with 10000 steps (cadence: 100)
+2026-02-18 23:28:12,208 INFO jax._src.xla_bridge: Unable to initialize backend 'tpu': UNIMPLEMENTED: LoadPjrtPlugin is not implemented on windows yet.
+2026-02-18 23:28:17,087 INFO model.ML.generate_data: Initialised batch of 1 trajectories
+2026-02-18 23:28:17,775 INFO model.ML.generate_data: Generated batch of 1 trajectories, shape: (1, 100, 1, 128, 128)
+2026-02-18 23:36:03,664 INFO model.ML.generate_data: Processing trajectory 1/1
+2026-02-19 15:46:27,731 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 15:46:35,870 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-19 15:46:35,874 INFO model.ML.generate_data: Generating 1 trajectories with 10000 steps (cadence: 100)
+2026-02-19 15:46:54,880 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-19 15:46:54,883 INFO model.ML.generate_data: Generating 1 trajectories with 100 steps (cadence: 100)
+2026-02-19 15:46:56,263 INFO model.ML.generate_data: Initialised batch of 1 trajectories
+2026-02-19 15:46:57,023 INFO model.ML.generate_data: Generated batch of 1 trajectories, shape: (1, 1, 1, 128, 128)
+2026-02-19 15:47:05,003 INFO model.ML.generate_data: Processing trajectory 1/1
+2026-02-19 15:55:28,523 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-19 15:55:28,526 INFO model.ML.generate_data: Generating 1 trajectories with 100 steps (cadence: 100)
+2026-02-19 15:55:29,454 INFO model.ML.generate_data: Initialised batch of 1 trajectories
+2026-02-19 15:55:30,002 INFO model.ML.generate_data: Generated batch of 1 trajectories, shape: (1, 1, 1, 128, 128)
+2026-02-19 15:55:37,772 INFO model.ML.generate_data: Processing trajectory 1/1
+2026-02-19 15:59:22,719 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 15:59:30,099 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-19 15:59:30,102 INFO model.ML.generate_data: Generating 1 trajectories with 100 steps (cadence: 100)
+2026-02-19 15:59:30,614 INFO model.ML.generate_data: Initialised batch of 1 trajectories
+2026-02-19 15:59:31,291 INFO model.ML.generate_data: Generated batch of 1 trajectories, shape: (1, 1, 1, 128, 128)
+2026-02-19 15:59:38,592 INFO model.ML.generate_data: Processing trajectory 1/1
+2026-02-19 15:59:38,678 INFO model.ML.generate_data: Generated 1/1 trajectories
+2026-02-19 15:59:38,679 INFO model.ML.generate_data: Finished generating all trajectories
+2026-02-19 15:59:38,681 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01\trajectories.zarr
+2026-02-19 15:59:38,688 INFO __main__: Finished generating training data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-19 16:00:42,417 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-19 16:00:42,420 INFO model.ML.generate_data: Generating 1 trajectories with 1000 steps (cadence: 100)
+2026-02-19 16:00:42,917 INFO model.ML.generate_data: Initialised batch of 1 trajectories
+2026-02-19 16:00:43,640 INFO model.ML.generate_data: Generated batch of 1 trajectories, shape: (1, 10, 1, 128, 128)
+2026-02-19 16:01:54,784 INFO model.ML.generate_data: Processing trajectory 1/1
+2026-02-19 16:01:54,881 INFO model.ML.generate_data: Generated 1/1 trajectories
+2026-02-19 16:01:54,883 INFO model.ML.generate_data: Finished generating all trajectories
+2026-02-19 16:01:54,884 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01\trajectories.zarr
+2026-02-19 16:01:54,889 INFO __main__: Finished generating training data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01

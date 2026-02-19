@@ -21,7 +21,7 @@ importlib.reload(model.ML.utils.coarsen)
 importlib.reload(model.utils.dataloading)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
-from model.ML.utils.coarsen import coarsen_state
+from model.ML.utils.coarsen import Coarsener
 from model.ML.generate_data import generate_train_data
 from model.utils.dataloading import metadata_matches, find_existing_run
 from model.utils.config import Config
@@ -71,35 +71,37 @@ def main():
     stepper = AB3Stepper(dt)
     sm = SteppedModel(model=model, stepper=stepper)
 
+    @jax.tree_util.register_pytree_node_class
+    class Coarsen(Coarsener):
+        @property
+        def spectral_filter(self):
+            return self.lr_model._dealias
+        
+    coarse = Coarsen(model, params['nx'])
+
     # I have to initialise with a hr to downsample, so generate this too 
-    hr_model = QGM({**params, "nx": params['hr_nx']})
-    hr_init_state = hr_model.initialise(params['seed'], tune=True, n_jets=16)
-    init_state = model.set_initial(hr_init_state.qh)
+    hr_model = SteppedModel(
+        model=QGM({**params, "nx": params['hr_nx']}),
+        stepper=AB3Stepper(dt=dt),
+    )
 
 
     # === dataloading === #
-    params_json = json.dumps(params, sort_keys=True, separators=(',', ':'))
-    params_hash = hashlib.sha256(params_json.encode('utf-8')).hexdigest()[:8]
 
     # Try to find an existing run with the same params
-    found_dir, found_meta_path, found_meta = find_existing_run(DATA_DIR, params['hr_nx'], params['nx'], params_hash)
-    if found_dir is not None:
-        metadata_path = found_meta_path
-        stored_meta = found_meta
-        if not metadata_matches(params, stored_meta):
-            raise RuntimeError(f"Metadata mismatch for {found_dir} - check {metadata_path}")
+    run_dir, found = find_existing_run(DATA_DIR, params['hr_nx'], params['nx'], params)
+    if found:
+        logger.info(f"Found existing run with matching parameters at {run_dir}, loading data from there.")
         # =================================
         # dataloading will go here
         # =================================
     else:
-        suffix = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(2))
-        dirname = f"data_hr{params['hr_nx']}_nx{params['nx']}_{suffix}"
-        hr_dir = os.path.join(DATA_DIR, dirname)
-        logger.info(f"No existing run found, generating new train data at {hr_dir}.zarr")
+        logger.info(f"No existing run found, generating new dataset at {run_dir}")
+        os.makedirs(run_dir, exist_ok=False)
 
         # Now generate the training data
-        generate_train_data(params, hr_init_state, hr_dir)
-        logger.info(f"Finished generating training data at {hr_dir}")
+        generate_train_data(cfg, params, hr_model, coarse, run_dir)
+        logger.info(f"Finished generating training data at {run_dir}")
 
 
         # =================================
@@ -110,9 +112,7 @@ def main():
 
         
     
-    '''I left it here, looking at the best method to coarsen the data
-    got weird with the coarsener wrapper bs i might have to figure out
-    '''
+
 
 
 
