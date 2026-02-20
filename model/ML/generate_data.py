@@ -113,8 +113,6 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
                 logger.warning(f"NaN detected in trajectory {n_generated+i}")
                 continue
 
-            # q_traj is 4D: (time_steps, layers, ny, nx)
-            # Chunk along all dimensions to match array shape
             traj_group.create_array(
                 f"traj_{n_generated+i:05d}",
                 data=q_traj.astype(np.float32),

@@ -20,7 +20,7 @@ params:
   delta: 0.25
   U1: 0.0
   U2: 0.0
-  hr_nx: 1024
+  hr_nx: 128
 
 plotting:
   nsteps: 1000
@@ -40,7 +40,7 @@ forcing:
 ml:
   enabled: true
   model: zero
-  n_trajs: 1
+  n_trajs: 5
   input_channels:
   output_channels: 
   num_epochs: 10

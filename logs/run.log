@@ -3082,3 +3082,81 @@ zmq.error.ZMQError: Too many open files
 2026-02-19 16:01:54,883 INFO model.ML.generate_data: Finished generating all trajectories
 2026-02-19 16:01:54,884 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01\trajectories.zarr
 2026-02-19 16:01:54,889 INFO __main__: Finished generating training data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-19 16:04:22,114 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-19 16:04:22,117 INFO model.ML.generate_data: Generating 5 trajectories with 1000 steps (cadence: 100)
+2026-02-19 16:04:25,184 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-02-19 16:04:26,002 INFO model.ML.generate_data: Generated batch of 5 trajectories, shape: (5, 10, 1, 128, 128)
+2026-02-19 16:04:51,657 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 16:04:58,240 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-19 16:04:58,243 INFO model.ML.generate_data: Generating 5 trajectories with 1000 steps (cadence: 100)
+2026-02-19 16:10:08,545 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-02-19 16:10:09,845 INFO model.ML.generate_data: Generated batch of 5 trajectories, shape: (5, 10, 1, 128, 128)
+2026-02-19 16:15:21,915 INFO model.ML.generate_data: Processing trajectory 1/5
+2026-02-19 16:15:21,970 INFO model.ML.generate_data: Processing trajectory 2/5
+2026-02-19 16:15:22,034 INFO model.ML.generate_data: Processing trajectory 3/5
+2026-02-19 16:15:22,100 INFO model.ML.generate_data: Processing trajectory 4/5
+2026-02-19 16:15:22,168 INFO model.ML.generate_data: Processing trajectory 5/5
+2026-02-19 16:15:22,209 INFO model.ML.generate_data: Generated 5/5 trajectories
+2026-02-19 16:15:22,210 INFO model.ML.generate_data: Finished generating all trajectories
+2026-02-19 16:15:22,211 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01\trajectories.zarr
+2026-02-19 16:15:22,227 INFO __main__: Finished generating training data at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01
+2026-02-19 16:47:06,125 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 16:47:06,251 INFO __main__: Loaded data: ZarrDataLoader(
+  path=c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01\trajectories.zarr
+  n_trajectories=5
+  traj_shape=(10, 1, 128, 128)
+  dtype=float32
+)
+2026-02-19 16:48:56,963 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 16:48:56,985 INFO __main__: Loaded data: ZarrDataLoader(
+  path=c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01\trajectories.zarr
+  n_trajectories=5
+  traj_shape=(10, 1, 128, 128)
+  dtype=float32
+)
+2026-02-19 16:49:13,297 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 16:49:13,321 INFO __main__: Loaded data: ZarrDataLoader(
+  path=c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01\trajectories.zarr
+  n_trajectories=5
+  traj_shape=(10, 1, 128, 128)
+  dtype=float32
+)
+2026-02-19 17:10:47,267 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 17:10:47,362 INFO __main__: Loaded data: ZarrDataLoader(
+  path=c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01\trajectories.zarr
+  n_trajectories=5
+  traj_shape=(10, 1, 128, 128)
+  dtype=float32
+)
+2026-02-19 17:11:44,703 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 17:11:44,727 INFO __main__: Loaded data: ZarrDataLoader(
+  path=c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01\trajectories.zarr
+  n_trajectories=5
+  traj_shape=(10, 1, 128, 128)
+  dtype=float32
+)
+2026-02-19 19:00:40,054 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 19:01:00,653 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 19:01:05,349 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 19:11:31,876 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 19:11:33,642 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 19:11:33,927 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 19:29:40,727 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr1024_nx128_01, loading data from there.
+2026-02-19 19:29:40,809 INFO __main__: Training with chunked windows from Zarr: n_traj=5, traj_shape=(10, 1, 128, 128), batch_size=8, batch_steps=10
+2026-02-19 19:56:04,383 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01
+2026-02-19 19:56:04,390 INFO model.ML.generate_data: Generating 5 trajectories with 1000 steps (cadence: 100)
+2026-02-19 19:56:09,021 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-02-19 19:56:09,537 INFO model.ML.generate_data: Generated batch of 5 trajectories, shape: (5, 10, 1, 128, 128)
+2026-02-19 19:56:14,040 INFO model.ML.generate_data: Processing trajectory 1/5
+2026-02-19 19:56:14,114 INFO model.ML.generate_data: Processing trajectory 2/5
+2026-02-19 19:56:14,146 INFO model.ML.generate_data: Processing trajectory 3/5
+2026-02-19 19:56:14,215 INFO model.ML.generate_data: Processing trajectory 4/5
+2026-02-19 19:56:14,271 INFO model.ML.generate_data: Processing trajectory 5/5
+2026-02-19 19:56:14,305 INFO model.ML.generate_data: Generated 5/5 trajectories
+2026-02-19 19:56:14,307 INFO model.ML.generate_data: Finished generating all trajectories
+2026-02-19 19:56:14,307 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01\trajectories.zarr
+2026-02-19 19:56:14,346 INFO __main__: Training with chunked windows from Zarr: n_traj=5, traj_shape=(10, 1, 128, 128), batch_size=8, batch_steps=10
+2026-02-19 20:16:28,518 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01, loading data from there.
+2026-02-19 20:16:28,629 INFO __main__: Training with chunked windows from Zarr: n_traj=5, traj_shape=(10, 1, 128, 128), batch_size=8, batch_steps=10
+2026-02-20 11:10:12,556 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01, loading data from there.
+2026-02-20 11:10:12,660 INFO __main__: Training with chunked windows from Zarr: n_traj=5, traj_shape=(10, 1, 128, 128), batch_size=8, batch_steps=10
