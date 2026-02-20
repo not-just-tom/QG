@@ -111,6 +111,7 @@ learning_rate = cfg.ml.learning_rate
 batch_size = cfg.ml.batch_size
 batch_steps = cfg.ml.batch_steps
 
+
 hr_model = SteppedModel(
     model=QGM(params),
     stepper=AB3Stepper(dt=dt),  # build stepper is definitely defunct now. remove at convenience. 

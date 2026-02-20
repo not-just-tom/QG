@@ -1,5 +1,8 @@
 import functools
 import model.core.states as states
+import jax 
+import jax.numpy as jnp
+import equinox as eqx
 
 def parameterization(param_func):
     """Decorator implementing parameterizations in terms of potential
@@ -29,3 +32,15 @@ def parameterization(param_func):
         return updates.update(qh=dqhdt), param_aux
 
     return wrapped_q_param
+
+def param_to_single(param):
+    if eqx.is_inexact_array(param):
+        if param.dtype == jnp.dtype(jnp.float64):
+            return param.astype(jnp.float32)
+        elif param.dtype == jnp.dtype(jnp.complex128):
+            return param.astype(jnp.complex64)
+    return param
+
+
+def module_to_single(module):
+    return jax.tree.map(param_to_single, module)
