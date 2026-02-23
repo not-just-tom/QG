@@ -107,3 +107,9 @@ class Coarsener(ABC):
     @classmethod
     def tree_unflatten(cls, aux_data, children):
         return cls(hr_model=children[0], n_lr=aux_data)
+
+@jax.tree_util.register_pytree_node_class
+class Coarsen(Coarsener): # i hate this get rid at convenience. 
+    @property
+    def spectral_filter(self):
+        return self.lr_model._dealias

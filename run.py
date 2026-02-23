@@ -29,7 +29,7 @@ importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
 from model.ML.utils.utils import parameterization, module_to_single # I want to build this into build_closure or something else ideally 
 from model.ML.architectures.build_model import build_closure
-from model.ML.utils.coarsen import Coarsener
+from model.ML.utils.coarsen import Coarsen
 from model.ML.generate_data import generate_train_data
 from model.ML.utils.dataloading import find_existing_closure, find_existing_run, ZarrDataLoader
 from model.utils.config import Config
@@ -52,7 +52,7 @@ import optax
 '''
 To Do:
 - Build in a spinup section to the generate_train_data func to not muddy the data. 
-- 
+- scale the PV in the parameterization to help with training stability.
 
 '''
 
@@ -80,42 +80,29 @@ def main():
 
     # load config values
     dt = cfg.plotting.dt
-    nsteps = cfg.plotting.nsteps
-    cadence = cfg.plotting.cadence
-    
-    # Instantiate the model from configs using factory
-    model = QGM(params)
-    stepper = AB3Stepper(dt)
-    sm = SteppedModel(model=model, stepper=stepper)
+    learning_rate = cfg.ml.learning_rate
+    batch_size = cfg.ml.batch_size
+    batch_steps = cfg.ml.batch_steps
+    n_batches = getattr(cfg.ml, "n_batches", 100)
+    n_epochs = cfg.ml.n_epochs
 
-    @jax.tree_util.register_pytree_node_class
-    class Coarsen(Coarsener): # i hate this get rid at convenience. 
-        @property
-        def spectral_filter(self):
-            return self.lr_model._dealias
-        
-    coarse = Coarsen(model, params['nx'])
-
-    # I have to initialise with a hr to downsample, so generate this too 
+    # instantiate the model
     hr_model = SteppedModel(
         model=QGM({**params, "nx": params['hr_nx']}),
-        stepper=AB3Stepper(dt=dt),
+        stepper=AB3Stepper(dt),
     )
+    coarse = Coarsen(hr_model, params['nx'])
 
     # === dataloading === #
     run_dir, found = find_existing_run(DATA_DIR, params['hr_nx'], params['nx'], params)
     if found: 
         logger.info(f"Found existing run with matching parameters at {run_dir}, loading data from there.")
-        # Load the data
         data_loader = ZarrDataLoader(run_dir)
     else:
         logger.info(f"No existing run found, generating new dataset at {run_dir}")
         os.makedirs(run_dir, exist_ok=False)
-
-        # generate the training data
+        # generate and load
         generate_train_data(cfg, params, hr_model, coarse, run_dir)
-
-        # load the generated data
         data_loader = ZarrDataLoader(run_dir)
 
     # === ML training === #
@@ -125,13 +112,18 @@ def main():
     else:
         closure_model = build_closure(cfg)
 
-    net = (closure_model)
+    
 
-    dt = cfg.plotting.dt
-    learning_rate = cfg.ml.learning_rate
-    batch_size = cfg.ml.batch_size
-    batch_steps = cfg.ml.batch_steps
-    n_batches = getattr(cfg.ml, "n_batches", 100)
+
+    for epoch in range(n_epochs):
+        logger.info(f'Starting epoch %d of %d', epoch + 1, n_epochs)
+
+
+    # the bit below this is functional but im replacing it
+
+    # === ml stuff === #
+    net = module_to_single(closure_model)
+
     optim = optax.adam(learning_rate)
     optim_state = optim.init(eqx.filter(net, eqx.is_array))
 
@@ -140,24 +132,16 @@ def main():
         f"traj_shape={data_loader.traj_shape}, batch_size={batch_size}, batch_steps={batch_steps}"
     )
 
-    def roll_out_with_net(init_q, net, nsteps):
-        @parameterization
-        def net_parameterization(state, param_aux, model):
-            assert param_aux is None
-            q = state.q
-            dq_closure = net(q.astype(jnp.float32))
-            # General additive closure: dq_closure is added to model dq/dt by @parameterization
-            return dq_closure.astype(q.dtype), None
+    @parameterization
+    def net_parameterization(state, param_aux, model, net):
+        assert param_aux is None
+        q = state.q
+        dq_closure = net(q.astype(jnp.float32))
+        return dq_closure.astype(q.dtype), None
 
-        forced_hr_model = SteppedModel(
-            model=ForcedModel(
-                model=hr_model.model,
-                param_func=net_parameterization,
-            ),
-            stepper=AB3Stepper(dt=dt),
-        )
+    template_state = hr_model.model.initialise(jax.random.PRNGKey(0))
 
-        template_state = forced_hr_model.model.model.initialise(jax.random.PRNGKey(0))
+    def roll_out_with_forced_model(init_q, forced_hr_model, nsteps):
         init_qh = jnp.fft.rfftn(init_q, axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
         base_state = template_state.update(qh=init_qh)
         init_state = forced_hr_model.initialize_stepper_state(
@@ -171,10 +155,10 @@ def main():
         _final_step, traj = jax.lax.scan(step, init_state, None, length=nsteps)
         return traj
 
-    def compute_traj_errors(target_traj, net):
-        rolled_out = roll_out_with_net(
+    def compute_traj_errors(target_traj, forced_hr_model):
+        rolled_out = roll_out_with_forced_model(
             init_q=target_traj[0],
-            net=net,
+            forced_hr_model=forced_hr_model,
             nsteps=target_traj.shape[0],
         )
         return rolled_out - target_traj
@@ -184,7 +168,16 @@ def main():
         batch = jnp.asarray(batch)
 
         def loss_fn(net, batch):
-            err = jax.vmap(functools.partial(compute_traj_errors, net=net))(batch)
+            forced_hr_model = SteppedModel(
+                model=ForcedModel(
+                    model=hr_model.model,
+                    param_func=functools.partial(net_parameterization, net=net),
+                ),
+                stepper=AB3Stepper(dt=dt),
+            )
+            err = jax.vmap(
+                functools.partial(compute_traj_errors, forced_hr_model=forced_hr_model)
+            )(batch)
             return jnp.mean(err ** 2)
 
         loss, grads = eqx.filter_value_and_grad(loss_fn)(net, batch)

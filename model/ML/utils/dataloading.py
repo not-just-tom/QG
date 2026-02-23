@@ -104,7 +104,7 @@ class ZarrDataLoader:
         if self.n_trajectories == 0:
             raise ValueError(f"No trajectories found in {self.zarr_path}")
         
-        # Get shape info from first trajectory (all should be same shape)
+        # Get shape info from first trajectory
         first_traj = self.traj_group[self.traj_names[0]]
         self.traj_shape = first_traj.shape  # (time_steps, layers, ny, nx)
         self.dtype = first_traj.dtype
@@ -176,7 +176,7 @@ class ZarrDataLoader:
     ) -> np.ndarray | Tuple[np.ndarray, List[Tuple[int, int]]]:
         """Sample random time windows from random trajectories.
         
-        Perfect for creating training batches.
+        I'm not sure this should be a numpy rng, and the start time being unstructured seems wrong now. 
         
         Parameters
         ----------
