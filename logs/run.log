@@ -3199,3 +3199,67 @@ zmq.error.ZMQError: Too many open files
 2026-02-21 12:05:37,821 INFO __main__: Starting epoch 2 of 3
 2026-02-21 12:05:37,824 INFO __main__: Starting epoch 3 of 3
 2026-02-21 12:05:37,828 INFO __main__: Training with chunked windows from Zarr: n_traj=5, traj_shape=(10, 1, 128, 128), batch_size=8, batch_steps=10
+2026-02-23 12:05:44,624 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01, loading data from there.
+2026-02-23 12:05:44,762 INFO __main__: Starting epoch 1 of 3
+2026-02-23 12:05:44,763 INFO __main__: Starting epoch 2 of 3
+2026-02-23 12:05:44,764 INFO __main__: Starting epoch 3 of 3
+2026-02-23 12:05:44,786 INFO __main__: Training with chunked windows from Zarr: n_traj=5, traj_shape=(10, 1, 128, 128), batch_size=8, batch_steps=10
+2026-02-23 15:19:37,272 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01, loading data from there.
+2026-02-23 15:19:37,422 INFO __main__: Training with chunked windows from Zarr: n_traj=5, traj_shape=(10, 1, 128, 128), batch_size=8, batch_steps=10
+2026-02-23 15:19:37,445 INFO __main__: Starting epoch 1 of 3
+2026-02-23 15:19:40,354 INFO __main__: Epoch 1/3 | Batch 10/100 | loss=2.9621E+00
+2026-02-23 15:19:42,814 INFO __main__: Epoch 1/3 | Batch 20/100 | loss=2.9501E+00
+2026-02-23 15:19:45,273 INFO __main__: Epoch 1/3 | Batch 30/100 | loss=2.8968E+00
+2026-02-23 15:19:47,738 INFO __main__: Epoch 1/3 | Batch 40/100 | loss=2.8697E+00
+2026-02-23 15:19:50,126 INFO __main__: Epoch 1/3 | Batch 50/100 | loss=2.9548E+00
+2026-02-23 15:19:52,408 INFO __main__: Epoch 1/3 | Batch 60/100 | loss=2.9048E+00
+2026-02-23 15:19:54,762 INFO __main__: Epoch 1/3 | Batch 70/100 | loss=2.9081E+00
+2026-02-23 15:19:57,155 INFO __main__: Epoch 1/3 | Batch 80/100 | loss=2.9349E+00
+2026-02-23 15:19:59,605 INFO __main__: Epoch 1/3 | Batch 90/100 | loss=2.9303E+00
+2026-02-23 15:20:02,112 INFO __main__: Epoch 1/3 | Batch 100/100 | loss=2.9760E+00
+2026-02-23 15:20:02,115 INFO __main__: Finished epoch 1/3 | mean_loss=2.9373E+00
+2026-02-23 15:20:02,116 INFO __main__: Starting epoch 2 of 3
+2026-02-23 15:20:04,550 INFO __main__: Epoch 2/3 | Batch 10/100 | loss=2.9243E+00
+2026-02-23 15:20:06,911 INFO __main__: Epoch 2/3 | Batch 20/100 | loss=2.9014E+00
+2026-02-23 15:20:09,292 INFO __main__: Epoch 2/3 | Batch 30/100 | loss=2.9141E+00
+2026-02-23 15:20:11,663 INFO __main__: Epoch 2/3 | Batch 40/100 | loss=2.9700E+00
+2026-02-23 15:20:14,044 INFO __main__: Epoch 2/3 | Batch 50/100 | loss=2.8654E+00
+2026-02-23 15:20:16,465 INFO __main__: Epoch 2/3 | Batch 60/100 | loss=2.8289E+00
+2026-02-23 15:20:18,812 INFO __main__: Epoch 2/3 | Batch 70/100 | loss=2.9912E+00
+2026-02-23 15:20:21,229 INFO __main__: Epoch 2/3 | Batch 80/100 | loss=2.9624E+00
+2026-02-23 15:20:23,660 INFO __main__: Epoch 2/3 | Batch 90/100 | loss=2.9790E+00
+2026-02-23 15:20:26,024 INFO __main__: Epoch 2/3 | Batch 100/100 | loss=2.8607E+00
+2026-02-23 15:20:26,027 INFO __main__: Finished epoch 2/3 | mean_loss=2.9400E+00
+2026-02-23 15:20:26,028 INFO __main__: Starting epoch 3 of 3
+2026-02-23 15:20:28,438 INFO __main__: Epoch 3/3 | Batch 10/100 | loss=2.9306E+00
+2026-02-23 15:20:30,637 INFO __main__: Epoch 3/3 | Batch 20/100 | loss=2.9346E+00
+2026-02-23 15:20:33,015 INFO __main__: Epoch 3/3 | Batch 30/100 | loss=2.9988E+00
+2026-02-23 15:20:35,294 INFO __main__: Epoch 3/3 | Batch 40/100 | loss=2.9985E+00
+2026-02-23 15:20:37,645 INFO __main__: Epoch 3/3 | Batch 50/100 | loss=2.9349E+00
+2026-02-23 15:20:39,999 INFO __main__: Epoch 3/3 | Batch 60/100 | loss=2.9985E+00
+2026-02-23 15:20:42,309 INFO __main__: Epoch 3/3 | Batch 70/100 | loss=2.9472E+00
+2026-02-23 15:20:44,703 INFO __main__: Epoch 3/3 | Batch 80/100 | loss=2.9594E+00
+2026-02-23 15:20:47,032 INFO __main__: Epoch 3/3 | Batch 90/100 | loss=2.9535E+00
+2026-02-23 15:20:49,337 INFO __main__: Epoch 3/3 | Batch 100/100 | loss=2.9150E+00
+2026-02-23 15:20:49,340 INFO __main__: Finished epoch 3/3 | mean_loss=2.9384E+00
+2026-02-23 15:25:09,953 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01, loading data from there.
+2026-02-23 15:25:18,793 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01, loading data from there.
+2026-02-23 15:25:21,537 INFO __main__: Training with chunked windows from Zarr: n_traj=5, traj_shape=(10, 1, 128, 128), batch_size=8, batch_steps=10
+2026-02-23 15:25:21,538 INFO __main__: Using fixed test trajectory index 3 for training windows
+2026-02-23 15:25:21,561 INFO __main__: Starting epoch 1 of 1
+2026-02-23 15:26:03,444 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01, loading data from there.
+2026-02-23 15:26:03,473 INFO __main__: Training with chunked windows from Zarr: n_traj=5, traj_shape=(10, 1, 128, 128), batch_size=8, batch_steps=10
+2026-02-23 15:26:03,474 INFO __main__: Using fixed test trajectory index 3 for training windows
+2026-02-23 15:26:03,484 INFO __main__: Starting epoch 1 of 1
+2026-02-23 15:28:16,267 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01, loading data from there.
+2026-02-23 15:28:16,297 INFO __main__: Training with chunked windows from Zarr: n_traj=5, traj_shape=(10, 1, 128, 128), batch_size=8, batch_steps=10
+2026-02-23 15:28:16,299 INFO __main__: Using fixed test trajectory index 3 for training windows
+2026-02-23 15:28:16,308 INFO __main__: Starting epoch 1 of 1
+2026-02-23 15:37:28,022 INFO __main__: Epoch 1/1 | Batch 10/10 | loss=2.7436E+00
+2026-02-23 15:37:28,026 INFO __main__: Finished epoch 1/1 | mean_loss=2.7607E+00
+2026-02-23 16:14:04,042 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01, loading data from there.
+2026-02-23 16:14:04,142 INFO __main__: Training with chunked windows from Zarr: n_traj=5, traj_shape=(10, 1, 128, 128), batch_size=8, batch_steps=10
+2026-02-23 16:14:04,144 INFO __main__: Train indices: [0, 1, 2, 3], Test indices: [4]
+2026-02-23 16:14:04,155 INFO __main__: Starting epoch 1 of 1
+2026-02-23 16:22:39,538 INFO __main__: Epoch 1/1 | Batch 10/10 | loss=2.9282E+00
+2026-02-23 16:22:39,541 INFO __main__: Finished epoch 1/1 | mean_loss=2.9364E+00

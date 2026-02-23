@@ -39,14 +39,16 @@ forcing:
 
 ml:
   enabled: true
-  model_type: zero
-  n_epochs: 3 # for now
-  n_trajs: 5
+  model_type: cnn
+  n_epochs: 1
+  n_train: 4
+  n_test: 1
   input_channels:
   output_channels: 
   num_epochs: 10
   optimiser: AdamW
   batches_per_epoch: 100
+  n_batches: 100
   batch_steps: 10 # not so sure about these two 
   batch_size: 8
   learning_rate: 0.0005
