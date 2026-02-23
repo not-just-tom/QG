@@ -172,12 +172,11 @@ class ZarrDataLoader:
         n_samples: int,
         window_size: int,
         rng: Optional[np.random.Generator] = None,
+        fixed_traj_idx: Optional[int] = None,
         return_indices: bool = False,
     ) -> np.ndarray | Tuple[np.ndarray, List[Tuple[int, int]]]:
-        """Sample random time windows from random trajectories.
-        
-        I'm not sure this should be a numpy rng, and the start time being unstructured seems wrong now. 
-        
+        """Sample random time windows from trajectories.
+
         Parameters
         ----------
         n_samples : int
@@ -186,6 +185,8 @@ class ZarrDataLoader:
             Length of each time window
         rng : np.random.Generator, optional
             Random number generator. If None, creates a new one.
+        fixed_traj_idx : int, optional
+            If provided, only sample from this trajectory. Otherwise sample from all.
         return_indices : bool, default=False
             If True, also return (traj_idx, start_time) for each sample
             
@@ -205,9 +206,14 @@ class ZarrDataLoader:
                 f"Window size {window_size} exceeds trajectory length {self.traj_shape[0]}"
             )
         
-        # Sample random trajectories and start times
-        traj_indices = rng.integers(0, self.n_trajectories, size=n_samples)
+        # Sample start times
         start_times = rng.integers(0, max_start_time + 1, size=n_samples)
+        
+        # Sample trajectories (fixed or random)
+        if fixed_traj_idx is not None:
+            traj_indices = np.full(n_samples, fixed_traj_idx, dtype=int)
+        else:
+            traj_indices = rng.integers(0, self.n_trajectories, size=n_samples)
         
         # Load the windows
         windows = []

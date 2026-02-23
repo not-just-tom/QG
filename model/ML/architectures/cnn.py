@@ -4,25 +4,55 @@ import equinox as eqx
 
 
 class CNN(eqx.Module):
-    """In the works"""
+    """Configurable CNN closure."""
     layers: list
 
-    def __init__(self, seed, nlayers, in_channels, out_channels, kernel_size, width, padding): # maybe making this a params dict later
-        key = jax.random.PRNGKey(seed)
-        keys = jax.random.split(key, nlayers+1)
+    def __init__(
+        self,
+        seed=42,
+        nlayers=3,
+        in_channels=1,
+        out_channels=1,
+        kernel_size=3,
+        width=64,
+        padding=None,
+        activation="relu",
+        padding_mode="CIRCULAR",
+        **kwargs,
+    ):
+        if nlayers < 2:
+            raise ValueError("nlayers must be >= 2")
+        if padding is None:
+            padding = kernel_size // 2
+
+        key = jax.random.PRNGKey(int(seed))
+        keys = jax.random.split(key, nlayers)
+        layers = []
+
+        if isinstance(activation, str) and activation.lower() == "tanh":
+            act = eqx.nn.Lambda(jnp.tanh)
+        elif isinstance(activation, str) and activation.lower() == "gelu":
+            act = eqx.nn.Lambda(jax.nn.gelu)
+        else:
+            act = eqx.nn.Lambda(jax.nn.relu)
+
         for i in range(nlayers):
-            if i == 0:
-                in_ch = in_channels
-            else:
-                in_ch = width
-            if i == nlayers-1:
-                out_ch = out_channels
-            else:
-                out_ch = width
-            layer = eqx.nn.Conv2d(in_ch, out_ch, kernel_size, padding, key=keys[i], padding_mode="CIRCULAR")
-            relu = eqx.nn.Lambda(jax.nn.relu)
-            self.layers.append(layer, relu)
-        self.layers.pop() # remove final relu
+            in_ch = in_channels if i == 0 else width
+            out_ch = out_channels if i == (nlayers - 1) else width
+            layers.append(
+                eqx.nn.Conv2d(
+                    in_channels=in_ch,
+                    out_channels=out_ch,
+                    kernel_size=kernel_size,
+                    padding=padding,
+                    key=keys[i],
+                    padding_mode=padding_mode,
+                )
+            )
+            if i < (nlayers - 1):
+                layers.append(act)
+
+        self.layers = layers
 
     def __call__(self, qh):
         x = qh # add batch dim

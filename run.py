@@ -27,7 +27,7 @@ importlib.reload(model.ML.utils.utils)
 importlib.reload(model.ML.forced_model)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
-from model.ML.utils.utils import parameterization, module_to_single # I want to build this into build_closure or something else ideally 
+from model.ML.utils.utils import parameterization, module_to_single
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import Coarsen
 from model.ML.generate_data import generate_train_data
@@ -37,7 +37,6 @@ from model.utils.logging import configure_logging
 from model.ML.forced_model import ForcedModel
 from model.core.steppers import SteppedModel, AB3Stepper
 from model.core.model import QGM
-from model.utils.diagnostics import Recorder
 import logging
 import jax
 import jax.numpy as jnp
@@ -48,14 +47,6 @@ import numpy as np
 import equinox as eqx
 import matplotlib.pyplot as plt
 import optax
-
-'''
-To Do:
-- Build in a spinup section to the generate_train_data func to not muddy the data. 
-- scale the PV in the parameterization to help with training stability.
-
-'''
-
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "config", "default.yaml")
@@ -85,6 +76,10 @@ def main():
     batch_steps = cfg.ml.batch_steps
     n_batches = getattr(cfg.ml, "n_batches", 100)
     n_epochs = cfg.ml.n_epochs
+    n_train = cfg.ml.n_train
+    n_test = cfg.ml.n_test
+    seed = params.get("seed", 42)
+ 
 
     # instantiate the model
     hr_model = SteppedModel(
@@ -112,16 +107,7 @@ def main():
     else:
         closure_model = build_closure(cfg)
 
-    
-
-
-    for epoch in range(n_epochs):
-        logger.info(f'Starting epoch %d of %d', epoch + 1, n_epochs)
-
-
-    # the bit below this is functional but im replacing it
-
-    # === ml stuff === #
+    # === online ML training === #
     net = module_to_single(closure_model)
 
     optim = optax.adam(learning_rate)
@@ -131,6 +117,26 @@ def main():
         f"Training with chunked windows from Zarr: n_traj={len(data_loader)}, "
         f"traj_shape={data_loader.traj_shape}, batch_size={batch_size}, batch_steps={batch_steps}"
     )
+
+    # Split trajectories into train and test sets
+    all_traj_indices = list(range(len(data_loader)))
+    train_indices = all_traj_indices[:n_train]
+    test_indices = all_traj_indices[n_train:n_train + n_test]
+    logger.info(f"Train indices: {train_indices}, Test indices: {test_indices}")
+
+    def sample_batch_windows(train_order, rng):
+        """Sample windows from randomly ordered training trajectories."""
+        windows = []
+        for _ in range(batch_size):
+            traj_idx = train_order[rng.integers(0, len(train_order))]
+            window = data_loader.sample_windows(
+                n_samples=1,
+                window_size=batch_steps,
+                rng=rng,
+                fixed_traj_idx=traj_idx,
+            )
+            windows.append(window)
+        return np.concatenate(windows, axis=0).astype(np.float32)
 
     @parameterization
     def net_parameterization(state, param_aux, model, net):
@@ -185,21 +191,40 @@ def main():
         new_net = eqx.apply_updates(net, updates)
         return loss, new_net, new_optim_state
 
-    np_rng = np.random.default_rng(seed=456)
-    losses = []
-    for batch_i in range(n_batches):
-        batch = data_loader.sample_windows(
-            n_samples=batch_size,
-            window_size=batch_steps,
-            rng=np_rng,
-        ).astype(np.float32)
+    np_rng = np.random.default_rng(seed=seed)
+    all_batch_losses = []
+    epoch_mean_losses = []
 
-        loss, net, optim_state = train_batch(batch, net, optim_state)
-        losses.append(loss)
-        if (batch_i + 1) % 10 == 0:
-            print(f"Step {batch_i + 1:02}: loss={loss.item():.4E}")
+    for epoch in range(n_epochs):
+        logger.info("Starting epoch %d of %d", epoch + 1, n_epochs)
+        epoch_losses = []
 
-    plt.plot(np.arange(len(losses)) + 1, losses)
+        # Randomize train trajectory order for this epoch
+        train_order = np_rng.permutation(train_indices)
+
+        for batch_i in range(n_batches):
+            batch = sample_batch_windows(train_order, np_rng)
+
+            loss, net, optim_state = train_batch(batch, net, optim_state)
+            loss_val = float(loss)
+            epoch_losses.append(loss_val)
+            all_batch_losses.append(loss_val)
+
+            if (batch_i + 1) % 10 == 0:
+                logger.info(
+                    "Epoch %d/%d | Batch %d/%d | loss=%.4E",
+                    epoch + 1,
+                    n_epochs,
+                    batch_i + 1,
+                    n_batches,
+                    loss_val,
+                )
+
+        epoch_mean = float(np.mean(epoch_losses))
+        epoch_mean_losses.append(epoch_mean)
+        logger.info("Finished epoch %d/%d | mean_loss=%.4E", epoch + 1, n_epochs, epoch_mean)
+
+    plt.plot(np.arange(len(all_batch_losses)) + 1, all_batch_losses)
     plt.xlabel("Step")
     plt.ylabel("Step Loss")
     plt.grid(True)

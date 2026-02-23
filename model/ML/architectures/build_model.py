@@ -7,34 +7,45 @@ importlib.reload(model.ML.architectures.cnn)
 from model.ML.architectures.cnn import CNN
 from model.ML.architectures.zero import ZeroModel
 
+
+def _normalize(name):
+    return str(name).strip().lower()
+
+
 def _get_arch_params(cfg, arch_name):
     arch_cfg = cfg.get("architectures", {})
-    if arch_name in arch_cfg and isinstance(arch_cfg[arch_name], dict):
-        return dict(arch_cfg[arch_name])
+    if not isinstance(arch_cfg, dict):
+        return {}
 
-def build_closure(cfg): 
-    _registry = {
-        'zero': ZeroModel,
-        "CNN": CNN,
-        'MLP': None, # add in soon
+    for key, value in arch_cfg.items():
+        if _normalize(key) == _normalize(arch_name) and isinstance(value, dict):
+            return dict(value)
+    return {}
+
+
+def _resolve_arch_name(cfg):
+    # Prefer model_type, fallback to older model field
+    return getattr(cfg.ml, "model_type", getattr(cfg.ml, "model", None))
+
+
+def build_closure(cfg):
+    registry = {
+        "zero": ZeroModel,
+        "cnn": CNN,
     }
 
-    arch_name = cfg.ml.model_type
-    cls = _registry.get(arch_name)
+    arch_name = _resolve_arch_name(cfg)
+    if arch_name is None:
+        raise ValueError("Missing closure architecture in config (expected ml.model_type or ml.model)")
+
+    cls = registry.get(_normalize(arch_name))
     if cls is None:
-        raise ValueError(f"Unknown ML closure '{arch_name}', Available: {sorted(_registry.keys())}")
+        raise ValueError(
+            f"Unknown ML closure '{arch_name}', available: {sorted(registry.keys())}"
+        )
+
     arch_params = _get_arch_params(cfg, arch_name)
-    if arch_params is None:
-        raise ValueError(f"No parameters found for architecture '{arch_name}' in config.")
     return cls(**arch_params)
-
-
-class Closure(ABC):
-    name: str
-
-    @abstractmethod
-    def requires(self) -> set[str]:
-        """dunno if i even need this rn"""
 
 
 
