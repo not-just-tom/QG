@@ -4,6 +4,8 @@ import re
 import zarr
 import numpy as np
 from typing import Optional, Tuple, List
+import logging
+logger = logging.getLogger(__name__)
 
 RUN_RE = re.compile(r"data_hr(?P<hr>\d+)_nx(?P<lr>\d+)_(?P<idx>\d{2})")
 
@@ -26,7 +28,7 @@ def find_existing_closure(dir, cfg):
     '''Search not implemented yet'''
     return False
 
-def find_existing_run(base_dir, hr_nx, lr_nx, params):
+def find_existing_run(base_dir, hr_nx, lr_nx, params, timing_metadata):
     prefix = f"data_hr{hr_nx}_nx{lr_nx}_"
     candidates = []
 
@@ -47,14 +49,16 @@ def find_existing_run(base_dir, hr_nx, lr_nx, params):
                 stored_meta = json.load(f)
         except Exception:
             continue
+        logger.info(f"Found existing run {name} with metadata: {stored_meta}")
 
-        # Exact metadata match → reuse
-        if metadata_matches(params, stored_meta["parameters"]):
+
+        # Exact metadata match
+        if (metadata_matches(params, stored_meta["parameters"])) & (metadata_matches(timing_metadata, stored_meta["timing"])):
             return run_dir, True
 
         candidates.append(int(m["idx"]))
 
-    # No match found → create new
+    # No match found
     next_idx = max(candidates, default=0) + 1
     run_name = f"{prefix}{next_idx:02d}"
     run_dir = os.path.join(base_dir, run_name)
@@ -173,6 +177,7 @@ class ZarrDataLoader:
         window_size: int,
         rng: Optional[np.random.Generator] = None,
         fixed_traj_idx: Optional[int] = None,
+        subset_traj_indices: Optional[List[int]] = None,
         return_indices: bool = False,
     ) -> np.ndarray | Tuple[np.ndarray, List[Tuple[int, int]]]:
         """Sample random time windows from trajectories.
@@ -187,6 +192,8 @@ class ZarrDataLoader:
             Random number generator. If None, creates a new one.
         fixed_traj_idx : int, optional
             If provided, only sample from this trajectory. Otherwise sample from all.
+        subset_traj_indices : list of int, optional
+            If provided, only sample from these trajectory indices.
         return_indices : bool, default=False
             If True, also return (traj_idx, start_time) for each sample
             
@@ -212,6 +219,8 @@ class ZarrDataLoader:
         # Sample trajectories (fixed or random)
         if fixed_traj_idx is not None:
             traj_indices = np.full(n_samples, fixed_traj_idx, dtype=int)
+        elif subset_traj_indices is not None:
+            traj_indices = rng.choice(subset_traj_indices, size=n_samples)
         else:
             traj_indices = rng.integers(0, self.n_trajectories, size=n_samples)
         

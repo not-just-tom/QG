@@ -72,26 +72,11 @@ def register_pytree_dataclass(cls):
     for field in dataclasses.fields(cls):
         if not field.init:
             continue
-        if field.metadata.get("pyqg_jax", {}).get("static", False):
-            cls_static_fields.append(field.name)
-        else:
-            cls_fields.append(field.name)
+        cls_fields.append(field.name)
 
     jax.tree_util.register_dataclass(
         cls, data_fields=tuple(cls_fields), meta_fields=tuple(cls_static_fields)
     )
-    return cls
-
-def register_pytree_dataclass(cls):
-    fields = tuple(f.name for f in dataclasses.fields(cls))
-
-    def flatten(obj):
-        return [getattr(obj, name) for name in fields], None
-
-    def unflatten(aux_data, flat_contents):
-        return cls(**dict(zip(fields, flat_contents, strict=True)))
-
-    jax.tree_util.register_pytree_node(cls, flatten, unflatten)
     return cls
 
 def find_array_like_types() -> tuple[type, ...]:

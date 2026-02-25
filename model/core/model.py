@@ -59,6 +59,7 @@ class QGM(Kernel):
         n_jets=None,
         tune=False,
         pseudo=False,
+        verbose=False
     ):
         """This still needs a lot of work - i need an auto replacing dt with the suggested dt from cfl, 
         and probably change to a energy level ? figure whether i should step the model/filter out some noise later
@@ -78,12 +79,14 @@ class QGM(Kernel):
 
         scaler = U_target / (U_rms + 1e-12)
         qh = base_state.qh * scaler
-        #logger.info(f"Initialised state with U_rms={U_rms:.3f}, scaled to U_target={U_target:.3f} with scale factor {scaler:.3f}")
+        if verbose:
+            logger.info(f"Initialised state with U_rms={U_rms:.3f}, scaled to U_target={U_target:.3f} with scale factor {scaler:.3f}")
 
         # Compute suggested dt on the scaled state 
         scaled_state = base_state.update(qh=qh)
         suggest_dt = self.estimate_cfl_dt(scaled_state)
-        #logger.info(f"Suggested initial dt for stability: {suggest_dt:.3f}")
+        if verbose:
+            logger.info(f"Suggested initial dt for stability: {suggest_dt:.3f}")
 
         return scaled_state
     
