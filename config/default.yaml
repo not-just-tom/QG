@@ -28,7 +28,8 @@ plotting:
   cadence: 100
   animate: ['PV']
   final: []
-  auto_dt: false
+  auto_dt: true
+  njets: 16
   cfl: 0.5
 
 
@@ -40,17 +41,17 @@ forcing:
 ml:
   enabled: true
   model_type: cnn
+  device: 'gpu' # 'cpu' or 'gpu'
+  use_float64: false
   n_epochs: 1
-  n_train: 4
-  n_test: 1
+  n_train: 7
+  n_test: 3
   input_channels:
   output_channels: 
-  num_epochs: 10
   optimiser: AdamW
-  batches_per_epoch: 100
-  n_batches: 100
-  batch_steps: 10 # not so sure about these two 
-  batch_size: 8
+  n_batches: 10
+  batch_steps: 10 
+  batch_size: 64
   learning_rate: 0.0005
   lr_schedule: idk rn
 

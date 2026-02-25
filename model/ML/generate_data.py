@@ -21,12 +21,13 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
     
     # Timing parameters
     dt = cfg.plotting.dt
-    num_steps = cfg.plotting.nsteps
+    nsteps = cfg.plotting.nsteps
     cadence = cfg.plotting.cadence if hasattr(cfg.plotting, 'cadence') else 1
     batch_size = getattr(cfg.ml, "batch_size", 5)
+    batch_steps = getattr(cfg.ml, "batch_steps", 1)  # Get batch_steps for chunking
     
-    logger.info(f"Generating {cfg.ml.n_trajs} trajectories with {num_steps} steps "
-                f"(cadence: {cadence})")
+    logger.info(f"Generating %d trajectories with %d steps (cadence: %d, batch_steps: %d)", 
+                cfg.ml.n_train + cfg.ml.n_test, nsteps, cadence, batch_steps)
     
     # JIT the trajectory generation
     @functools.partial(jax.jit, static_argnames=["nsteps", "cadence"])
@@ -46,13 +47,19 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
         jax.vmap(generate_trajectory, in_axes=(0, None, None)),
         static_argnums=(1, 2),
     )
-    
-    # Metadata and HDF5 setup
+
+    timing_metadata = {
+        "dt": float(dt),
+        'steps': nsteps,
+        "cadence": int(cadence),    
+        'batch_size': int(batch_size),
+        'batch_steps': int(batch_steps),
+    }
+
     metadata = {
         "parameters": params,
+        'timing': timing_metadata,
         "created_utc": datetime.datetime.utcnow().isoformat() + "Z",
-        "dt": float(dt),
-        "cadence": int(cadence),
     }
     
     metadata_path = os.path.join(hr_dir, "metadata.json")
@@ -66,16 +73,16 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
 
     traj_group = z_root.create_group("trajectories")
 
-    # Zarr v3 codec (use list of codecs)
+    # Zarr v3 codec
     compressor = BloscCodec(
         cname="zstd",
         clevel=3,  # lower level = faster
         shuffle="bitshuffle",
     )
     
-    # trajectory loop 
+
     rng = jax.random.key(params["seed"])
-    n_total = cfg.ml.n_trajs
+    n_total = cfg.ml.n_train + cfg.ml.n_test
     n_generated = 0
 
     while n_generated < n_total:
@@ -85,20 +92,12 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
         rng, subkey = jax.random.split(rng)
         keys = jax.random.split(subkey, current_batch)
 
-        # Vectorized initialisation
-        init_states = []
-        for k in keys:
-            state = hr_model.initialise(k, tune=True, n_jets=16)
-            init_states.append(state)
-
-        init_states = jax.tree_util.tree_map(
-            lambda *xs: jnp.stack(xs),
-            *init_states
-        )
+        init_states = jax.vmap(functools.partial(hr_model.initialise))(keys)
+        
         logger.info(f"Initialised batch of {current_batch} trajectories")
 
         # Generate batch
-        traj_batch = batched_traj(init_states, num_steps, cadence)
+        traj_batch = batched_traj(init_states, nsteps, cadence)
 
         logger.info(f"Generated batch of {current_batch} trajectories, shape: {traj_batch.shape}")
         # Transfer once per batch
@@ -113,11 +112,13 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
                 logger.warning(f"NaN detected in trajectory {n_generated+i}")
                 continue
 
+            # Optimize chunking by aligning with training window size (batch_steps)
+            time_chunk = min(q_traj.shape[0], batch_steps)
             traj_group.create_array(
                 f"traj_{n_generated+i:05d}",
                 data=q_traj.astype(np.float32),
-                chunks=(1, q_traj.shape[1], q_traj.shape[2], q_traj.shape[3]),
-                compressors=[compressor],  # v3 uses list of compressors
+                chunks=(time_chunk, q_traj.shape[1], q_traj.shape[2], q_traj.shape[3]),
+                compressors=[compressor],
             )
 
         n_generated += current_batch
