@@ -7,7 +7,7 @@ filepaths:
 
 params: 
   seed: 42
-  nx: 128
+  nx: 32
   Lx: 6.283185307179586  # 2π
   beta: 10
   kmin: 10.0
@@ -40,8 +40,8 @@ forcing:
 
 ml:
   enabled: true
-  model_type: cnn
-  device: 'gpu' # 'cpu' or 'gpu'
+  model_type: unet
+  device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   use_float64: false
   n_epochs: 1
   n_train: 7
