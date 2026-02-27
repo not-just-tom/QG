@@ -1,58 +1,103 @@
-import time
-import logging
 import jax.numpy as jnp
 import jax
 import functools
 import equinox as eqx
+import importlib
+import model.ML.forced_model
+import model.core.steppers
+importlib.reload(model.core.steppers)
+importlib.reload(model.ML.forced_model)
+from model.ML.utils.utils import parameterization
+from model.ML.forced_model import ForcedModel
+from model.core.steppers import SteppedModel
 
-def do_epoch(train_state, batch_iter, batch_fn):
-    logger = logging.getLogger("train_epoch")
-    epoch_start = time.perf_counter()
-    losses = []
-    for batch in batch_iter:
-        train_state, batch_loss = batch_fn(batch, train_state)
-        losses.append(batch_loss)
-    epoch_end = time.perf_counter()
-    mean_loss = jax.device_get(jnp.mean(jnp.stack(losses)))
-    final_loss = jax.device_get(losses[-1])
-    logger.info("Finished epoch in %f sec", epoch_end - epoch_start)
-    logger.info("Epoch mean loss %f", mean_loss)
-    logger.info("Epoch final loss %f", final_loss)
-    return train_state, {"mean_loss": mean_loss.item(), "final_loss": final_loss.item(), "duration_sec": epoch_end - epoch_start}, rng_ctr
 
-def make_batch_computer(params, loss_fn):
+def closure_combiner(state, closure_params, static_closure_obj=None):
+    """Combine params and static closure, evaluate closure, return dq and params.
+    """
+    assert static_closure_obj is not None, "static_closure_obj must be provided"
+    closure = eqx.combine(closure_params, static_closure_obj)
+    q = state.q
+    dq_closure = closure(q.astype(jnp.float32))
+    return dq_closure.astype(q.dtype), closure_params
 
-    def batch_loss(net, input_chunk, target_chunk):
-        losses = jax.vmap(
-            functools.partial(
-                loss_fn,
-                net=net,
-            )
-        )(input_chunk, target_chunk)
-        return jnp.mean(losses)
+def roll_out_with_forced_model(init_q, forced_hr_model, template_state, nsteps, closure_params):
+    init_qh = jnp.fft.rfftn(init_q, axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
+    base_state = template_state.update(qh=init_qh)
+    
+    # This initializes the stepper state with '_params' (only arrays) in param_aux.
+    init_state = forced_hr_model.initialize_stepper_state(
+        forced_hr_model.model.initialise_param_state(base_state, closure_params)
+    )
 
-    def do_batch(batch, state):
-        batch_sizes = {leaf.shape[0] for leaf in jax.tree_util.tree_leaves(batch)}
-        if len(batch_sizes) != 1:
-            raise ValueError(f"Inconsistent batch sizes {batch_sizes}")
+    def step(carry, _x):
+        next_state = forced_hr_model.step_model(carry)
+        return next_state, next_state.state.model_state.q
 
-        # Special processing for the first chunk (gaussian noise, if needed) <- what?
-        target_chunk = make_chunk_from_batch(
-            channels=output_channels,
-            batch=batch,
-            params=params,
-            net_aux=net_aux,
-        )
-        input_chunk = make_chunk_from_batch(
-            channels=input_channels,
-            batch=batch,
-            params=params,
-            net_aux=net_aux,
-        )
-        # Compute losses
-        loss, grads = eqx.filter_value_and_grad(batch_loss)(state.net, input_chunk, target_chunk)# <--- is your net in state????
-        # Update parameters
-        out_state = state.apply_updates(grads)
-        return out_state, loss
+    _, traj = jax.lax.scan(step, init_state, None, length=nsteps)
+    return traj
 
-    return do_batch
+def compute_traj_errors(target_traj, forced_hr_model, template_state, closure_params):
+    rolled_out = roll_out_with_forced_model(
+        init_q=target_traj[0],
+        forced_hr_model=forced_hr_model,
+        template_state=template_state,
+        nsteps=target_traj.shape[0],
+        closure_params=closure_params,
+    )
+    return rolled_out - target_traj
+
+@eqx.filter_jit
+def train_epoch(epoch_batches, coarse, hr_model, closure, optim, optim_state):
+    # Use the low-resolution physics model for training (data are coarsened)
+    lr_base_model = coarse.lr_model
+    stepper_obj = hr_model.stepper
+    template_state = coarse.lr_model.initialise(jax.random.PRNGKey(0))
+    
+    # Partition the closure into dynamic arrays and static structure
+    closure_params, static_closure_obj = eqx.partition(closure, eqx.is_array)
+
+    # init_param_aux_func: when initialising the stepper state, return the
+    # array-only parameters (param_aux). The signature forwarded by
+    # ForcedModel.initialise_param_state is (state, model, *args).
+    init_param_func = lambda state, model, params: params
+
+    # Adapter matching (state, param_aux, model) -> (updates, new_param_aux)
+    def _param_adapter(state, param_aux, model, *args, **kwargs):
+        # param_aux contains the dynamic closure parameters
+        return closure_combiner(state, param_aux, static_closure_obj)
+
+    # Wrap adapter with `parameterization` so it produces the proper
+    # update object (performs FFT and combines with model.get_updates)
+    param_func = parameterization(_param_adapter)
+
+    forced_hr_static = SteppedModel(
+        model=ForcedModel(
+            model=lr_base_model,
+            param_func=param_func,
+            init_param_aux_func=init_param_func,
+        ),
+        stepper=stepper_obj,
+    )
+
+    def step_fn(carry, batch):
+        closure_params, optim_state = carry
+
+        def loss_fn(params, batch):
+            err = jax.vmap(
+                functools.partial(compute_traj_errors, 
+                                    forced_hr_model=forced_hr_static,
+                                    template_state=template_state,
+                                    closure_params=params)
+            )(batch)
+            return jnp.mean(err ** 2)
+
+        loss, grads = eqx.filter_value_and_grad(loss_fn)(closure_params, batch)
+        updates, new_optim_state = optim.update(grads, optim_state, closure_params)
+        new_closure_params = eqx.apply_updates(closure_params, updates)
+        return (new_closure_params, new_optim_state), loss
+
+    (final_closure_params, final_optim_state), losses = jax.lax.scan(
+        step_fn, (closure_params, optim_state), epoch_batches
+    )
+    return eqx.combine(final_closure_params, static_closure_obj), final_optim_state, losses
