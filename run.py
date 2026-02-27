@@ -10,6 +10,7 @@ import model.ML.architectures.build_model
 import model.ML.utils.dataloading
 import model.ML.utils.utils
 import model.ML.forced_model
+import model.ML.train
 import model.utils.plotting
 import model.utils.diagnostics
 importlib.reload(model.core.grid)
@@ -23,8 +24,10 @@ importlib.reload(model.ML.architectures.build_model)
 importlib.reload(model.ML.utils.dataloading)
 importlib.reload(model.ML.utils.utils)
 importlib.reload(model.ML.forced_model)
+importlib.reload(model.ML.train)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
+from model.ML.train import train_epoch
 from model.ML.utils.utils import parameterization, module_to_single
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import Coarsen
@@ -138,10 +141,10 @@ def main():
         closure_model = build_closure(cfg)
 
     # === online ML training === #
-    net = module_to_single(closure_model)
+    closure = module_to_single(closure_model)
 
     optim = optax.adam(learning_rate)
-    optim_state = optim.init(eqx.filter(net, eqx.is_array))
+    optim_state = optim.init(eqx.filter(closure, eqx.is_array))
 
     logger.info(
         f"Training with chunked windows from Zarr: n_traj={len(data_loader)}, "
@@ -201,22 +204,15 @@ def main():
         return rolled_out - target_traj
 
     @eqx.filter_jit
-    def train_epoch(epoch_batches, net, optim_state):
+    def train_epoch(epoch_batches, closure, optim_state):
         # Use the low-resolution physics model for training (data are coarsened)
         lr_base_model = coarse.lr_model
         stepper_obj = hr_model.stepper
         
-        # Partition the net into dynamic parameters and static structure
-        closure_params, static_closure_obj = eqx.partition(net, eqx.is_array)
+        # Partition the closure into dynamics arrays and static structure
+        closure_params, static_closure_obj = eqx.partition(closure, eqx.is_array)
 
-        # Identity function to pass closure_params into the parameterization
         init_param_func = lambda state, model, params: params
-
-        # Build model param function. We need a function matching the
-        # `(state, param_aux, model)` signature expected by
-        # `parameterization`. Capture `static_closure_obj` from the
-        # current scope so the inner function passes the correct static
-        # closure to `closure_parameterization`.
         def _param_func(state, param_aux, model, *args, **kwargs):
             # param_aux holds the dynamic closure parameters
             return closure_parameterization(state, param_aux, static_closure_obj)
@@ -275,9 +271,7 @@ def main():
         epoch_batches = jax.device_put(epoch_batches)
 
         logger.info("Executing epoch %d/%d. Total batches: %d, batch size: %d, batch steps: %d", epoch + 1, n_epochs, n_batches, batch_size, batch_steps)
-        net, optim_state, epoch_losses_jax = train_epoch(
-            epoch_batches, net, optim_state
-        )
+        closure, optim_state, epoch_losses_jax = train_epoch(epoch_batches, closure, optim_state)
         
         epoch_losses = np.array(epoch_losses_jax)
         all_batch_losses.extend(epoch_losses.tolist())
