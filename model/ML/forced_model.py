@@ -20,24 +20,24 @@ def _init_none(init_state, model):
 
 
 @Pytree.register_pytree_class_attrs(
-    children=["model", "param_func", "init_param_aux_func"],
+    children=["model", "closure", "init_param_aux_func"],
     static_attrs=[],
 )
 class ForcedModel:
     """Model with defined parameterisation
     """
 
-    def __init__(self, model, param_func, init_param_aux_func=None):
-        # param_func(full_state, param_aux, model) -> full_state, param_aux
+    def __init__(self, model, closure, init_param_aux_func=None):
+        # closure(full_state, param_aux, model) -> full_state, param_aux
         # init_param_aux_func(model_state, model) -> param_aux
         # param_aux (often None) is used to carry parameterization state
         # between time steps, for example: a JAX PRNGKey, if needed
         self.model = model
-        if isinstance(param_func, types.FunctionType):
+        if isinstance(closure, types.FunctionType):
             # If this is a plain function, wrap in Partial
             # This ensures it is a pytree
-            param_func = jax.tree_util.Partial(param_func)
-        self.param_func = param_func
+            closure = jax.tree_util.Partial(closure)
+        self.closure = closure
         if init_param_aux_func is None:
             init_param_aux_func = _init_none
         if isinstance(init_param_aux_func, types.FunctionType):
@@ -53,7 +53,7 @@ class ForcedModel:
     def get_updates(self, state):
         """Get updates for time-stepping `state`.
         """
-        param_updates, new_param_aux = self.param_func(
+        param_updates, new_param_aux = self.closure(
             state.model_state, state.param_aux.value, self.model
         )
         return ForcedModelState(

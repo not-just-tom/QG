@@ -49,11 +49,9 @@ def find_existing_run(base_dir, hr_nx, lr_nx, params, timing_metadata):
                 stored_meta = json.load(f)
         except Exception:
             continue
-        logger.info(f"Found existing run {name} with metadata: {stored_meta}")
-
 
         # Exact metadata match
-        if (metadata_matches(params, stored_meta["parameters"])) & (metadata_matches(timing_metadata, stored_meta["timing"])):
+        if (metadata_matches(params, stored_meta["parameters"])):
             return run_dir, True
 
         candidates.append(int(m["idx"]))

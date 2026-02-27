@@ -19,12 +19,13 @@ def grid(nx, ny, Lx, Ly):
 
 @Pytree.register_pytree_class_attrs(
     children=["beta", "rd", "delta", "U1", "U2", "H1"],
-    static_attrs=[],
+    static_attrs=["params"],
 )
 class QGM(Kernel):
     """multi-layer quasi-geostrophic model.
     """
     def __init__(self, params):
+        self.params = params
         # Use safe dict lookups so missing keys (e.g. 'ny') don't raise KeyError
         nx = params.get('nx')
         ny = params.get('ny', nx)

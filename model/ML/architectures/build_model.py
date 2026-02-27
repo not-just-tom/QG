@@ -1,11 +1,13 @@
-from abc import ABC, abstractmethod
 import importlib
 import model.ML.architectures.zero
 import model.ML.architectures.cnn
+import model.ML.architectures.unet
 importlib.reload(model.ML.architectures.zero)
 importlib.reload(model.ML.architectures.cnn)
+importlib.reload(model.ML.architectures.unet)
 from model.ML.architectures.cnn import CNN
 from model.ML.architectures.zero import ZeroModel
+from model.ML.architectures.unet import UNet
 
 
 def _normalize(name):
@@ -32,12 +34,10 @@ def build_closure(cfg):
     registry = {
         "zero": ZeroModel,
         "cnn": CNN,
+        'unet': UNet,
     }
 
     arch_name = _resolve_arch_name(cfg)
-    if arch_name is None:
-        raise ValueError("Missing closure architecture in config (expected ml.model_type or ml.model)")
-
     cls = registry.get(_normalize(arch_name))
     if cls is None:
         raise ValueError(

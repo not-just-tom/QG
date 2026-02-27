@@ -62,39 +62,24 @@ params = dict(cfg_dict["params"])   # pure dict for JAX
 # =========================================
 def main():
     cfg = Config.load_config(CONFIG_DEFAULT_PATH)
+    logger = configure_logging(level=cfg.filepaths.log_level, out_file="../logs/run.log")
+    logger = logging.getLogger(__name__)
     
-    # === JAX Device and Precision configuration === #
-    device_type = getattr(cfg.ml, "device", "cpu").lower()
-    
-    # Use a more robust check to avoid RuntimeError with unknown backend names like 'rocm'
-    if device_type == "gpu":
-        # Try to find an available GPU-like backend
-        backend_order = ["cuda", "gpu"] 
-        # Don't include 'rocm' by default unless you're on a Linux AMD system where it's known
-        found_gpu = False
-        for backend in backend_order:
-            try:
-                jax.devices(backend)
-                jax.config.update("jax_platforms", backend)
-                found_gpu = True
-                break
-            except Exception:
-                continue
-        if not found_gpu:
-            jax.config.update("jax_platforms", "cpu")
-            device_type = "cpu (fallback)"
+    # GPU or CPU setup 
+    device_type = (cfg.ml.device).lower()
+    devices = jax.devices()
+    gpu_devices = [d for d in devices if d.platform == "gpu"]
+    if gpu_devices:
+        jax.config.update("jax_platforms", "gpu")
+        chosen = "gpu"
     else:
         jax.config.update("jax_platforms", "cpu")
+        chosen = "cpu"
+
+    logger.info(f"Requested device: {device_type}, using device: {chosen.upper()}")
 
     use_float64 = getattr(cfg.ml, "use_float64", False)
     jax.config.update("jax_enable_x64", use_float64)
-
-
-
-
-    # setup logging
-    logger = configure_logging(level=cfg.filepaths.log_level, out_file="../logs/run.log")
-    logger = logging.getLogger(__name__)
 
     logger.info(f"Running on {device_type.upper()} with x64_enabled={use_float64}")
 
@@ -127,7 +112,7 @@ def main():
 
     # === dataloading === #
     timing_metadata = {
-        "dt": float(dt),
+        "dt": float(cfg.plotting.dt),
         'steps': cfg.plotting.nsteps,
         "cadence": int(cfg.plotting.cadence if hasattr(cfg.plotting, 'cadence') else 1),    
         'batch_size': int(batch_size),
@@ -169,96 +154,111 @@ def main():
     test_indices = all_traj_indices[n_train:n_train + n_test]
     if len(all_traj_indices) < n_train + n_test:
         raise ValueError(f"Not enough trajectories in dataset for requested train/test split.")
-    
     logger.info(f"Train indices: {train_indices}, Test indices: {test_indices}")
 
-    @parameterization
-    def net_parameterization(state, net_params, model, static_net_obj=None):
-        assert static_net_obj is not None, "static_net_obj must be provided"
+    def closure_parameterization(state, closure_params, static_closure_obj=None):
+        """Combine params and static closure, evaluate closure, return dq and params.
+
+        This function is NOT the parameterization wrapper — it simply implements
+        the combination logic. It will be wrapped later with `parameterization`
+        so that it receives `(state, param_aux, model)` when called by
+        `ForcedModel.get_updates`.
+        """
+        assert static_closure_obj is not None, "static_closure_obj must be provided"
         # Combine the dynamic parameters with the static structure
-        net = eqx.combine(net_params, static_net_obj)
-        
+        closure = eqx.combine(closure_params, static_closure_obj)
+
         q = state.q
-        dq_closure = net(q.astype(jnp.float32))
-        return dq_closure.astype(q.dtype), net_params
+        dq_closure = closure(q.astype(jnp.float32))
+        return dq_closure.astype(q.dtype), closure_params
 
-    template_state = hr_model.model.initialise(jax.random.PRNGKey(0))
+    # Use the low-resolution template state (trajectories are coarsened)
+    template_state = coarse.lr_model.initialise(jax.random.PRNGKey(0))
 
-    def roll_out_with_forced_model(init_q, forced_hr_model, nsteps, net_params):
+    def roll_out_with_forced_model(init_q, forced_hr_model, nsteps, closure_params):
         init_qh = jnp.fft.rfftn(init_q, axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
         base_state = template_state.update(qh=init_qh)
         
-        # This initializes the stepper state with 'net_params' (only arrays) in param_aux.
+        # This initializes the stepper state with '_params' (only arrays) in param_aux.
         init_state = forced_hr_model.initialize_stepper_state(
-            forced_hr_model.model.initialise_param_state(base_state, net_params)
+            forced_hr_model.model.initialise_param_state(base_state, closure_params)
         )
 
         def step(carry, _x):
             next_state = forced_hr_model.step_model(carry)
             return next_state, next_state.state.model_state.q
 
-        _final_step, traj = jax.lax.scan(step, init_state, None, length=nsteps)
+        _, traj = jax.lax.scan(step, init_state, None, length=nsteps)
         return traj
 
-    def compute_traj_errors(target_traj, forced_hr_model, net_params):
+    def compute_traj_errors(target_traj, forced_hr_model, closure_params):
         rolled_out = roll_out_with_forced_model(
             init_q=target_traj[0],
             forced_hr_model=forced_hr_model,
             nsteps=target_traj.shape[0],
-            net_params=net_params,
+            closure_params=closure_params,
         )
         return rolled_out - target_traj
 
     @eqx.filter_jit
     def train_epoch(epoch_batches, net, optim_state):
-        hr_base_model = hr_model.model
+        # Use the low-resolution physics model for training (data are coarsened)
+        lr_base_model = coarse.lr_model
         stepper_obj = hr_model.stepper
         
         # Partition the net into dynamic parameters and static structure
-        net_params, static_net_obj = eqx.partition(net, eqx.is_array)
+        closure_params, static_closure_obj = eqx.partition(net, eqx.is_array)
 
-        # Identity function to pass net_params into the parameterization
+        # Identity function to pass closure_params into the parameterization
         init_param_func = lambda state, model, params: params
 
-        # Build model with static structure captured
-        param_func = functools.partial(net_parameterization, static_net_obj=static_net_obj)
+        # Build model param function. We need a function matching the
+        # `(state, param_aux, model)` signature expected by
+        # `parameterization`. Capture `static_closure_obj` from the
+        # current scope so the inner function passes the correct static
+        # closure to `closure_parameterization`.
+        def _param_func(state, param_aux, model, *args, **kwargs):
+            # param_aux holds the dynamic closure parameters
+            return closure_parameterization(state, param_aux, static_closure_obj)
+
+        # Wrap with the `parameterization` decorator so it returns updates
+        # in the form expected by ForcedModel.
+        closure_func = parameterization(_param_func)
         forced_hr_static = SteppedModel(
             model=ForcedModel(
-                model=hr_base_model,
-                param_func=param_func,
+                model=lr_base_model,
+                closure=closure_func,
                 init_param_aux_func=init_param_func,
             ),
             stepper=stepper_obj,
         )
 
         def step_fn(carry, batch):
-            net_params, optim_state = carry
+            closure_params, optim_state = carry
 
             def loss_fn(params, batch):
                 err = jax.vmap(
                     functools.partial(compute_traj_errors, 
                                       forced_hr_model=forced_hr_static,
-                                      net_params=params)
+                                      closure_params=params)
                 )(batch)
                 return jnp.mean(err ** 2)
 
-            loss, grads = eqx.filter_value_and_grad(loss_fn)(net_params, batch)
-            updates, new_optim_state = optim.update(grads, optim_state, net_params)
-            new_net_params = eqx.apply_updates(net_params, updates)
-            return (new_net_params, new_optim_state), loss
+            loss, grads = eqx.filter_value_and_grad(loss_fn)(closure_params, batch)
+            updates, new_optim_state = optim.update(grads, optim_state, closure_params)
+            new_closure_params = eqx.apply_updates(closure_params, updates)
+            return (new_closure_params, new_optim_state), loss
 
-        (final_net_params, final_optim_state), losses = jax.lax.scan(
-            step_fn, (net_params, optim_state), epoch_batches
+        (final_closure_params, final_optim_state), losses = jax.lax.scan(
+            step_fn, (closure_params, optim_state), epoch_batches
         )
-        return eqx.combine(final_net_params, static_net_obj), final_optim_state, losses
+        return eqx.combine(final_closure_params, static_closure_obj), final_optim_state, losses
 
     np_rng = np.random.default_rng(seed=seed)
     all_batch_losses = []
     epoch_mean_losses = []
 
-    for epoch in range(n_epochs):
-        logger.info("Starting epoch %d of %d", epoch + 1, n_epochs)
-        
+    for epoch in range(n_epochs):        
         epoch_batches = data_loader.sample_windows(
             n_samples=n_batches * batch_size,
             window_size=batch_steps,
@@ -272,11 +272,11 @@ def main():
         )
         
         # Explicitly move to device
-        epoch_batches_gpu = jax.device_put(epoch_batches)
+        epoch_batches = jax.device_put(epoch_batches)
 
         logger.info("Executing epoch %d/%d. Total batches: %d, batch size: %d, batch steps: %d", epoch + 1, n_epochs, n_batches, batch_size, batch_steps)
         net, optim_state, epoch_losses_jax = train_epoch(
-            epoch_batches_gpu, net, optim_state
+            epoch_batches, net, optim_state
         )
         
         epoch_losses = np.array(epoch_losses_jax)
