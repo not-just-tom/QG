@@ -50,6 +50,7 @@ def build_diagnostic(name: str, *, nz: int):
         "energy": EnergyDiagnostic,
         "enstrophy": EnstrophyDiagnostic,
         "cfl": CFLDiagnostic,
+        'drift': DriftDiagnostic,
     }
 
     cls = registry.get(name)
@@ -874,6 +875,59 @@ class EnstrophyDiagnostic(Diagnostic):
         ax.set_title("Enstrophy (final)")
         ax.set_xlabel("frame")
         ax.set_ylabel("enstrophy")
+
+
+class DriftDiagnostic(Diagnostic):
+    name = "drift"
+    def __init__(self, nz: int):
+        self.nz = int(nz)
+
+    def requires(self):
+        return {"u"}
+
+    def retrieve(self, state, grid=None):
+        # state.u expected shape (nz, ny, nx)
+        u = state.u
+        # mean over zonal direction
+        um = jnp.mean(u, axis=1)
+
+        if um.ndim == 1:
+            um = um[None, ...]
+
+        if um.shape[0] != self.nz:
+            raise ValueError(f"{self.name}: expected nz={self.nz}, got {um.shape[0]}")
+
+        return um
+
+    def n_axes(self) -> int:
+        return self.nz
+
+    def reduce(self, samples, grid=None):
+        # samples: list of (nz, ny)
+        arr = jnp.stack(samples, axis=0)  
+        return arr # (nt, nz, ny)
+
+    def plot_final(self, ax, reduced, grid=None, layer: int = 0):
+        # reduced: (nt, nz, ny)
+        # plot of (nt, ny) for the specified layer
+        image = np.asarray(reduced[:, layer, :])  # (nt, ny)
+
+        # transpose so horizontal axis corresponds to time (nt)
+        img_to_plot = image.T  # shape (ny, nt)
+
+        # set figure size: fixed vertical height, horizontal width scaled with time length
+        nt = image.shape[0]
+        fixed_height = 3.0  # inches
+        width_per_frame = 0.12  # inches per time frame
+        width = max(4.0, nt * width_per_frame)
+        try:
+            ax.figure.set_size_inches(width, fixed_height)
+        except Exception:
+            pass
+
+        ax.set_xlabel("frame")
+        ax.set_ylabel("y")
+        ax.imshow(img_to_plot, aspect="auto", origin="lower", cmap="RdBu_r")
 
 
 def compute_ke(psi: jnp.ndarray, grid) -> float:

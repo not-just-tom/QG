@@ -1,6 +1,3 @@
-import jax
-import jax.numpy as jnp
-from functools import cached_property, partial
 import model.utils.pytree as Pytree 
 
 @Pytree.register_pytree_class_attrs(

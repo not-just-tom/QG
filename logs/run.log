@@ -849,3 +849,189 @@
 2026-02-27 11:57:12,107 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
 2026-02-27 11:57:12,323 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_size=64, batch_steps=10
 2026-02-27 11:57:12,325 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-02-27 12:07:16,097 INFO __main__: Requested device: cpu, using device: CPU
+2026-02-27 12:07:16,098 INFO __main__: Running on CPU with x64_enabled=False
+2026-02-27 12:07:16,100 INFO __main__: Auto-estimating initial dt using CFL condition on a sample initial state...
+2026-02-27 12:07:16,406 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-02-27 12:07:16,503 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-02-27 12:07:16,641 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-02-27 12:07:16,889 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_size=64, batch_steps=10
+2026-02-27 12:07:16,890 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-02-27 12:07:21,331 INFO __main__: Executing epoch 1/1. Total batches: 10, batch size: 64, batch steps: 10
+2026-02-27 12:07:34,429 INFO __main__: Requested device: cpu, using device: CPU
+2026-02-27 12:07:34,431 INFO __main__: Running on CPU with x64_enabled=False
+2026-02-27 12:07:34,432 INFO __main__: Auto-estimating initial dt using CFL condition on a sample initial state...
+2026-02-27 12:07:34,508 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-02-27 12:07:34,596 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-02-27 12:07:34,680 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-02-27 12:07:34,840 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_size=64, batch_steps=10
+2026-02-27 12:07:34,841 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-02-27 12:07:38,525 INFO __main__: Executing epoch 1/1. Total batches: 10, batch size: 64, batch steps: 10
+2026-02-27 12:10:10,109 INFO __main__: Requested device: cpu, using device: CPU
+2026-02-27 12:10:10,111 INFO __main__: Running on CPU with x64_enabled=False
+2026-02-27 12:10:10,114 INFO __main__: Auto-estimating initial dt using CFL condition on a sample initial state...
+2026-02-27 12:10:10,205 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-02-27 12:10:10,297 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-02-27 12:10:10,386 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-02-27 12:10:10,569 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_size=64, batch_steps=10
+2026-02-27 12:10:10,569 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-02-27 12:10:13,441 INFO __main__: Executing epoch 1/1. Total batches: 10, batch size: 64, batch steps: 10
+2026-02-27 12:12:13,343 INFO __main__: Requested device: cpu, using device: CPU
+2026-02-27 12:12:13,344 INFO __main__: Running on CPU with x64_enabled=False
+2026-02-27 12:12:13,345 INFO __main__: Auto-estimating initial dt using CFL condition on a sample initial state...
+2026-02-27 12:12:17,189 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-02-27 12:12:17,400 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-02-27 12:12:18,868 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-02-27 12:12:34,885 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_size=64, batch_steps=10
+2026-02-27 12:12:34,886 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-02-27 12:12:39,224 INFO __main__: Executing epoch 1/1. Total batches: 10, batch size: 64, batch steps: 10
+2026-02-27 12:13:01,393 INFO __main__: Requested device: cpu, using device: CPU
+2026-02-27 12:13:01,395 INFO __main__: Running on CPU with x64_enabled=False
+2026-02-27 12:13:01,397 INFO __main__: Auto-estimating initial dt using CFL condition on a sample initial state...
+2026-02-27 12:13:01,505 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-02-27 12:13:01,598 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-02-27 12:13:01,691 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-02-27 12:13:02,589 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_size=64, batch_steps=10
+2026-02-27 12:13:02,591 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-02-27 12:13:06,838 INFO __main__: Executing epoch 1/1. Total batches: 10, batch size: 64, batch steps: 10
+2026-02-27 12:16:53,537 INFO __main__: Requested device: cpu, using device: CPU
+2026-02-27 12:16:53,539 INFO __main__: Running on CPU with x64_enabled=False
+2026-02-27 12:16:53,541 INFO __main__: Auto-estimating initial dt using CFL condition on a sample initial state...
+2026-02-27 12:16:57,481 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-02-27 12:16:57,698 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-02-27 12:16:59,301 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-02-27 12:17:14,928 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_size=64, batch_steps=10
+2026-02-27 12:17:14,929 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-02-27 12:17:18,463 INFO __main__: Executing epoch 1/1. Total batches: 10, batch size: 64, batch steps: 10
+2026-02-27 12:23:36,298 INFO __main__: Requested device: cpu, using device: CPU
+2026-02-27 12:23:36,299 INFO __main__: Running on CPU with x64_enabled=False
+2026-02-27 12:23:36,300 INFO __main__: Auto-estimating initial dt using CFL condition on a sample initial state...
+2026-02-27 12:23:39,918 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-02-27 12:23:40,112 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-02-27 12:23:41,621 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-02-27 12:23:56,412 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_size=64, batch_steps=10
+2026-02-27 12:23:56,414 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-02-27 12:24:00,643 INFO __main__: Executing epoch 1/1. Total batches: 10, batch size: 64, batch steps: 10
+2026-02-27 14:18:19,755 INFO __main__: Finished epoch 1/1 | mean_loss=5.3116E-03
+2026-02-27 18:12:37,242 INFO __main__: Requested device: cpu, using device: CPU
+2026-02-27 18:12:37,244 INFO __main__: Running on CPU with x64_enabled=False
+2026-02-27 18:12:37,247 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-02-27 18:12:37,440 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-02-27 18:12:37,600 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-02-27 18:12:37,805 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-02-27 18:12:38,077 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_size=64, batch_steps=10
+2026-02-27 18:12:38,079 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-02-27 18:12:43,510 INFO __main__: Executing epoch 1/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-02-27 21:50:33,142 INFO __main__: Finished epoch 1/5 | mean_loss=5.3116E-03
+2026-02-27 21:50:39,255 INFO __main__: Executing epoch 2/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-02-27 23:04:45,587 INFO __main__: Finished epoch 2/5 | mean_loss=5.2684E-03
+2026-02-27 23:04:53,243 INFO __main__: Executing epoch 3/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-02-28 00:04:43,138 INFO __main__: Finished epoch 3/5 | mean_loss=5.2252E-03
+2026-02-28 00:04:50,857 INFO __main__: Executing epoch 4/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-02-28 17:47:58,928 INFO __main__: Requested device: cpu, using device: CPU
+2026-02-28 17:47:58,930 INFO __main__: Running on CPU with x64_enabled=False
+2026-02-28 17:47:58,933 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-02-28 17:48:03,063 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-02-28 17:48:03,278 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-02-28 17:48:04,717 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-02-28 17:48:22,553 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_size=64, batch_steps=10
+2026-02-28 17:48:22,554 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-02-28 17:48:26,536 INFO __main__: Executing epoch 1/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-03-01 11:00:57,057 INFO __main__: Finished epoch 1/5 | mean_loss=5.3116E-03
+2026-03-01 11:01:05,284 INFO __main__: Executing epoch 2/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-03-02 02:44:53,354 INFO __main__: Finished epoch 2/5 | mean_loss=5.2684E-03
+2026-03-02 02:44:59,812 INFO __main__: Executing epoch 3/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-03-02 03:44:24,199 INFO __main__: Finished epoch 3/5 | mean_loss=5.2252E-03
+2026-03-02 03:44:30,163 INFO __main__: Executing epoch 4/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-03-02 04:43:40,129 INFO __main__: Finished epoch 4/5 | mean_loss=5.1728E-03
+2026-03-02 04:43:45,959 INFO __main__: Executing epoch 5/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-03-02 05:44:59,186 INFO __main__: Finished epoch 5/5 | mean_loss=5.0194E-03
+2026-03-02 13:54:06,548 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 13:55:00,810 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 13:58:42,022 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 14:01:03,968 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 14:21:19,118 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 14:43:29,520 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 14:46:04,786 INFO model.core.model: Initialised state with U_rms=0.062, scaled to U_target=1.111 with scale factor 17.792
+2026-03-02 14:46:04,934 INFO model.core.model: Suggested initial dt for stability: 0.003
+2026-03-02 14:46:36,417 INFO model.core.model: Initialised state with U_rms=0.062, scaled to U_target=1.111 with scale factor 17.792
+2026-03-02 14:46:36,512 INFO model.core.model: Suggested initial dt for stability: 0.003
+2026-03-02 14:47:06,926 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 14:49:53,776 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-02 14:49:53,900 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-02 14:51:28,630 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 15:01:06,631 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:01:06,798 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:05:27,405 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:05:27,632 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:06:45,361 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 15:09:38,156 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:09:38,276 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:10:52,039 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 15:14:06,088 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:14:06,187 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:14:47,563 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 15:15:37,087 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:15:37,204 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:16:18,590 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 15:17:10,413 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:17:10,523 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:17:51,671 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 15:24:11,726 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:24:11,827 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:24:52,422 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 15:26:56,072 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:26:56,185 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:29:40,392 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-02 15:29:40,394 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-02 15:29:40,396 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-02 15:29:44,384 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:29:44,609 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:29:44,709 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01
+2026-03-02 15:29:44,712 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100, batch_steps: 10)
+2026-03-02 15:29:53,924 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:29:54,050 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:29:54,172 INFO __main__: Running spinup for 100000 steps.
+2026-03-02 15:30:36,722 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-02 15:30:36,723 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-02 15:30:36,726 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-02 15:30:40,525 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:30:40,737 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:30:40,841 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01, loading data from there.
+2026-03-02 15:30:55,294 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:30:55,403 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:30:55,539 INFO __main__: Running spinup for 1000 steps.
+2026-03-02 15:31:34,189 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 15:34:44,744 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-02 15:34:44,746 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-02 15:34:44,749 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-02 15:34:44,877 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:34:44,979 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:34:45,132 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01, loading data from there.
+2026-03-02 15:34:53,879 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:34:53,994 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:34:58,750 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 15:36:33,155 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-02 15:36:33,288 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-02 15:36:33,293 INFO __main__: Running spinup for 100000 steps.
+2026-03-02 15:37:13,674 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 15:38:31,262 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.016 with scale factor 0.482
+2026-03-02 15:38:31,387 INFO model.core.model: Suggested initial dt for stability: 0.101
+2026-03-02 15:38:31,391 INFO __main__: Running spinup for 100000 steps.
+2026-03-02 15:39:14,674 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 15:39:47,414 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.078 with scale factor 2.408
+2026-03-02 15:39:47,512 INFO model.core.model: Suggested initial dt for stability: 0.020
+2026-03-02 15:39:47,516 INFO __main__: Running spinup for 100000 steps.
+2026-03-02 15:40:31,116 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 15:41:39,069 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.039 with scale factor 1.204
+2026-03-02 15:41:39,158 INFO model.core.model: Suggested initial dt for stability: 0.041
+2026-03-02 15:41:39,162 INFO __main__: Running spinup for 100000 steps.
+2026-03-02 15:42:21,335 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 15:42:56,230 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.039 with scale factor 1.204
+2026-03-02 15:42:56,357 INFO model.core.model: Suggested initial dt for stability: 0.041
+2026-03-02 15:42:56,362 INFO __main__: Running spinup for 100000 steps.
+2026-03-02 15:44:10,254 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 15:45:06,268 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.039 with scale factor 1.204
+2026-03-02 15:45:06,372 INFO model.core.model: Suggested initial dt for stability: 0.041
+2026-03-02 15:45:06,377 INFO __main__: Running spinup for 100000 steps.
+2026-03-02 15:46:22,510 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
