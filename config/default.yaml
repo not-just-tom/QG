@@ -7,9 +7,9 @@ filepaths:
 
 params: 
   seed: 42
-  nx: 32
+  nx: 128
   Lx: 6.283185307179586  # 2π
-  beta: 10
+  beta: 2.5
   kmin: 10.0
   kmax: 10.0
   nz: 1
@@ -23,13 +23,14 @@ params:
   hr_nx: 128
 
 plotting:
-  nsteps: 1000
-  dt: 0.001
+  nsteps: 100000
+  dt: 0.041
   cadence: 100
   animate: ['PV']
-  final: []
+  final: ['drift']
   auto_dt: true
   njets: 16
+  spinup: 100000
   cfl: 0.5
 
 
@@ -43,17 +44,14 @@ ml:
   model_type: unet
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   use_float64: false
-  n_epochs: 1
+  n_epochs: 5
   n_train: 7
   n_test: 3
-  input_channels:
-  output_channels: 
   optimiser: AdamW
   n_batches: 10
   batch_steps: 10 
   batch_size: 64
   learning_rate: 0.0005
-  lr_schedule: idk rn
 
 
 architectures:

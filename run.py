@@ -9,7 +9,6 @@ import model.ML.utils.coarsen
 import model.ML.architectures.build_model
 import model.ML.utils.dataloading
 import model.ML.utils.utils
-import model.ML.forced_model
 import model.ML.train
 import model.utils.plotting
 import model.utils.diagnostics
@@ -23,25 +22,22 @@ importlib.reload(model.ML.utils.coarsen)
 importlib.reload(model.ML.architectures.build_model)
 importlib.reload(model.ML.utils.dataloading)
 importlib.reload(model.ML.utils.utils)
-importlib.reload(model.ML.forced_model)
 importlib.reload(model.ML.train)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
-from model.ML.train import train_epoch
-from model.ML.utils.utils import parameterization, module_to_single
+from model.ML.train import make_train_epoch
+from model.ML.utils.utils import module_to_single
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import Coarsen
 from model.ML.generate_data import generate_train_data
 from model.ML.utils.dataloading import find_existing_closure, find_existing_run, ZarrDataLoader
 from model.utils.config import Config
 from model.utils.logging import configure_logging
-from model.ML.forced_model import ForcedModel
 from model.core.steppers import SteppedModel, AB3Stepper
 from model.core.model import QGM
 import logging
 import jax
 import jax.numpy as jnp
-import functools
 import yaml
 import os
 import numpy as np
@@ -59,6 +55,9 @@ with open(CONFIG_DEFAULT_PATH) as f:
     cfg_dict = yaml.safe_load(f)
 
 params = dict(cfg_dict["params"])   # pure dict for JAX  
+
+
+
 
 # =========================================
 # Main loop to run from Command Line 
@@ -100,7 +99,7 @@ def main():
     key = jax.random.PRNGKey(seed)
 
     if cfg.plotting.auto_dt:
-        logger.info("Auto-estimating initial dt using CFL condition on a sample initial state...")
+        logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
         raw_model = QGM({**params, "nx": params['hr_nx']})
         init_state = raw_model.initialise(key, tune=True, n_jets=njets, verbose=True)
         dt = raw_model.estimate_cfl_dt(init_state)
@@ -139,12 +138,17 @@ def main():
         raise NotImplementedError("Model loading is not implemented yet")
     else:
         closure_model = build_closure(cfg)
-
-    # === online ML training === #
     closure = module_to_single(closure_model)
-
-    optim = optax.adam(learning_rate)
+    if cfg.ml.optimiser=='Adam':
+        optim = optax.adam(learning_rate)
+    elif cfg.ml.optimiser=='AdamW':
+        optim = optax.adamw(learning_rate)
+    else:
+        raise ValueError(f"Unsupported optimiser: {cfg.ml.optimiser}. Supported options are 'Adam' and 'AdamW'.")
     optim_state = optim.init(eqx.filter(closure, eqx.is_array))
+
+    # Build training function
+    train_epoch = make_train_epoch(coarse, hr_model, optim)
 
     logger.info(
         f"Training with chunked windows from Zarr: n_traj={len(data_loader)}, "
@@ -158,97 +162,6 @@ def main():
     if len(all_traj_indices) < n_train + n_test:
         raise ValueError(f"Not enough trajectories in dataset for requested train/test split.")
     logger.info(f"Train indices: {train_indices}, Test indices: {test_indices}")
-
-    def closure_parameterization(state, closure_params, static_closure_obj=None):
-        """Combine params and static closure, evaluate closure, return dq and params.
-
-        This function is NOT the parameterization wrapper — it simply implements
-        the combination logic. It will be wrapped later with `parameterization`
-        so that it receives `(state, param_aux, model)` when called by
-        `ForcedModel.get_updates`.
-        """
-        assert static_closure_obj is not None, "static_closure_obj must be provided"
-        # Combine the dynamic parameters with the static structure
-        closure = eqx.combine(closure_params, static_closure_obj)
-
-        q = state.q
-        dq_closure = closure(q.astype(jnp.float32))
-        return dq_closure.astype(q.dtype), closure_params
-
-    # Use the low-resolution template state (trajectories are coarsened)
-    template_state = coarse.lr_model.initialise(jax.random.PRNGKey(0))
-
-    def roll_out_with_forced_model(init_q, forced_hr_model, nsteps, closure_params):
-        init_qh = jnp.fft.rfftn(init_q, axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
-        base_state = template_state.update(qh=init_qh)
-        
-        # This initializes the stepper state with '_params' (only arrays) in param_aux.
-        init_state = forced_hr_model.initialize_stepper_state(
-            forced_hr_model.model.initialise_param_state(base_state, closure_params)
-        )
-
-        def step(carry, _x):
-            next_state = forced_hr_model.step_model(carry)
-            return next_state, next_state.state.model_state.q
-
-        _, traj = jax.lax.scan(step, init_state, None, length=nsteps)
-        return traj
-
-    def compute_traj_errors(target_traj, forced_hr_model, closure_params):
-        rolled_out = roll_out_with_forced_model(
-            init_q=target_traj[0],
-            forced_hr_model=forced_hr_model,
-            nsteps=target_traj.shape[0],
-            closure_params=closure_params,
-        )
-        return rolled_out - target_traj
-
-    @eqx.filter_jit
-    def train_epoch(epoch_batches, closure, optim_state):
-        # Use the low-resolution physics model for training (data are coarsened)
-        lr_base_model = coarse.lr_model
-        stepper_obj = hr_model.stepper
-        
-        # Partition the closure into dynamics arrays and static structure
-        closure_params, static_closure_obj = eqx.partition(closure, eqx.is_array)
-
-        init_param_func = lambda state, model, params: params
-        def _param_func(state, param_aux, model, *args, **kwargs):
-            # param_aux holds the dynamic closure parameters
-            return closure_parameterization(state, param_aux, static_closure_obj)
-
-        # Wrap with the `parameterization` decorator so it returns updates
-        # in the form expected by ForcedModel.
-        closure_func = parameterization(_param_func)
-        forced_hr_static = SteppedModel(
-            model=ForcedModel(
-                model=lr_base_model,
-                closure=closure_func,
-                init_param_aux_func=init_param_func,
-            ),
-            stepper=stepper_obj,
-        )
-
-        def step_fn(carry, batch):
-            closure_params, optim_state = carry
-
-            def loss_fn(params, batch):
-                err = jax.vmap(
-                    functools.partial(compute_traj_errors, 
-                                      forced_hr_model=forced_hr_static,
-                                      closure_params=params)
-                )(batch)
-                return jnp.mean(err ** 2)
-
-            loss, grads = eqx.filter_value_and_grad(loss_fn)(closure_params, batch)
-            updates, new_optim_state = optim.update(grads, optim_state, closure_params)
-            new_closure_params = eqx.apply_updates(closure_params, updates)
-            return (new_closure_params, new_optim_state), loss
-
-        (final_closure_params, final_optim_state), losses = jax.lax.scan(
-            step_fn, (closure_params, optim_state), epoch_batches
-        )
-        return eqx.combine(final_closure_params, static_closure_obj), final_optim_state, losses
 
     np_rng = np.random.default_rng(seed=seed)
     all_batch_losses = []

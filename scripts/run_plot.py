@@ -28,9 +28,8 @@ import yaml
 import os
 import numpy as np
 
-
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "QG", "config", "default.yaml")
+CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "config", "default.yaml")
 
 # === just loading in params as dict === #
 with open(CONFIG_DEFAULT_PATH) as f:
@@ -52,13 +51,14 @@ def main():
     dt = cfg.plotting.dt
     nsteps = cfg.plotting.nsteps
     cadence = cfg.plotting.cadence
-    cfg_stepper = cfg.plotting.stepper
+    njets = cfg.plotting.njets
+    spinup = cfg.plotting.spinup
+    key = jax.random.PRNGKey(params['seed'])
     
     # Instantiate the model from configs using factory
     model = QGM(params)
-    stepper = AB3Stepper(dt) # not used really, maybe in future
-    sm = SteppedModel(model=model, stepper=stepper)
-    init_state = sm.initialise(params['seed'], tune=True, n_jets=16)
+    sm = SteppedModel(model=model, stepper=AB3Stepper(dt))
+    init_state = sm.initialise(key, tune=True, n_jets=njets, verbose=True)
 
 
     @functools.partial(jax.jit, static_argnames=["nsteps", "cadence"])
@@ -78,7 +78,9 @@ def main():
         _final_carry, traj_steps = jax.lax.scan(loop_fn, state, steps)
         return _final_carry, traj_steps
 
-    init_state, _ = rollout(init_state, 100000, cadence)
+    if spinup != 0:
+        logger.info(f"Running spinup for {spinup} steps.")
+        init_state, _ = rollout(init_state, spinup, cadence)
     _, q_traj = rollout(init_state, nsteps, cadence)
     q_traj = jax.device_get(q_traj)  # shape (nsteps, nz, nl, nk)
 

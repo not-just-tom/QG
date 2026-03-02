@@ -47,57 +47,67 @@ def compute_traj_errors(target_traj, forced_hr_model, template_state, closure_pa
     )
     return rolled_out - target_traj
 
-@eqx.filter_jit
-def train_epoch(epoch_batches, coarse, hr_model, closure, optim, optim_state):
-    # Use the low-resolution physics model for training (data are coarsened)
-    lr_base_model = coarse.lr_model
-    stepper_obj = hr_model.stepper
+def make_train_epoch(coarse, hr_model, optim):
+    """Factory that returns a JIT-compiled `train_epoch` function bound to
+    the provided `coarse`, `hr_model`, and `optim` objects.
+
+    The returned function has signature `(epoch_batches, closure, optim_state)`
+    so it only accepts dynamic JAX arrays (no large model objects).
+    """
+    # Prepare any template state that is static and can be captured
     template_state = coarse.lr_model.initialise(jax.random.PRNGKey(0))
-    
-    # Partition the closure into dynamic arrays and static structure
-    closure_params, static_closure_obj = eqx.partition(closure, eqx.is_array)
 
-    # init_param_aux_func: when initialising the stepper state, return the
-    # array-only parameters (param_aux). The signature forwarded by
-    # ForcedModel.initialise_param_state is (state, model, *args).
-    init_param_func = lambda state, model, params: params
+    def _train_epoch(epoch_batches, closure, optim_state):
+        # Use the low-resolution physics model for training (data are coarsened)
+        lr_base_model = coarse.lr_model
+        stepper_obj = hr_model.stepper
 
-    # Adapter matching (state, param_aux, model) -> (updates, new_param_aux)
-    def _param_adapter(state, param_aux, model, *args, **kwargs):
-        # param_aux contains the dynamic closure parameters
-        return closure_combiner(state, param_aux, static_closure_obj)
+        # Partition the closure into dynamic arrays and static structure
+        closure_params, static_closure_obj = eqx.partition(closure, eqx.is_array)
 
-    # Wrap adapter with `parameterization` so it produces the proper
-    # update object (performs FFT and combines with model.get_updates)
-    param_func = parameterization(_param_adapter)
+        # init_param_aux_func: when initialising the stepper state, return the
+        # array-only parameters (param_aux). The signature forwarded by
+        # ForcedModel.initialise_param_state is (state, model, *args).
+        init_param_func = lambda state, model, params: params
 
-    forced_hr_static = SteppedModel(
-        model=ForcedModel(
-            model=lr_base_model,
-            param_func=param_func,
-            init_param_aux_func=init_param_func,
-        ),
-        stepper=stepper_obj,
-    )
+        # Adapter matching (state, param_aux, model) -> (updates, new_param_aux)
+        def _param_adapter(state, param_aux, model, *args, **kwargs):
+            # param_aux contains the dynamic closure parameters
+            return closure_combiner(state, param_aux, static_closure_obj)
 
-    def step_fn(carry, batch):
-        closure_params, optim_state = carry
+        # Wrap adapter with `parameterization` so it produces the proper
+        # update object (performs FFT and combines with model.get_updates)
+        closure_func = parameterization(_param_adapter)
 
-        def loss_fn(params, batch):
-            err = jax.vmap(
-                functools.partial(compute_traj_errors, 
-                                    forced_hr_model=forced_hr_static,
-                                    template_state=template_state,
-                                    closure_params=params)
-            )(batch)
-            return jnp.mean(err ** 2)
+        forced_hr_static = SteppedModel(
+            model=ForcedModel(
+                model=lr_base_model,
+                closure=closure_func,
+                init_param_aux_func=init_param_func,
+            ),
+            stepper=stepper_obj,
+        )
 
-        loss, grads = eqx.filter_value_and_grad(loss_fn)(closure_params, batch)
-        updates, new_optim_state = optim.update(grads, optim_state, closure_params)
-        new_closure_params = eqx.apply_updates(closure_params, updates)
-        return (new_closure_params, new_optim_state), loss
+        def step_fn(carry, batch):
+            closure_params, optim_state = carry
 
-    (final_closure_params, final_optim_state), losses = jax.lax.scan(
-        step_fn, (closure_params, optim_state), epoch_batches
-    )
-    return eqx.combine(final_closure_params, static_closure_obj), final_optim_state, losses
+            def loss_fn(params, batch):
+                err = jax.vmap(
+                    functools.partial(compute_traj_errors,
+                                      forced_hr_model=forced_hr_static,
+                                      template_state=template_state,
+                                      closure_params=params)
+                )(batch)
+                return jnp.mean(err ** 2)
+
+            loss, grads = eqx.filter_value_and_grad(loss_fn)(closure_params, batch)
+            updates, new_optim_state = optim.update(grads, optim_state, closure_params)
+            new_closure_params = eqx.apply_updates(closure_params, updates)
+            return (new_closure_params, new_optim_state), loss
+
+        (final_closure_params, final_optim_state), losses = jax.lax.scan(
+            step_fn, (closure_params, optim_state), epoch_batches
+        )
+        return eqx.combine(final_closure_params, static_closure_obj), final_optim_state, losses
+
+    return eqx.filter_jit(_train_epoch)
