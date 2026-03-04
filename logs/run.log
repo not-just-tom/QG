@@ -1035,3 +1035,34 @@
 2026-03-02 15:45:06,372 INFO model.core.model: Suggested initial dt for stability: 0.041
 2026-03-02 15:45:06,377 INFO __main__: Running spinup for 100000 steps.
 2026-03-02 15:46:22,510 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-02 19:47:06,229 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.039 with scale factor 1.204
+2026-03-02 19:47:06,324 INFO model.core.model: Suggested initial dt for stability: 0.041
+2026-03-02 19:47:06,326 INFO __main__: Running spinup for 1000000 steps.
+2026-03-02 19:47:57,376 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-02 19:47:57,378 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-02 19:47:57,381 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-02 19:48:01,302 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.039 with scale factor 1.204
+2026-03-02 19:48:07,109 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.039 with scale factor 1.204
+2026-03-02 19:48:07,263 INFO model.core.model: Suggested initial dt for stability: 0.041
+2026-03-02 19:48:07,355 INFO __main__: Running spinup for 1000000 steps.
+2026-03-02 19:53:46,779 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-03 09:03:47,134 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.039 with scale factor 1.204
+2026-03-03 09:03:47,259 INFO model.core.model: Suggested initial dt for stability: 0.041
+2026-03-03 09:03:47,264 INFO __main__: Running spinup for 100000 steps.
+2026-03-03 09:06:10,026 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-03 09:25:03,911 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.039 with scale factor 1.204
+2026-03-03 09:25:04,040 INFO model.core.model: Suggested initial dt for stability: 0.041
+2026-03-03 09:25:04,045 INFO __main__: Running spinup for 100000 steps.
+2026-03-03 09:25:49,350 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-03 09:29:32,831 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.039 with scale factor 1.204
+2026-03-03 09:29:32,950 INFO model.core.model: Suggested initial dt for stability: 0.041
+2026-03-03 09:29:32,954 INFO __main__: Running spinup for 100000 steps.
+2026-03-03 09:30:22,885 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-03 09:34:18,912 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.039 with scale factor 1.204
+2026-03-03 09:34:19,028 INFO model.core.model: Suggested initial dt for stability: 0.041
+2026-03-03 09:34:19,033 INFO __main__: Running spinup for 100000 steps.
+2026-03-03 09:35:45,301 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-03 09:36:35,923 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.039 with scale factor 1.204
+2026-03-03 09:36:36,038 INFO model.core.model: Suggested initial dt for stability: 0.041
+2026-03-03 09:36:36,042 INFO __main__: Running spinup for 100000 steps.
+2026-03-03 09:37:18,799 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>

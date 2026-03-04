@@ -339,7 +339,13 @@ class Recorder:
             if not samples:
                 continue
 
-            reduced = diag.reduce(samples, grid=self.grid)
+            # convert buffered samples to host (NumPy) once to avoid repeated device->host sync
+            try:
+                samples_host = [jax.device_get(s) for s in samples]
+            except Exception:
+                samples_host = [np.asarray(s) for s in samples]
+
+            reduced = diag.reduce(samples_host, grid=self.grid)
 
             n_axes = diag.n_axes()
             fig, axes = plt.subplots(
@@ -904,30 +910,31 @@ class DriftDiagnostic(Diagnostic):
 
     def reduce(self, samples, grid=None):
         # samples: list of (nz, ny)
-        arr = jnp.stack(samples, axis=0)  
-        return arr # (nt, nz, ny)
+        arr = jnp.stack(samples, axis=0)   # (nt, nz, ny)
+        return jax.device_get(arr)
 
     def plot_final(self, ax, reduced, grid=None, layer: int = 0):
-        # reduced: (nt, nz, ny)
-        # plot of (nt, ny) for the specified layer
-        image = np.asarray(reduced[:, layer, :])  # (nt, ny)
+        # reduced: numpy array (nt, nz, ny) or jax array that has been converted
+        if not isinstance(reduced, np.ndarray):
+            try:
+                reduced = jax.device_get(reduced)
+            except Exception:
+                reduced = np.asarray(reduced)
 
-        # transpose so horizontal axis corresponds to time (nt)
-        img_to_plot = image.T  # shape (ny, nt)
+        # select layer: image shape (nt, ny)
+        image = reduced[:, layer, :]
 
-        # set figure size: fixed vertical height, horizontal width scaled with time length
+        # transpose so x axis is time/frames and y axis is physical y
+        img_to_plot = image.T  # (ny, nt)
+
         nt = image.shape[0]
-        fixed_height = 3.0  # inches
-        width_per_frame = 0.12  # inches per time frame
-        width = max(4.0, nt * width_per_frame)
-        try:
-            ax.figure.set_size_inches(width, fixed_height)
-        except Exception:
-            pass
+        ly = float(getattr(grid, "Ly", image.shape[1]))
+        extent = (0, nt, 0, ly)
 
+        im = ax.imshow(img_to_plot, extent=extent, aspect="auto", origin="lower", cmap="RdBu_r")
         ax.set_xlabel("frame")
         ax.set_ylabel("y")
-        ax.imshow(img_to_plot, aspect="auto", origin="lower", cmap="RdBu_r")
+        ax.figure.colorbar(im, ax=ax)
 
 
 def compute_ke(psi: jnp.ndarray, grid) -> float:
