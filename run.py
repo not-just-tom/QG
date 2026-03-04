@@ -1,4 +1,23 @@
+import warnings
+warnings.filterwarnings(
+    "ignore",
+    message=r"Explicitly requested dtype float64 requested in astype is not available.*",
+    category=UserWarning,
+    module=r"jax\\._src\\.numpy\\.array_methods",
+)
 import importlib 
+import os
+from model.utils.config import Config
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "config", "default.yaml")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+MODEL_DIR = os.path.join(DATA_DIR, "saved_models")
+cfg = Config.load_config(CONFIG_DEFAULT_PATH)
+use_float64 = getattr(cfg.ml, "use_float64", False)
+if use_float64:
+    os.environ.setdefault("JAX_ENABLE_X64", "1") 
+else:
+    os.environ.setdefault("JAX_ENABLE_X64", "0")
 import model.core.grid
 import model.core.states
 import model.core.kernel
@@ -31,24 +50,17 @@ from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import Coarsen
 from model.ML.generate_data import generate_train_data
 from model.ML.utils.dataloading import find_existing_closure, find_existing_run, ZarrDataLoader
-from model.utils.config import Config
 from model.utils.logging import configure_logging
 from model.core.steppers import SteppedModel, AB3Stepper
 from model.core.model import QGM
 import logging
 import jax
-import jax.numpy as jnp
 import yaml
 import os
 import numpy as np
 import equinox as eqx
 import matplotlib.pyplot as plt
 import optax
-
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "config", "default.yaml")
-DATA_DIR = os.path.join(BASE_DIR, "data")
-MODEL_DIR = os.path.join(DATA_DIR, "saved_models")
 
 # === just loading in params as dict === #
 with open(CONFIG_DEFAULT_PATH) as f:
@@ -63,7 +75,6 @@ params = dict(cfg_dict["params"])   # pure dict for JAX
 # Main loop to run from Command Line 
 # =========================================
 def main():
-    cfg = Config.load_config(CONFIG_DEFAULT_PATH)
     logger = configure_logging(level=cfg.filepaths.log_level, out_file="../logs/run.log")
     logger = logging.getLogger(__name__)
     
@@ -79,9 +90,6 @@ def main():
         chosen = "cpu"
 
     logger.info(f"Requested device: {device_type}, using device: {chosen.upper()}")
-
-    use_float64 = getattr(cfg.ml, "use_float64", False)
-    jax.config.update("jax_enable_x64", use_float64)
 
     logger.info(f"Running on {device_type.upper()} with x64_enabled={use_float64}")
 

@@ -1,4 +1,4 @@
-"""Config loader for QG model.
+"""Config loader for QG model. I think loads of this is useless so clean it later
 """
 from __future__ import annotations
 

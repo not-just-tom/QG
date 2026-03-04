@@ -12,6 +12,11 @@ import matplotlib.pyplot as plt
 from model.core.grid import Grid
 from matplotlib.animation import FuncAnimation, PillowWriter
 import model.core.states as states
+import os
+from model.utils.config import Config
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
+CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "config", "default.yaml")
+cfg = Config.load_config(CONFIG_DEFAULT_PATH)
 
 
 class ReconstructedState:
@@ -627,7 +632,9 @@ class KESpectrumDiagnostic(Diagnostic):
 
     def __init__(self, nz: int):
         self.nz = int(nz)
-
+        self.beta = getattr(cfg.params, "beta", 10.0)
+        self.Ly = getattr(cfg.params, "Ly", cfg.params.Lx)
+        self.njets = getattr(cfg.plotting, "n_jets", 6)
     # ------------------------------------------------------------------
     # data interface
     # ------------------------------------------------------------------
@@ -739,8 +746,29 @@ class KESpectrumDiagnostic(Diagnostic):
         return {"E": E_mean, "k": k}
 
     def plot_final(self, ax, reduced, grid=None, layer: int = 0):
+        # Make the final KE spectrum plot slightly bigger for readability
+        fig = ax.get_figure()
+        w, h = fig.get_size_inches()
+        fig.set_size_inches(max(w * 1.25, 8), h * 1.25)
+
         E = np.asarray(reduced["E"][layer])
         k = np.asarray(reduced["k"])
+
+        # add Rhines wavenumber and slope reference lines
+        U_target = self.beta * (self.Ly / (jnp.pi * self.njets))**2
+        L_rh = (2*U_target / self.beta) ** 0.5
+        k_rh = 1 / L_rh
+
+        ax.axvline(x=k_rh, color="C1", ls="--", label="Rhines Scale k")
+
+        _k = np.asarray(k[1:])
+        _ref_clipped = np.clip(_k, 1, 4)
+        ax.loglog(_ref_clipped, (10 * _ref_clipped **(-5.0)), color="C3", ls="--", label="$k^{-5}$")
+
+        _k = np.asarray(k[1:])
+        _ref_clipped = np.clip(_k, 4, 10)
+        ax.loglog(_ref_clipped, (1e-3 * _ref_clipped **(-5/3))+1e-3, color="C2", ls="--", label="$k^{-5/3}$")
+        #ax.loglog(k[1:], (1e-3 * k[1:] **(-3.0))+1e-2, color="C4", ls="--", label="$k^{-3}$")
 
         ax.loglog(k[1:], E[1:], color="k")
         ax.set_title(
@@ -749,6 +777,7 @@ class KESpectrumDiagnostic(Diagnostic):
         ax.set_xlabel(self.xlabel)
         ax.set_ylabel(self.ylabel)
         ax.grid(True, which="both", ls=":")
+        ax.legend()
 
 
 
@@ -889,21 +918,19 @@ class DriftDiagnostic(Diagnostic):
         self.nz = int(nz)
 
     def requires(self):
-        return {"u"}
+        return {"q"}
 
     def retrieve(self, state, grid=None):
-        # state.u expected shape (nz, ny, nx)
-        u = state.u
-        # mean over zonal direction
-        um = jnp.mean(u, axis=1)
+        q = state.q # expected shape (nz, ny, nx)
+        qm = jnp.mean(q, axis=-1)
 
-        if um.ndim == 1:
-            um = um[None, ...]
+        if qm.ndim == 1:
+            qm = qm[None, ...]
 
-        if um.shape[0] != self.nz:
-            raise ValueError(f"{self.name}: expected nz={self.nz}, got {um.shape[0]}")
+        if qm.shape[0] != self.nz:
+            raise ValueError(f"{self.name}: expected nz={self.nz}, got {qm.shape[0]}")
 
-        return um
+        return qm
 
     def n_axes(self) -> int:
         return self.nz
@@ -914,7 +941,7 @@ class DriftDiagnostic(Diagnostic):
         return jax.device_get(arr)
 
     def plot_final(self, ax, reduced, grid=None, layer: int = 0):
-        # reduced: numpy array (nt, nz, ny) or jax array that has been converted
+        # reduced: numpy array (nt, nz, ny)
         if not isinstance(reduced, np.ndarray):
             try:
                 reduced = jax.device_get(reduced)
@@ -922,16 +949,12 @@ class DriftDiagnostic(Diagnostic):
                 reduced = np.asarray(reduced)
 
         # select layer: image shape (nt, ny)
-        image = reduced[:, layer, :]
-
-        # transpose so x axis is time/frames and y axis is physical y
-        img_to_plot = image.T  # (ny, nt)
-
-        nt = image.shape[0]
-        ly = float(getattr(grid, "Ly", image.shape[1]))
+        im = reduced[:, layer, :].T # (ny, nt)
+        nt = im.shape[1]
+        ly = float(getattr(grid, "Ly", im.shape[0]))
         extent = (0, nt, 0, ly)
 
-        im = ax.imshow(img_to_plot, extent=extent, aspect="auto", origin="lower", cmap="RdBu_r")
+        im = ax.imshow(im, extent=extent, aspect="auto", origin="lower", cmap="RdBu_r")
         ax.set_xlabel("frame")
         ax.set_ylabel("y")
         ax.figure.colorbar(im, ax=ax)

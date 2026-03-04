@@ -9,8 +9,8 @@ params:
   seed: 42
   nx: 128
   Lx: 6.283185307179586  # 2π
-  beta: 2.5
-  kmin: 10.0
+  beta: 10
+  kmin: 4.0 
   kmax: 10.0
   nz: 1
   # multi-layer model parameters (only used if nz>1)
@@ -23,13 +23,13 @@ params:
   hr_nx: 128
 
 plotting:
-  nsteps: 10000
-  dt: 0.041
+  nsteps: 50000
+  dt: 0.001
   cadence: 100
-  animate: ['PV']
-  final: ['drift', 'zonal']
+  animate: []
+  final: ['drift', 'ke_spectrum']
   auto_dt: true
-  njets: 16
+  njets: 6
   spinup: 100000
   cfl: 0.5
 

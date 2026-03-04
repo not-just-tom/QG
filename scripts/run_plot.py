@@ -1,4 +1,20 @@
-import importlib 
+import warnings
+warnings.filterwarnings(
+    "ignore",
+    message=r"Explicitly requested dtype float64 requested in astype is not available.*",
+    category=UserWarning,
+)
+import os
+import importlib
+from model.utils.config import Config
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "config", "default.yaml")
+cfg = Config.load_config(CONFIG_DEFAULT_PATH)
+use_float64 = getattr(cfg.ml, "use_float64", False)
+if use_float64:
+    os.environ.setdefault("JAX_ENABLE_X64", "1") 
+else:
+    os.environ.setdefault("JAX_ENABLE_X64", "0")
 import model.core.grid
 import model.core.states
 import model.core.kernel
@@ -15,7 +31,6 @@ importlib.reload(model.core.model)
 importlib.reload(model.core.steppers)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
-from model.utils.config import Config
 from model.utils.logging import configure_logging
 from model.core.steppers import SteppedModel, AB3Stepper
 from model.core.model import QGM
@@ -25,11 +40,7 @@ import jax
 import jax.numpy as jnp
 import functools
 import yaml
-import os
 import numpy as np
-
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "config", "default.yaml")
 
 # === just loading in params as dict === #
 with open(CONFIG_DEFAULT_PATH) as f:
@@ -40,25 +51,26 @@ params = dict(cfg_dict["params"])   # pure dict for JAX
 # =========================================
 # Main loop to run from Command Line 
 # =========================================
-def main():
-    cfg = Config.load_config(CONFIG_DEFAULT_PATH)
-    
+def main():  
     # setup logging
     logger = configure_logging(level=cfg.filepaths.log_level, out_file="../logs/run.log")
     logger = logging.getLogger(__name__)
 
     # load config values
-    dt = cfg.plotting.dt
     nsteps = cfg.plotting.nsteps
     cadence = cfg.plotting.cadence
     njets = cfg.plotting.njets
     spinup = cfg.plotting.spinup
     key = jax.random.PRNGKey(params['seed'])
-    
-    # Instantiate the model from configs using factory
     model = QGM(params)
+    # Instantiate the model from configs using factory
+    if cfg.plotting.auto_dt:
+        logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
+        init_state = model.initialise(key, tune=True, n_jets=njets, verbose=True)
+        dt = model.estimate_cfl_dt(init_state)
+
     sm = SteppedModel(model=model, stepper=AB3Stepper(dt))
-    init_state = sm.initialise(key, tune=True, n_jets=njets, verbose=True)
+    init_state = sm.initialise(key)
 
 
     @functools.partial(jax.jit, static_argnames=["nsteps", "cadence"])
