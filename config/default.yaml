@@ -23,11 +23,11 @@ params:
   hr_nx: 128
 
 plotting:
-  nsteps: 100000
+  nsteps: 10000
   dt: 0.041
   cadence: 100
   animate: ['PV']
-  final: ['drift']
+  final: ['drift', 'zonal']
   auto_dt: true
   njets: 16
   spinup: 100000
