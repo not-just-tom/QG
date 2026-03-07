@@ -7,7 +7,7 @@ filepaths:
 
 params: 
   seed: 42
-  nx: 128
+  nx: 32
   Lx: 6.283185307179586  # 2π
   beta: 10
   kmin: 4.0 
@@ -23,14 +23,14 @@ params:
   hr_nx: 128
 
 plotting:
-  nsteps: 50000
+  nsteps: 10
   dt: 0.001
   cadence: 100
-  animate: []
-  final: ['drift', 'ke_spectrum']
+  animate: ['PV']
+  final: ['drift', ke_spectrum]
   auto_dt: true
   njets: 6
-  spinup: 100000
+  spinup: 0
   cfl: 0.5
 
 
@@ -41,16 +41,14 @@ forcing:
 
 ml:
   enabled: true
-  model_type: unet
+  model_type: cnn
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   use_float64: false
-  n_epochs: 5
   n_train: 7
   n_test: 3
   optimiser: AdamW
-  n_batches: 10
-  batch_steps: 10 
-  batch_size: 64
+  batch_steps: 3
+  batch_size: 10 #not used rn, will be if i generate much more trajs
   learning_rate: 0.0005
 
 

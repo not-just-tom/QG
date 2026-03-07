@@ -26,8 +26,7 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
     batch_size = getattr(cfg.ml, "batch_size", 5)
     batch_steps = getattr(cfg.ml, "batch_steps", 1)  # Get batch_steps for chunking
     
-    logger.info(f"Generating %d trajectories with %d steps (cadence: %d, batch_steps: %d)", 
-                cfg.ml.n_train + cfg.ml.n_test, nsteps, cadence, batch_steps)
+    logger.info(f"Generating %d trajectories with %d steps", cfg.ml.n_train + cfg.ml.n_test, nsteps)
     
     # JIT the trajectory generation
     @functools.partial(jax.jit, static_argnames=["nsteps", "cadence"])
@@ -35,12 +34,10 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
         """Generate coarsened trajectory with subsampling."""
         def step(carry, _x):
             next_state = hr_model.step_model(carry)
-            lr_state = coarse.coarsen_state(next_state.state)
-            return next_state, lr_state.q
+            return next_state, next_state.state.q
         
         _, traj_q = jax.lax.scan(step, init_state, None, length=nsteps)
-        # cadence: keep every cadence-th step
-        return traj_q[::cadence]
+        return traj_q
     
     # Vectorize over trajectories
     batched_traj = jax.jit(
@@ -51,12 +48,11 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
     timing_metadata = {
         "dt": float(dt),
         'steps': nsteps,
-        "cadence": int(cadence),    
-        'batch_size': int(batch_size),
         'batch_steps': int(batch_steps),
     }
 
     metadata = {
+        'model_type': cfg.ml.model_type,
         "parameters": params,
         'timing': timing_metadata,
         "created_utc": datetime.datetime.utcnow().isoformat() + "Z",

@@ -1479,3 +1479,1763 @@
 2026-03-04 16:19:14,615 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
 2026-03-04 16:19:14,702 INFO model.core.model: Suggested initial dt for stability: 0.001
 2026-03-04 16:19:14,792 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 11:12:14,955 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-05 11:12:14,958 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-05 11:12:14,961 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 11:12:27,015 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 11:12:31,318 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-05 11:12:31,785 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 11:12:32,490 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 11:16:20,382 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 11:16:21,199 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-05 11:16:21,580 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 11:16:22,189 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 11:19:37,021 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 11:19:37,931 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-05 11:19:38,412 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 11:19:38,999 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 11:22:18,115 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 11:22:18,980 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-05 11:22:19,400 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 11:22:20,060 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 12:35:45,841 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 12:35:47,898 INFO model.core.model: Initialised state with U_rms=0.023, scaled to U_target=40.000 with scale factor 1750.311
+2026-03-05 12:35:48,418 INFO model.core.model: Suggested initial dt for stability: 0.000
+2026-03-05 12:35:49,104 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 12:40:44,379 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 12:40:45,334 INFO model.core.model: Initialised state with U_rms=0.023, scaled to U_target=40.000 with scale factor 1750.311
+2026-03-05 12:40:46,008 INFO model.core.model: Suggested initial dt for stability: 0.000
+2026-03-05 12:40:47,139 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 12:44:43,843 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-05 12:56:49,127 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 12:56:50,130 INFO model.core.model: Initialised state with U_rms=0.029, scaled to U_target=4.444 with scale factor 152.093
+2026-03-05 12:56:50,613 INFO model.core.model: Suggested initial dt for stability: 0.000
+2026-03-05 12:56:51,225 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 12:57:37,387 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-05 12:59:23,839 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 12:59:24,702 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-05 12:59:25,140 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 12:59:25,810 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 13:00:13,188 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-05 13:11:11,596 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 13:11:12,875 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-05 13:11:13,497 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 13:11:14,361 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 13:13:29,584 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 13:13:30,430 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-05 13:13:30,881 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 13:13:31,461 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 13:14:14,170 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-05 13:18:08,455 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 13:18:09,308 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-05 13:18:09,728 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 13:18:10,250 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 13:18:55,757 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-05 13:21:07,706 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 13:21:08,656 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-05 13:21:09,272 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 13:21:09,892 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 13:21:56,748 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-05 13:30:39,433 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 13:30:40,307 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-05 13:30:40,758 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 13:30:41,379 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 13:31:25,433 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-05 13:32:03,692 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 13:32:04,534 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-05 13:32:05,003 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 13:32:05,604 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 13:32:48,792 INFO __main__: Found existing output directory with matching parameters, replacing the existing.
+2026-03-05 13:32:49,064 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-05 13:33:49,485 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 13:33:52,903 INFO model.core.model: Initialised state with U_rms=0.015, scaled to U_target=1.111 with scale factor 71.711
+2026-03-05 13:33:53,120 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 13:33:53,320 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 13:37:05,898 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-05 13:38:07,522 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 13:38:08,594 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-05 13:38:09,101 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 13:38:09,781 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 13:38:58,693 INFO __main__: Found existing output directory with matching parameters, replacing the existing.
+2026-03-05 13:39:08,747 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-05 13:44:23,478 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 13:44:23,681 INFO model.core.model: Initialised state with U_rms=0.015, scaled to U_target=1.111 with scale factor 71.711
+2026-03-05 13:44:23,841 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 13:44:24,010 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 13:47:10,401 INFO __main__: Found existing output directory with matching parameters, replacing the original.
+2026-03-05 13:47:21,470 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-05 13:49:55,650 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 13:49:55,902 INFO model.core.model: Initialised state with U_rms=0.015, scaled to U_target=1.111 with scale factor 71.711
+2026-03-05 13:49:56,076 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-05 13:49:56,238 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 14:00:15,024 INFO __main__: Found existing output directory with matching parameters, replacing the original.
+2026-03-05 14:00:39,215 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-05 15:29:28,339 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-05 15:29:29,455 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-05 15:29:29,949 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-05 15:29:30,693 INFO __main__: Running spinup for 100000 steps.
+2026-03-05 15:30:06,533 INFO __main__: Found existing output directory with matching parameters, replacing the original.
+2026-03-05 15:30:15,545 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.PillowWriter'>
+2026-03-06 13:09:59,280 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:09:59,282 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:09:59,284 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:10:00,179 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:10:00,765 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:10:01,544 INFO model.ML.utils.dataloading: didnt match
+2026-03-06 13:10:01,546 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_02
+2026-03-06 13:10:01,550 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100, batch_steps: 10)
+2026-03-06 13:10:04,461 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-06 13:10:05,134 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 100, 1, 128, 128)
+2026-03-06 13:11:01,302 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:11:01,305 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:11:01,307 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:11:02,172 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:11:02,735 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:11:05,103 INFO model.ML.utils.dataloading: didnt match
+2026-03-06 13:11:05,104 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-06 13:11:05,107 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100, batch_steps: 10)
+2026-03-06 13:11:05,194 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-06 13:11:06,046 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 100, 1, 32, 32)
+2026-03-06 13:11:52,351 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-06 13:11:52,453 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-06 13:11:52,505 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-06 13:11:52,598 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-06 13:11:52,669 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-06 13:11:52,738 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-06 13:11:52,799 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-06 13:11:52,867 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-06 13:11:52,949 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-06 13:11:53,025 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-06 13:11:53,128 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-06 13:11:53,132 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-06 13:11:53,134 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02\trajectories.zarr
+2026-03-06 13:11:56,084 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(100, 1, 32, 32), batch_size=64, batch_steps=10
+2026-03-06 13:11:56,086 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-03-06 13:12:03,960 INFO __main__: Executing epoch 1/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-03-06 13:13:42,924 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:13:42,928 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:13:42,934 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:13:47,373 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:13:47,609 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:13:49,377 INFO model.ML.utils.dataloading: didnt match
+2026-03-06 13:14:07,974 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:14:07,976 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:14:07,978 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:14:08,090 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:14:08,201 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:14:08,304 INFO model.ML.utils.dataloading: didnt match
+2026-03-06 13:14:08,307 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 13:14:10,852 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(100, 1, 32, 32), batch_size=64, batch_steps=10
+2026-03-06 13:14:10,853 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-03-06 13:14:16,910 INFO __main__: Executing epoch 1/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-03-06 13:20:54,967 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:20:54,970 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:20:54,975 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:20:55,197 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:20:55,377 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:20:55,592 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-06 13:20:55,596 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100, batch_steps: 10)
+2026-03-06 13:20:59,174 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-06 13:21:00,166 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 100, 1, 32, 32)
+2026-03-06 13:21:53,392 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-06 13:21:53,488 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-06 13:21:53,561 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-06 13:21:53,641 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-06 13:21:53,709 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-06 13:21:53,782 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-06 13:21:53,849 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-06 13:21:53,924 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-06 13:21:53,984 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-06 13:21:54,035 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-06 13:21:54,089 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-06 13:21:54,091 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-06 13:21:54,093 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02\trajectories.zarr
+2026-03-06 13:24:39,273 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:24:39,275 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:24:39,277 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:24:39,386 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:24:39,480 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:25:17,855 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:25:17,857 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:25:17,860 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:25:17,988 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:25:18,110 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:25:18,223 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 13:25:18,291 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(100, 1, 32, 32), batch_size=64, batch_steps=10
+2026-03-06 13:25:18,292 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-03-06 13:25:23,212 INFO __main__: Executing epoch 1/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-03-06 13:35:55,147 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:35:55,148 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:35:55,151 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:35:55,288 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:35:55,394 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:35:55,523 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 13:35:55,575 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(100, 1, 32, 32), batch_size=64, batch_steps=10
+2026-03-06 13:35:55,577 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-03-06 13:36:01,439 INFO __main__: Executing epoch 1/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-03-06 13:41:36,262 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:41:36,264 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:41:36,268 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:41:36,415 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:41:36,537 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:41:36,657 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 13:42:00,942 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:42:00,944 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:42:00,946 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:42:01,063 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:42:01,183 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:42:01,290 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 13:42:25,903 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:42:25,905 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:42:25,907 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:42:26,036 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:42:26,176 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:42:26,318 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 13:43:22,201 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:43:22,204 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:43:22,207 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:43:22,367 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:43:22,496 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:43:22,635 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 13:44:17,972 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:44:17,973 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:44:17,975 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:44:18,118 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:44:18,245 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:44:18,371 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 13:44:42,225 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:44:42,228 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:44:42,230 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:44:42,374 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:44:42,503 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:44:42,616 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 13:45:36,089 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:45:36,091 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:45:36,095 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:45:36,217 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:45:36,330 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:45:36,440 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 13:45:36,486 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(100, 1, 32, 32), batch_size=64, batch_steps=10
+2026-03-06 13:45:36,487 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-03-06 13:45:41,453 INFO __main__: Executing epoch 1/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-03-06 13:57:44,275 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:57:44,278 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:57:44,281 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:57:44,420 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:57:44,534 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:57:44,648 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 13:57:44,722 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(100, 1, 32, 32), batch_size=64, batch_steps=10
+2026-03-06 13:57:44,723 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-03-06 13:58:24,325 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:58:24,326 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:58:24,328 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:58:24,469 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:58:24,613 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:58:24,741 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 13:58:24,790 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(100, 1, 32, 32), batch_size=64, batch_steps=10
+2026-03-06 13:58:24,791 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-03-06 13:58:43,514 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 13:58:43,515 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 13:58:43,520 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 13:58:43,651 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 13:58:43,784 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 13:58:43,895 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 13:58:43,945 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(100, 1, 32, 32), batch_size=64, batch_steps=10
+2026-03-06 13:58:43,946 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6], Test indices: [7, 8, 9]
+2026-03-06 13:58:49,204 INFO __main__: Executing epoch 1/5. Total batches: 10, batch size: 64, batch steps: 10
+2026-03-06 14:03:26,212 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 14:03:26,215 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 14:03:26,218 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 14:03:30,354 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 14:03:30,586 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 14:03:32,331 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03
+2026-03-06 14:03:32,334 INFO model.ML.generate_data: Generating 3 trajectories with 10000 steps (cadence: 100, batch_steps: 3)
+2026-03-06 14:03:34,521 INFO model.ML.generate_data: Initialised batch of 3 trajectories
+2026-03-06 14:03:35,165 INFO model.ML.generate_data: Generated batch of 3 trajectories, shape: (3, 100, 1, 32, 32)
+2026-03-06 14:03:49,622 INFO model.ML.generate_data: Processing trajectory 1/3
+2026-03-06 14:03:49,779 INFO model.ML.generate_data: Processing trajectory 2/3
+2026-03-06 14:03:50,053 INFO model.ML.generate_data: Processing trajectory 3/3
+2026-03-06 14:03:50,258 INFO model.ML.generate_data: Generated 3/3 trajectories
+2026-03-06 14:03:50,259 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-06 14:03:50,260 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03\trajectories.zarr
+2026-03-06 14:03:52,593 INFO __main__: Training with chunked windows from Zarr: n_traj=3, traj_shape=(100, 1, 32, 32), batch_size=10, batch_steps=3
+2026-03-06 14:03:52,594 INFO __main__: Train indices: [0, 1], Test indices: [2]
+2026-03-06 14:03:54,591 INFO __main__: Executing epoch 1/3. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:04:01,254 INFO __main__: Finished epoch 1/3 | mean_loss=2.8482E-03
+2026-03-06 14:04:02,270 INFO __main__: Executing epoch 2/3. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:04:06,451 INFO __main__: Finished epoch 2/3 | mean_loss=2.7914E-03
+2026-03-06 14:04:07,326 INFO __main__: Executing epoch 3/3. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:04:11,513 INFO __main__: Finished epoch 3/3 | mean_loss=2.6312E-03
+2026-03-06 14:05:17,482 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 14:05:17,484 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 14:05:17,487 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 14:05:17,631 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 14:05:17,760 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 14:05:17,900 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 14:05:17,933 INFO __main__: Training with chunked windows from Zarr: n_traj=3, traj_shape=(100, 1, 32, 32), batch_size=10, batch_steps=3
+2026-03-06 14:05:17,935 INFO __main__: Train indices: [0, 1], Test indices: [2]
+2026-03-06 14:05:18,575 INFO __main__: Executing epoch 1/3. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:05:25,095 INFO __main__: Finished epoch 1/3 | mean_loss=2.8482E-03
+2026-03-06 14:05:25,951 INFO __main__: Executing epoch 2/3. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:05:30,298 INFO __main__: Finished epoch 2/3 | mean_loss=2.7914E-03
+2026-03-06 14:05:31,129 INFO __main__: Executing epoch 3/3. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:05:35,468 INFO __main__: Finished epoch 3/3 | mean_loss=2.6312E-03
+2026-03-06 14:05:56,778 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 14:05:56,780 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 14:05:56,784 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 14:05:56,914 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 14:05:57,030 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 14:05:57,168 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 14:05:57,203 INFO __main__: Training with chunked windows from Zarr: n_traj=3, traj_shape=(100, 1, 32, 32), batch_size=10, batch_steps=3
+2026-03-06 14:05:57,205 INFO __main__: Train indices: [0, 1], Test indices: [2]
+2026-03-06 14:05:57,951 INFO __main__: Executing epoch 1/3. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:07:16,900 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 14:07:16,901 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 14:07:16,903 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 14:07:17,010 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 14:07:17,124 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 14:07:17,261 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 14:07:17,292 INFO __main__: Training with chunked windows from Zarr: n_traj=3, traj_shape=(100, 1, 32, 32), batch_size=10, batch_steps=3
+2026-03-06 14:07:17,293 INFO __main__: Train indices: [0, 1], Test indices: [2]
+2026-03-06 14:07:17,909 INFO __main__: Executing epoch 1/3. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:07:24,664 INFO __main__: Finished epoch 1/3 | mean_loss=2.8482E-03
+2026-03-06 14:07:25,553 INFO __main__: Executing epoch 2/3. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:07:29,798 INFO __main__: Finished epoch 2/3 | mean_loss=2.7914E-03
+2026-03-06 14:07:30,782 INFO __main__: Executing epoch 3/3. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:07:34,967 INFO __main__: Finished epoch 3/3 | mean_loss=2.6312E-03
+2026-03-06 14:16:27,691 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 14:16:27,693 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 14:16:27,696 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 14:16:27,823 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 14:16:27,951 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 14:16:28,082 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 14:16:28,114 INFO __main__: Training with chunked windows from Zarr: n_traj=3, traj_shape=(100, 1, 32, 32), batch_size=10, batch_steps=3
+2026-03-06 14:16:28,116 INFO __main__: Train indices: [0, 1], Test indices: [2]
+2026-03-06 14:16:28,643 INFO __main__: Executing train epoch 1/2. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:16:35,354 INFO __main__: Finished train epoch 1/2 | mean_loss=2.8482E-03
+2026-03-06 14:16:36,176 INFO __main__: Executing train epoch 2/2. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:16:40,339 INFO __main__: Finished train epoch 2/2 | mean_loss=2.7914E-03
+2026-03-06 14:16:40,340 INFO __main__: Completed 2 training epochs. Validating results on 1 test epochs
+2026-03-06 14:16:41,133 INFO __main__: Executing test epoch 1/1. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:16:45,329 INFO __main__: Finished test epoch 1/1 | mean_loss=2.7713E-03
+2026-03-06 14:17:36,427 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 14:17:36,430 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 14:17:36,433 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 14:17:36,581 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 14:17:36,696 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 14:17:36,821 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 14:17:36,858 INFO __main__: Training with chunked windows from Zarr: n_traj=3, traj_shape=(100, 1, 32, 32), batch_size=10, batch_steps=3
+2026-03-06 14:17:36,859 INFO __main__: Train indices: [0, 1], Test indices: [2]
+2026-03-06 14:17:37,573 INFO __main__: Executing train epoch 1/2. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:17:44,178 INFO __main__: Finished train epoch 1/2 | mean_loss=2.8482E-03
+2026-03-06 14:17:44,992 INFO __main__: Executing train epoch 2/2. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:17:49,136 INFO __main__: Finished train epoch 2/2 | mean_loss=2.7914E-03
+2026-03-06 14:17:49,137 INFO __main__: Completed 2 training epochs. Validating results on 1 test epochs
+2026-03-06 14:17:49,882 INFO __main__: Executing test epoch 1/1. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 14:17:54,125 INFO __main__: Finished test epoch 1/1 | mean_loss=2.7713E-03
+2026-03-06 15:29:46,325 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 15:29:46,326 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 15:29:46,330 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 15:29:46,518 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 15:29:46,616 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 15:29:46,751 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 15:29:46,792 INFO __main__: Training with chunked windows from Zarr: n_traj=3, traj_shape=(100, 1, 32, 32), batch_size=10, batch_steps=3
+2026-03-06 15:29:46,794 INFO __main__: Train indices: [0, 1], Test indices: [2]
+2026-03-06 15:29:47,487 INFO __main__: Executing train epoch 1/2. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:29:54,265 INFO __main__: Finished train epoch 1/2 | mean_loss=2.8482E-03
+2026-03-06 15:29:55,093 INFO __main__: Executing train epoch 2/2. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:29:59,324 INFO __main__: Finished train epoch 2/2 | mean_loss=2.7914E-03
+2026-03-06 15:29:59,325 INFO __main__: Completed 2 training epochs. Validating results on 1 test epochs
+2026-03-06 15:30:00,179 INFO __main__: Executing test epoch 1/1. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:30:04,510 INFO __main__: Finished test epoch 1/1 | mean_loss=2.7713E-03
+2026-03-06 15:30:29,281 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 15:30:29,283 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 15:30:29,286 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 15:30:29,425 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 15:30:29,546 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 15:30:29,685 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 15:30:29,728 INFO __main__: Training with chunked windows from Zarr: n_traj=3, traj_shape=(100, 1, 32, 32), batch_size=10, batch_steps=3
+2026-03-06 15:31:04,786 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 15:31:04,788 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 15:31:04,790 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 15:31:04,919 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 15:31:05,042 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 15:31:05,165 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03
+2026-03-06 15:31:05,168 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100, batch_steps: 3)
+2026-03-06 15:31:07,346 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-06 15:31:08,049 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 100, 1, 32, 32)
+2026-03-06 15:31:51,169 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-06 15:31:51,290 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-06 15:31:51,432 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-06 15:31:51,532 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-06 15:31:51,662 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-06 15:31:51,792 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-06 15:31:51,901 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-06 15:31:52,069 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-06 15:31:52,357 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-06 15:31:52,529 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-06 15:31:52,673 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-06 15:31:52,676 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-06 15:31:52,678 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03\trajectories.zarr
+2026-03-06 15:31:52,746 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(100, 1, 32, 32), batch_size=10, batch_steps=3
+2026-03-06 15:31:52,748 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6, 7, 8], Test indices: [9]
+2026-03-06 15:31:55,379 INFO __main__: Executing train epoch 1/9. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:32:01,970 INFO __main__: Finished train epoch 1/9 | mean_loss=3.1418E-03
+2026-03-06 15:32:04,000 INFO __main__: Executing train epoch 2/9. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:32:08,431 INFO __main__: Finished train epoch 2/9 | mean_loss=3.0448E-03
+2026-03-06 15:32:10,295 INFO __main__: Executing train epoch 3/9. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:32:15,051 INFO __main__: Finished train epoch 3/9 | mean_loss=2.8774E-03
+2026-03-06 15:32:15,909 INFO __main__: Executing train epoch 4/9. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:32:21,021 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 15:32:21,023 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 15:32:21,026 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 15:32:21,182 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 15:32:21,307 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 15:32:21,434 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 15:32:21,500 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(100, 1, 32, 32), batch_size=10, batch_steps=3
+2026-03-06 15:32:21,502 INFO __main__: Train indices: [0, 1, 2, 3, 4, 5, 6, 7, 8], Test indices: [9]
+2026-03-06 15:32:22,252 INFO __main__: Executing train epoch 1/9. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:32:28,870 INFO __main__: Finished train epoch 1/9 | mean_loss=3.1418E-03
+2026-03-06 15:32:29,650 INFO __main__: Executing train epoch 2/9. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:32:33,801 INFO __main__: Finished train epoch 2/9 | mean_loss=3.0448E-03
+2026-03-06 15:32:34,578 INFO __main__: Executing train epoch 3/9. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:32:38,804 INFO __main__: Finished train epoch 3/9 | mean_loss=2.8774E-03
+2026-03-06 15:32:39,576 INFO __main__: Executing train epoch 4/9. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:32:43,822 INFO __main__: Finished train epoch 4/9 | mean_loss=2.6965E-03
+2026-03-06 15:32:44,634 INFO __main__: Executing train epoch 5/9. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:32:48,750 INFO __main__: Finished train epoch 5/9 | mean_loss=2.4019E-03
+2026-03-06 15:32:49,586 INFO __main__: Executing train epoch 6/9. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:32:53,760 INFO __main__: Finished train epoch 6/9 | mean_loss=2.1157E-03
+2026-03-06 15:32:54,542 INFO __main__: Executing train epoch 7/9. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:32:58,694 INFO __main__: Finished train epoch 7/9 | mean_loss=1.8193E-03
+2026-03-06 15:32:59,498 INFO __main__: Executing train epoch 8/9. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:33:03,772 INFO __main__: Finished train epoch 8/9 | mean_loss=1.6006E-03
+2026-03-06 15:33:04,595 INFO __main__: Executing train epoch 9/9. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:33:08,664 INFO __main__: Finished train epoch 9/9 | mean_loss=1.3312E-03
+2026-03-06 15:33:08,666 INFO __main__: Completed 9 training epochs. Validating results on 1 test epochs
+2026-03-06 15:33:09,449 INFO __main__: Executing test epoch 1/1. Total batches: 10, batch size: 10, batch steps: 3
+2026-03-06 15:33:13,793 INFO __main__: Finished test epoch 1/1 | mean_loss=1.0603E-03
+2026-03-06 16:55:48,218 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 16:55:48,220 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 16:57:13,400 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 16:57:13,403 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 16:57:13,407 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 16:57:13,540 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 16:57:13,640 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 16:57:13,792 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-06 16:57:13,795 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100, batch_steps: 3)
+2026-03-06 16:57:13,881 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-06 16:57:14,649 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 100, 1, 32, 32)
+2026-03-06 16:57:58,775 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-06 16:57:58,927 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-06 16:57:59,055 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-06 16:57:59,164 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-06 16:57:59,301 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-06 16:57:59,415 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-06 16:57:59,503 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-06 16:57:59,678 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-06 16:57:59,825 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-06 16:57:59,958 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-06 16:58:00,126 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-06 16:58:00,128 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-06 16:58:00,128 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02\trajectories.zarr
+2026-03-06 16:58:00,176 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(100, 1, 32, 32), batch_steps=3
+2026-03-06 16:59:50,421 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 16:59:50,424 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 16:59:50,426 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 16:59:50,545 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 16:59:50,648 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 16:59:50,767 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03
+2026-03-06 16:59:50,770 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100, batch_steps: 3)
+2026-03-06 16:59:50,843 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-06 16:59:51,654 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 100, 1, 32, 32)
+2026-03-06 17:00:36,875 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-06 17:00:36,977 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-06 17:00:37,116 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-06 17:00:37,250 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-06 17:00:37,390 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-06 17:00:37,498 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-06 17:00:37,626 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-06 17:00:37,736 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-06 17:00:37,850 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-06 17:00:37,995 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-06 17:00:38,132 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-06 17:00:38,134 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-06 17:00:38,136 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03\trajectories.zarr
+2026-03-06 17:00:38,202 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(100, 1, 32, 32), batch_steps=3
+2026-03-06 17:01:15,946 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:01:15,948 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:01:15,950 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:01:16,089 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:01:16,198 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:01:16,331 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_04
+2026-03-06 17:01:16,334 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100, batch_steps: 3)
+2026-03-06 17:01:16,444 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-06 17:01:17,192 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 100, 1, 32, 32)
+2026-03-06 17:01:58,834 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:01:58,836 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:01:58,839 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:01:59,012 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:01:59,154 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:01:59,299 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-06 17:01:59,301 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100, batch_steps: 3)
+2026-03-06 17:01:59,400 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-06 17:02:00,215 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 100, 1, 32, 32)
+2026-03-06 17:02:42,154 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:02:42,156 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:02:42,158 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:02:42,293 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:02:42,471 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:02:42,647 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 17:02:52,008 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:02:52,009 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:02:52,011 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:02:52,117 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:02:52,211 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:02:52,320 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-06 17:02:52,322 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100, batch_steps: 3)
+2026-03-06 17:02:52,403 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-06 17:02:53,549 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 100, 1, 32, 32)
+2026-03-06 17:03:35,282 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-06 17:03:35,424 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-06 17:03:35,552 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-06 17:03:35,700 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-06 17:03:35,824 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-06 17:03:35,926 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-06 17:03:36,064 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-06 17:03:36,199 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-06 17:03:36,385 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-06 17:03:36,547 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-06 17:03:36,701 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-06 17:03:36,702 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-06 17:03:36,703 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02\trajectories.zarr
+2026-03-06 17:03:36,774 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(100, 1, 32, 32), batch_steps=3
+2026-03-06 17:04:45,691 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:04:45,693 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:04:45,696 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:04:45,840 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:04:45,976 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:04:46,096 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 17:04:46,145 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(100, 1, 32, 32), batch_steps=3
+2026-03-06 17:08:41,367 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:08:41,369 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:08:41,374 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:08:41,494 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:08:41,612 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:08:41,722 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-06 17:08:41,724 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100, batch_steps: 3)
+2026-03-06 17:09:13,259 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:09:13,260 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:09:13,262 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:09:13,380 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:09:13,495 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:09:13,613 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-06 17:09:13,616 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100, batch_steps: 3)
+2026-03-06 17:09:13,709 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-06 17:10:02,015 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:10:02,018 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:10:02,022 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:10:02,140 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:10:02,268 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:10:02,406 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-06 17:10:02,409 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100, batch_steps: 3)
+2026-03-06 17:10:26,618 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:10:26,621 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:10:26,624 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:10:26,761 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:10:26,885 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:10:26,995 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-06 17:10:26,997 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps (cadence: 100, batch_steps: 3)
+2026-03-06 17:10:27,091 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-06 17:10:27,868 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10000, 1, 32, 32)
+2026-03-06 17:11:09,909 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-06 17:11:20,592 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-06 17:11:29,221 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-06 17:11:38,578 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-06 17:11:47,459 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-06 17:11:56,193 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-06 17:12:04,987 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-06 17:12:13,624 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-06 17:12:23,158 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-06 17:12:31,893 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-06 17:12:40,587 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-06 17:12:40,589 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-06 17:12:40,590 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02\trajectories.zarr
+2026-03-06 17:12:40,681 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-06 17:12:40,984 INFO __main__: Executing epoch 1/10.
+2026-03-06 17:40:07,825 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:40:07,827 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:40:07,829 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:40:07,957 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:40:08,078 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:40:08,199 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 17:40:08,249 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-06 17:41:56,904 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:41:56,905 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:41:56,908 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:41:57,029 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:41:57,142 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:41:57,262 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 17:41:57,329 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-06 17:41:57,423 INFO __main__: Executing epoch 1/10.
+2026-03-06 17:42:23,945 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:42:23,947 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:42:23,950 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:42:24,068 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:42:24,201 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:42:24,331 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 17:42:24,368 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-06 17:42:24,429 INFO __main__: Executing epoch 1/10.
+2026-03-06 17:43:41,702 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:43:41,704 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:43:41,706 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:43:41,846 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:43:41,977 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:43:42,159 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 17:43:42,232 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-06 17:43:42,705 INFO __main__: Executing epoch 1/10.
+2026-03-06 17:44:55,944 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:44:55,946 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:44:55,949 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:44:56,076 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:44:56,192 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:44:56,321 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 17:44:56,382 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-06 17:44:56,482 INFO __main__: Executing epoch 1/10.
+2026-03-06 17:47:05,902 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:47:05,904 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:47:05,908 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:47:06,037 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:47:06,143 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:47:06,272 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 17:47:06,323 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-06 17:47:06,418 INFO __main__: Executing epoch 1/10.
+2026-03-06 17:48:06,910 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 17:48:06,913 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 17:48:06,915 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 17:48:07,054 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 17:48:07,167 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 17:48:07,276 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 17:48:07,326 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-06 17:48:07,423 INFO __main__: Executing epoch 1/10.
+2026-03-06 18:18:38,622 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 18:18:38,624 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 18:18:38,627 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 18:18:38,751 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 18:18:38,879 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 18:18:39,516 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 18:18:39,567 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-06 18:19:19,464 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 18:19:19,465 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 18:19:19,468 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 18:19:19,608 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 18:19:19,743 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 18:19:19,914 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 18:19:19,946 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-06 18:19:49,207 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 18:19:49,208 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 18:19:49,211 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 18:19:49,326 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 18:19:49,443 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 18:19:49,572 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 18:19:49,619 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-06 18:20:34,307 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 18:20:34,310 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 18:20:34,313 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 18:20:34,436 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 18:20:34,553 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 18:20:34,695 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-06 18:20:34,746 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-06 18:21:16,113 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 18:21:16,115 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 18:21:16,116 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 18:21:16,254 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 18:21:16,369 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 18:21:16,493 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03
+2026-03-06 18:21:16,497 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps (cadence: 100, batch_steps: 3)
+2026-03-06 18:21:16,591 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-06 18:21:17,426 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 32, 32)
+2026-03-06 18:21:17,483 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-06 18:21:17,530 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-06 18:21:17,558 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-06 18:21:17,594 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-06 18:21:17,634 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-06 18:21:17,681 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-06 18:21:17,725 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-06 18:21:17,766 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-06 18:21:17,814 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-06 18:21:17,847 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-06 18:21:17,893 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-06 18:21:17,895 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-06 18:21:17,896 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03\trajectories.zarr
+2026-03-06 18:21:18,009 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-06 18:21:19,291 INFO __main__: Executing epoch 1/10.
+2026-03-06 18:30:15,264 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 18:30:15,266 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 18:30:15,269 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 18:30:15,407 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 18:30:15,511 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 18:30:15,637 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 18:30:15,695 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-06 18:30:15,940 INFO __main__: Executing epoch 1/10.
+2026-03-06 18:32:06,974 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 18:32:06,975 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 18:32:06,976 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 18:32:07,104 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 18:32:07,216 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 18:32:07,347 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 18:32:07,392 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-06 18:32:07,603 INFO __main__: Executing epoch 1/10.
+2026-03-06 18:39:19,871 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 18:39:19,872 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 18:39:19,875 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 18:39:20,019 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 18:39:20,122 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 18:39:20,256 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 18:39:20,298 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-06 18:39:58,050 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 18:39:58,052 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 18:39:58,055 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 18:39:58,190 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 18:39:58,305 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 18:39:58,435 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 18:39:58,502 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-06 18:39:58,745 INFO __main__: Executing epoch 1/10.
+2026-03-06 18:40:36,279 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 18:40:36,280 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 18:40:36,283 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 18:40:36,435 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 18:40:36,559 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 18:40:36,681 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 18:40:36,757 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-06 18:40:36,970 INFO __main__: Executing epoch 1/10.
+2026-03-06 18:40:40,332 INFO __main__: Finished epoch 1/10 | mean_loss=2.8039E-04
+2026-03-06 18:40:40,567 INFO __main__: Executing epoch 2/10.
+2026-03-06 18:40:41,610 INFO __main__: Finished epoch 2/10 | mean_loss=2.6999E-04
+2026-03-06 18:40:41,819 INFO __main__: Executing epoch 3/10.
+2026-03-06 18:40:42,944 INFO __main__: Finished epoch 3/10 | mean_loss=2.6571E-04
+2026-03-06 18:40:43,110 INFO __main__: Executing epoch 4/10.
+2026-03-06 18:40:44,237 INFO __main__: Finished epoch 4/10 | mean_loss=2.5939E-04
+2026-03-06 18:40:44,424 INFO __main__: Executing epoch 5/10.
+2026-03-06 18:40:45,332 INFO __main__: Finished epoch 5/10 | mean_loss=2.6187E-04
+2026-03-06 18:40:45,513 INFO __main__: Executing epoch 6/10.
+2026-03-06 18:40:46,543 INFO __main__: Finished epoch 6/10 | mean_loss=2.5298E-04
+2026-03-06 18:40:46,713 INFO __main__: Executing epoch 7/10.
+2026-03-06 18:40:47,693 INFO __main__: Finished epoch 7/10 | mean_loss=2.4221E-04
+2026-03-06 18:40:47,869 INFO __main__: Executing epoch 8/10.
+2026-03-06 18:40:48,827 INFO __main__: Finished epoch 8/10 | mean_loss=2.3591E-04
+2026-03-06 18:40:49,038 INFO __main__: Executing epoch 9/10.
+2026-03-06 18:40:49,997 INFO __main__: Finished epoch 9/10 | mean_loss=2.2731E-04
+2026-03-06 18:40:50,182 INFO __main__: Executing epoch 10/10.
+2026-03-06 18:40:51,214 INFO __main__: Finished epoch 10/10 | mean_loss=2.2054E-04
+2026-03-06 18:46:35,109 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 18:46:35,111 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 18:46:35,114 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 18:46:35,291 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 18:46:35,414 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 18:46:35,571 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 18:46:35,631 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-06 18:46:35,865 INFO __main__: Executing epoch 1/10.
+2026-03-06 18:46:41,674 INFO __main__: Finished epoch 1/10 | mean_loss=2.8039E-04
+2026-03-06 18:46:41,887 INFO __main__: Executing epoch 2/10.
+2026-03-06 18:46:43,316 INFO __main__: Finished epoch 2/10 | mean_loss=2.6842E-04
+2026-03-06 18:46:43,513 INFO __main__: Executing epoch 3/10.
+2026-03-06 18:46:44,873 INFO __main__: Finished epoch 3/10 | mean_loss=2.6159E-04
+2026-03-06 18:46:45,036 INFO __main__: Executing epoch 4/10.
+2026-03-06 18:46:46,655 INFO __main__: Finished epoch 4/10 | mean_loss=2.5152E-04
+2026-03-06 18:46:46,861 INFO __main__: Executing epoch 5/10.
+2026-03-06 18:46:48,281 INFO __main__: Finished epoch 5/10 | mean_loss=2.4927E-04
+2026-03-06 18:46:48,504 INFO __main__: Executing epoch 6/10.
+2026-03-06 18:46:50,007 INFO __main__: Finished epoch 6/10 | mean_loss=2.3626E-04
+2026-03-06 18:46:50,208 INFO __main__: Executing epoch 7/10.
+2026-03-06 18:46:51,776 INFO __main__: Finished epoch 7/10 | mean_loss=2.2151E-04
+2026-03-06 18:46:51,988 INFO __main__: Executing epoch 8/10.
+2026-03-06 18:46:53,455 INFO __main__: Finished epoch 8/10 | mean_loss=2.0982E-04
+2026-03-06 18:46:53,638 INFO __main__: Executing epoch 9/10.
+2026-03-06 18:46:55,025 INFO __main__: Finished epoch 9/10 | mean_loss=1.9768E-04
+2026-03-06 18:46:55,207 INFO __main__: Executing epoch 10/10.
+2026-03-06 18:46:56,543 INFO __main__: Finished epoch 10/10 | mean_loss=1.8721E-04
+2026-03-06 18:49:48,854 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 18:49:48,856 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 18:49:48,859 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 18:49:49,018 INFO model.core.model: Initialised state with U_rms=0.032, scaled to U_target=0.156 with scale factor 4.817
+2026-03-06 18:49:49,165 INFO model.core.model: Suggested initial dt for stability: 0.010
+2026-03-06 18:49:49,272 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 18:49:49,348 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-06 18:49:49,578 INFO __main__: Executing epoch 1/10.
+2026-03-06 18:49:55,026 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8039E-04 | mean_test_loss=2.6399E-04
+2026-03-06 18:49:55,242 INFO __main__: Executing epoch 2/10.
+2026-03-06 18:49:56,519 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.6842E-04 | mean_test_loss=2.7538E-04
+2026-03-06 18:49:56,714 INFO __main__: Executing epoch 3/10.
+2026-03-06 18:49:58,036 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.6159E-04 | mean_test_loss=2.6902E-04
+2026-03-06 18:49:58,244 INFO __main__: Executing epoch 4/10.
+2026-03-06 18:49:59,529 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.5152E-04 | mean_test_loss=2.6269E-04
+2026-03-06 18:49:59,738 INFO __main__: Executing epoch 5/10.
+2026-03-06 18:50:01,028 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.4927E-04 | mean_test_loss=2.3210E-04
+2026-03-06 18:50:01,231 INFO __main__: Executing epoch 6/10.
+2026-03-06 18:50:02,524 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.3626E-04 | mean_test_loss=2.2339E-04
+2026-03-06 18:50:02,683 INFO __main__: Executing epoch 7/10.
+2026-03-06 18:50:03,979 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.2151E-04 | mean_test_loss=2.1766E-04
+2026-03-06 18:50:04,197 INFO __main__: Executing epoch 8/10.
+2026-03-06 18:50:05,509 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.0982E-04 | mean_test_loss=2.0457E-04
+2026-03-06 18:50:05,709 INFO __main__: Executing epoch 9/10.
+2026-03-06 18:50:07,011 INFO __main__: Finished epoch 9/10 | mean_train_loss=1.9768E-04 | mean_test_loss=1.9166E-04
+2026-03-06 18:50:07,218 INFO __main__: Executing epoch 10/10.
+2026-03-06 18:50:08,588 INFO __main__: Finished epoch 10/10 | mean_train_loss=1.8721E-04 | mean_test_loss=1.7603E-04
+2026-03-06 18:50:40,858 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 18:50:40,859 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 18:50:40,861 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 18:50:40,968 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-06 18:50:41,071 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-06 18:50:41,192 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03
+2026-03-06 18:50:41,194 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps (cadence: 100, batch_steps: 3)
+2026-03-06 18:50:41,283 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-06 18:50:41,899 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 1000, 1, 32, 32)
+2026-03-06 18:50:45,680 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-06 18:50:46,685 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-06 18:50:47,650 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-06 18:50:48,544 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-06 18:50:49,471 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-06 18:50:50,393 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-06 18:50:51,355 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-06 18:50:52,340 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-06 18:50:53,247 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-06 18:50:54,182 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-06 18:50:55,104 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-06 18:50:55,105 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-06 18:50:55,108 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03\trajectories.zarr
+2026-03-06 18:50:55,188 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-06 18:53:56,978 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-06 18:53:56,979 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-06 18:53:56,982 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-06 18:53:57,152 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-06 18:53:57,282 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-06 18:53:57,421 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03, loading data from there.
+2026-03-06 18:53:57,477 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-06 18:54:22,922 INFO __main__: Executing epoch 1/10.
+2026-03-06 23:15:24,675 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.7923E-04 | mean_test_loss=2.6135E-04
+2026-03-06 23:16:57,781 INFO __main__: Executing epoch 2/10.
+2026-03-07 11:41:13,997 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 11:41:13,999 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 11:41:14,002 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 11:41:18,530 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 11:41:18,794 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 11:41:20,674 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_04
+2026-03-07 11:41:20,678 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps (cadence: 100, batch_steps: 3)
+2026-03-07 11:41:22,919 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 11:41:23,662 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 32, 32)
+2026-03-07 11:41:23,703 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 11:41:23,778 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 11:41:23,799 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 11:41:23,829 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 11:41:23,872 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 11:41:23,909 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 11:41:23,964 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 11:41:23,991 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 11:41:24,024 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 11:41:24,063 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 11:41:24,095 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 11:41:24,097 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 11:41:24,098 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_04\trajectories.zarr
+2026-03-07 11:41:26,850 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 11:41:28,765 INFO __main__: Executing epoch 1/10.
+2026-03-07 11:41:34,446 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 11:41:34,659 INFO __main__: Executing epoch 2/10.
+2026-03-07 11:41:36,061 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7344E-04 | mean_test_loss=2.8221E-04
+2026-03-07 11:41:36,281 INFO __main__: Executing epoch 3/10.
+2026-03-07 11:41:37,583 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7216E-04 | mean_test_loss=2.8175E-04
+2026-03-07 11:41:37,782 INFO __main__: Executing epoch 4/10.
+2026-03-07 11:41:39,068 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.6915E-04 | mean_test_loss=2.8378E-04
+2026-03-07 11:41:39,275 INFO __main__: Executing epoch 5/10.
+2026-03-07 11:41:40,574 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7573E-04 | mean_test_loss=2.6137E-04
+2026-03-07 11:41:40,788 INFO __main__: Executing epoch 6/10.
+2026-03-07 11:41:42,101 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7063E-04 | mean_test_loss=2.6346E-04
+2026-03-07 11:41:42,303 INFO __main__: Executing epoch 7/10.
+2026-03-07 11:41:43,578 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6387E-04 | mean_test_loss=2.6649E-04
+2026-03-07 11:41:43,791 INFO __main__: Executing epoch 8/10.
+2026-03-07 11:41:45,073 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.6219E-04 | mean_test_loss=2.5479E-04
+2026-03-07 11:41:45,281 INFO __main__: Executing epoch 9/10.
+2026-03-07 11:41:46,558 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.5567E-04 | mean_test_loss=2.5110E-04
+2026-03-07 11:41:46,761 INFO __main__: Executing epoch 10/10.
+2026-03-07 11:41:48,045 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.5121E-04 | mean_test_loss=2.4081E-04
+2026-03-07 11:50:25,352 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 11:50:25,354 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 11:50:25,357 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 11:50:25,505 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 11:50:25,638 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 11:50:25,802 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_05
+2026-03-07 11:50:25,805 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps (cadence: 100, batch_steps: 3)
+2026-03-07 11:50:25,917 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 11:50:26,741 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 1000, 1, 32, 32)
+2026-03-07 11:50:30,948 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 11:50:32,219 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 11:50:33,683 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 11:50:34,765 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 11:50:35,681 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 11:50:36,676 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 11:50:37,748 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 11:50:38,708 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 11:50:39,579 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 11:50:40,568 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 11:50:41,545 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 11:50:41,546 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 11:50:41,547 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_05\trajectories.zarr
+2026-03-07 11:50:41,630 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-07 11:56:19,287 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 11:56:19,289 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 11:56:19,291 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 11:56:19,427 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 11:56:19,548 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 11:56:19,648 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01
+2026-03-07 11:56:19,651 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps (cadence: 100, batch_steps: 3)
+2026-03-07 11:56:19,719 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 11:56:20,537 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 1000, 1, 32, 32)
+2026-03-07 11:56:25,387 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 11:56:26,418 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 11:56:27,614 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 11:56:28,589 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 11:56:29,388 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 11:56:30,403 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 11:56:31,278 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 11:56:32,169 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 11:56:33,003 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 11:56:33,921 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 11:56:34,900 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 11:56:34,902 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 11:56:34,903 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01\trajectories.zarr
+2026-03-07 11:56:34,950 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-07 11:58:16,931 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:08:41,503 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:08:41,505 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:08:41,508 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:08:45,690 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:08:45,928 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:08:47,634 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-07 12:08:47,637 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps (cadence: 100, batch_steps: 3)
+2026-03-07 12:08:49,978 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:08:50,664 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 1000, 1, 32, 32)
+2026-03-07 12:08:55,627 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:08:56,685 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:08:57,725 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:08:58,658 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:08:59,558 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:09:00,532 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:09:01,399 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:09:02,249 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:09:03,069 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:09:03,986 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:09:05,632 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:09:05,634 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:09:05,635 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02\trajectories.zarr
+2026-03-07 12:09:08,123 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-07 12:09:48,520 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:09:48,522 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:09:48,524 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:09:48,651 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:09:48,767 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:09:48,901 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01
+2026-03-07 12:09:48,904 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps (cadence: 100, batch_steps: 3)
+2026-03-07 12:09:48,987 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:09:49,724 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 1000, 1, 32, 32)
+2026-03-07 12:09:54,061 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:09:55,169 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:09:56,136 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:09:56,942 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:09:57,776 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:09:58,659 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:09:59,532 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:10:00,414 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:10:01,339 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:10:02,241 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:10:03,133 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:10:03,134 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:10:03,135 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01\trajectories.zarr
+2026-03-07 12:10:03,186 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-07 12:11:46,365 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:30:45,508 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:30:45,510 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:30:45,512 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:30:45,631 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:30:45,752 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:30:45,868 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-07 12:30:45,870 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps (cadence: 100, batch_steps: 3)
+2026-03-07 12:30:45,969 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:30:46,643 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 32, 32)
+2026-03-07 12:30:46,687 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:30:46,720 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:30:46,750 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:30:46,794 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:30:46,845 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:30:46,881 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:30:46,932 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:30:46,967 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:30:47,021 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:30:47,061 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:30:47,116 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:30:47,119 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:30:47,122 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02\trajectories.zarr
+2026-03-07 12:30:47,251 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 12:30:48,603 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:30:58,312 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 12:30:58,602 INFO __main__: Executing epoch 2/10.
+2026-03-07 12:31:01,174 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7344E-04 | mean_test_loss=2.8221E-04
+2026-03-07 12:31:01,471 INFO __main__: Executing epoch 3/10.
+2026-03-07 12:31:03,989 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7216E-04 | mean_test_loss=2.8175E-04
+2026-03-07 12:31:04,283 INFO __main__: Executing epoch 4/10.
+2026-03-07 12:31:06,758 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.6915E-04 | mean_test_loss=2.8378E-04
+2026-03-07 12:31:07,052 INFO __main__: Executing epoch 5/10.
+2026-03-07 12:31:09,545 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7573E-04 | mean_test_loss=2.6137E-04
+2026-03-07 12:31:09,833 INFO __main__: Executing epoch 6/10.
+2026-03-07 12:31:12,400 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7063E-04 | mean_test_loss=2.6346E-04
+2026-03-07 12:31:12,693 INFO __main__: Executing epoch 7/10.
+2026-03-07 12:31:15,160 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6387E-04 | mean_test_loss=2.6649E-04
+2026-03-07 12:31:15,447 INFO __main__: Executing epoch 8/10.
+2026-03-07 12:31:17,930 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.6219E-04 | mean_test_loss=2.5479E-04
+2026-03-07 12:31:18,234 INFO __main__: Executing epoch 9/10.
+2026-03-07 12:31:20,728 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.5567E-04 | mean_test_loss=2.5110E-04
+2026-03-07 12:31:21,026 INFO __main__: Executing epoch 10/10.
+2026-03-07 12:31:23,504 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.5121E-04 | mean_test_loss=2.4081E-04
+2026-03-07 12:31:38,263 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:31:38,265 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:31:38,266 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:31:38,395 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:31:38,526 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:31:38,688 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03
+2026-03-07 12:31:38,691 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps (cadence: 100, batch_steps: 3)
+2026-03-07 12:31:38,787 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:31:39,528 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 32, 32)
+2026-03-07 12:31:39,575 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:31:39,619 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:31:39,639 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:31:39,662 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:31:39,684 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:31:39,706 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:31:39,727 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:31:39,749 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:31:39,785 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:31:39,805 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:31:39,826 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:31:39,828 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:31:39,830 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03\trajectories.zarr
+2026-03-07 12:31:39,877 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 12:31:40,746 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:31:46,700 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 12:31:46,938 INFO __main__: Executing epoch 2/10.
+2026-03-07 12:31:48,261 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7344E-04 | mean_test_loss=2.8221E-04
+2026-03-07 12:31:48,456 INFO __main__: Executing epoch 3/10.
+2026-03-07 12:31:49,800 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7216E-04 | mean_test_loss=2.8175E-04
+2026-03-07 12:31:50,030 INFO __main__: Executing epoch 4/10.
+2026-03-07 12:31:51,340 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.6915E-04 | mean_test_loss=2.8378E-04
+2026-03-07 12:31:51,543 INFO __main__: Executing epoch 5/10.
+2026-03-07 12:31:52,941 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7573E-04 | mean_test_loss=2.6137E-04
+2026-03-07 12:31:53,163 INFO __main__: Executing epoch 6/10.
+2026-03-07 12:31:54,481 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7063E-04 | mean_test_loss=2.6346E-04
+2026-03-07 12:31:54,694 INFO __main__: Executing epoch 7/10.
+2026-03-07 12:31:56,037 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6387E-04 | mean_test_loss=2.6649E-04
+2026-03-07 12:31:56,271 INFO __main__: Executing epoch 8/10.
+2026-03-07 12:31:57,603 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.6219E-04 | mean_test_loss=2.5479E-04
+2026-03-07 12:31:57,820 INFO __main__: Executing epoch 9/10.
+2026-03-07 12:31:59,164 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.5567E-04 | mean_test_loss=2.5110E-04
+2026-03-07 12:31:59,379 INFO __main__: Executing epoch 10/10.
+2026-03-07 12:32:00,722 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.5121E-04 | mean_test_loss=2.4081E-04
+2026-03-07 12:37:38,847 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:37:38,848 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:37:38,851 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:37:38,973 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:37:39,149 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:37:39,260 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03
+2026-03-07 12:37:39,264 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps (cadence: 100, batch_steps: 3)
+2026-03-07 12:37:39,352 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:37:40,113 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 32, 32)
+2026-03-07 12:37:40,152 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:37:40,200 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:37:40,223 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:37:40,244 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:37:40,267 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:37:40,290 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:37:40,329 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:37:40,351 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:37:40,376 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:37:40,401 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:37:40,427 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:37:40,428 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:37:40,431 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03\trajectories.zarr
+2026-03-07 12:37:40,484 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 12:37:41,370 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:37:46,868 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 12:37:47,100 INFO __main__: Executing epoch 2/10.
+2026-03-07 12:37:48,405 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7344E-04 | mean_test_loss=2.8221E-04
+2026-03-07 12:37:48,616 INFO __main__: Executing epoch 3/10.
+2026-03-07 12:37:49,911 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7216E-04 | mean_test_loss=2.8175E-04
+2026-03-07 12:37:50,119 INFO __main__: Executing epoch 4/10.
+2026-03-07 12:37:51,379 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.6915E-04 | mean_test_loss=2.8378E-04
+2026-03-07 12:37:51,574 INFO __main__: Executing epoch 5/10.
+2026-03-07 12:37:52,874 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7573E-04 | mean_test_loss=2.6137E-04
+2026-03-07 12:37:53,117 INFO __main__: Executing epoch 6/10.
+2026-03-07 12:37:54,522 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7063E-04 | mean_test_loss=2.6346E-04
+2026-03-07 12:37:54,732 INFO __main__: Executing epoch 7/10.
+2026-03-07 12:37:56,038 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6387E-04 | mean_test_loss=2.6649E-04
+2026-03-07 12:37:56,258 INFO __main__: Executing epoch 8/10.
+2026-03-07 12:37:57,550 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.6219E-04 | mean_test_loss=2.5479E-04
+2026-03-07 12:37:57,746 INFO __main__: Executing epoch 9/10.
+2026-03-07 12:37:59,019 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.5567E-04 | mean_test_loss=2.5110E-04
+2026-03-07 12:37:59,213 INFO __main__: Executing epoch 10/10.
+2026-03-07 12:38:00,490 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.5121E-04 | mean_test_loss=2.4081E-04
+2026-03-07 12:40:33,540 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:40:33,543 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:40:33,548 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:40:33,698 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:40:33,815 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:40:33,920 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_04
+2026-03-07 12:40:33,923 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps (cadence: 100, batch_steps: 3)
+2026-03-07 12:40:34,011 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:40:34,871 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 32, 32)
+2026-03-07 12:40:34,929 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:40:34,955 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:40:34,980 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:40:35,006 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:40:35,030 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:40:35,053 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:40:35,078 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:40:35,111 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:40:35,134 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:40:35,176 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:40:35,199 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:40:35,201 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:40:35,202 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_04\trajectories.zarr
+2026-03-07 12:40:35,254 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 12:40:36,187 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:40:41,921 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 12:40:59,392 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:40:59,394 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:40:59,395 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:40:59,516 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:40:59,635 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:40:59,781 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01
+2026-03-07 12:40:59,784 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps (cadence: 100, batch_steps: 3)
+2026-03-07 12:40:59,880 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:41:00,652 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 32, 32)
+2026-03-07 12:41:00,700 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:41:00,758 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:41:00,800 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:41:00,850 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:41:00,899 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:41:00,935 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:41:00,983 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:41:01,028 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:41:01,078 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:41:01,124 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:41:01,158 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:41:01,160 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:41:01,163 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01\trajectories.zarr
+2026-03-07 12:41:01,226 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 12:41:02,176 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:41:07,545 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 12:41:07,770 INFO __main__: Executing epoch 2/10.
+2026-03-07 12:41:09,070 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7344E-04 | mean_test_loss=2.8221E-04
+2026-03-07 12:41:09,357 INFO __main__: Executing epoch 3/10.
+2026-03-07 12:41:10,633 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7216E-04 | mean_test_loss=2.8175E-04
+2026-03-07 12:41:10,838 INFO __main__: Executing epoch 4/10.
+2026-03-07 12:41:12,117 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.6915E-04 | mean_test_loss=2.8378E-04
+2026-03-07 12:41:12,324 INFO __main__: Executing epoch 5/10.
+2026-03-07 12:41:13,603 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7573E-04 | mean_test_loss=2.6137E-04
+2026-03-07 12:41:13,810 INFO __main__: Executing epoch 6/10.
+2026-03-07 12:41:15,098 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7063E-04 | mean_test_loss=2.6346E-04
+2026-03-07 12:41:15,287 INFO __main__: Executing epoch 7/10.
+2026-03-07 12:41:16,566 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6387E-04 | mean_test_loss=2.6649E-04
+2026-03-07 12:41:16,766 INFO __main__: Executing epoch 8/10.
+2026-03-07 12:41:18,042 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.6219E-04 | mean_test_loss=2.5479E-04
+2026-03-07 12:41:18,247 INFO __main__: Executing epoch 9/10.
+2026-03-07 12:41:19,532 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.5567E-04 | mean_test_loss=2.5110E-04
+2026-03-07 12:41:19,736 INFO __main__: Executing epoch 10/10.
+2026-03-07 12:41:21,011 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.5121E-04 | mean_test_loss=2.4081E-04
+2026-03-07 12:41:24,863 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:41:24,865 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:41:24,867 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:41:25,018 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:41:25,140 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:41:25,320 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-07 12:41:25,322 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps (cadence: 100, batch_steps: 3)
+2026-03-07 12:41:25,427 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:41:26,207 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 32, 32)
+2026-03-07 12:41:26,248 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:41:26,273 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:41:26,298 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:41:26,322 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:41:26,349 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:41:26,374 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:41:26,399 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:41:26,425 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:41:26,460 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:41:26,484 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:41:26,527 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:41:26,529 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:41:26,531 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02\trajectories.zarr
+2026-03-07 12:41:26,589 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 12:41:27,480 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:41:32,939 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 12:41:33,184 INFO __main__: Executing epoch 2/10.
+2026-03-07 12:41:34,604 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7344E-04 | mean_test_loss=2.8221E-04
+2026-03-07 12:41:34,798 INFO __main__: Executing epoch 3/10.
+2026-03-07 12:41:36,285 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7216E-04 | mean_test_loss=2.8175E-04
+2026-03-07 12:41:36,528 INFO __main__: Executing epoch 4/10.
+2026-03-07 12:41:37,890 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.6915E-04 | mean_test_loss=2.8378E-04
+2026-03-07 12:41:38,095 INFO __main__: Executing epoch 5/10.
+2026-03-07 12:41:39,450 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7573E-04 | mean_test_loss=2.6137E-04
+2026-03-07 12:41:39,649 INFO __main__: Executing epoch 6/10.
+2026-03-07 12:41:40,961 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7063E-04 | mean_test_loss=2.6346E-04
+2026-03-07 12:41:41,121 INFO __main__: Executing epoch 7/10.
+2026-03-07 12:41:42,408 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6387E-04 | mean_test_loss=2.6649E-04
+2026-03-07 12:41:42,647 INFO __main__: Executing epoch 8/10.
+2026-03-07 12:41:44,221 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.6219E-04 | mean_test_loss=2.5479E-04
+2026-03-07 12:41:44,423 INFO __main__: Executing epoch 9/10.
+2026-03-07 12:41:45,856 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.5567E-04 | mean_test_loss=2.5110E-04
+2026-03-07 12:41:46,034 INFO __main__: Executing epoch 10/10.
+2026-03-07 12:41:47,475 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.5121E-04 | mean_test_loss=2.4081E-04
+2026-03-07 12:42:04,547 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:42:04,549 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:42:04,552 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:42:04,669 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:42:04,809 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:42:04,938 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03
+2026-03-07 12:42:04,941 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps (cadence: 100, batch_steps: 3)
+2026-03-07 12:42:05,058 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:42:06,061 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 32, 32)
+2026-03-07 12:42:06,124 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:42:06,167 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:42:06,187 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:42:06,210 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:42:06,231 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:42:06,254 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:42:06,278 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:42:06,299 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:42:06,321 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:42:06,341 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:42:06,362 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:42:06,363 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:42:06,364 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_03\trajectories.zarr
+2026-03-07 12:42:06,425 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 12:42:07,299 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:42:12,718 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 12:42:12,940 INFO __main__: Executing epoch 2/10.
+2026-03-07 12:42:14,295 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7344E-04 | mean_test_loss=2.8221E-04
+2026-03-07 12:42:14,507 INFO __main__: Executing epoch 3/10.
+2026-03-07 12:42:15,795 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7216E-04 | mean_test_loss=2.8175E-04
+2026-03-07 12:42:15,983 INFO __main__: Executing epoch 4/10.
+2026-03-07 12:42:17,274 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.6915E-04 | mean_test_loss=2.8378E-04
+2026-03-07 12:42:17,471 INFO __main__: Executing epoch 5/10.
+2026-03-07 12:42:18,754 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7573E-04 | mean_test_loss=2.6137E-04
+2026-03-07 12:42:18,957 INFO __main__: Executing epoch 6/10.
+2026-03-07 12:42:20,241 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7063E-04 | mean_test_loss=2.6346E-04
+2026-03-07 12:42:20,463 INFO __main__: Executing epoch 7/10.
+2026-03-07 12:42:21,758 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6387E-04 | mean_test_loss=2.6649E-04
+2026-03-07 12:42:21,973 INFO __main__: Executing epoch 8/10.
+2026-03-07 12:42:23,258 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.6219E-04 | mean_test_loss=2.5479E-04
+2026-03-07 12:42:23,473 INFO __main__: Executing epoch 9/10.
+2026-03-07 12:42:24,759 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.5567E-04 | mean_test_loss=2.5110E-04
+2026-03-07 12:42:24,974 INFO __main__: Executing epoch 10/10.
+2026-03-07 12:42:26,259 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.5121E-04 | mean_test_loss=2.4081E-04
+2026-03-07 12:42:28,445 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:42:28,448 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:42:28,451 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:42:28,590 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:42:28,698 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:42:28,857 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_04
+2026-03-07 12:42:28,860 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps (cadence: 100, batch_steps: 3)
+2026-03-07 12:42:28,955 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:42:29,759 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 32, 32)
+2026-03-07 12:42:29,810 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:42:29,834 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:42:29,853 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:42:29,875 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:42:29,897 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:42:29,918 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:42:29,939 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:42:29,960 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:42:29,981 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:42:30,004 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:42:30,026 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:42:30,028 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:42:30,030 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_04\trajectories.zarr
+2026-03-07 12:42:30,080 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 12:42:30,940 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:42:37,167 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 12:42:37,422 INFO __main__: Executing epoch 2/10.
+2026-03-07 12:42:38,890 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7344E-04 | mean_test_loss=2.8221E-04
+2026-03-07 12:42:39,085 INFO __main__: Executing epoch 3/10.
+2026-03-07 12:42:40,523 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7216E-04 | mean_test_loss=2.8175E-04
+2026-03-07 12:42:40,841 INFO __main__: Executing epoch 4/10.
+2026-03-07 12:42:42,289 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.6915E-04 | mean_test_loss=2.8378E-04
+2026-03-07 12:42:42,522 INFO __main__: Executing epoch 5/10.
+2026-03-07 12:42:43,816 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7573E-04 | mean_test_loss=2.6137E-04
+2026-03-07 12:42:44,032 INFO __main__: Executing epoch 6/10.
+2026-03-07 12:42:45,334 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7063E-04 | mean_test_loss=2.6346E-04
+2026-03-07 12:42:45,550 INFO __main__: Executing epoch 7/10.
+2026-03-07 12:42:46,869 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6387E-04 | mean_test_loss=2.6649E-04
+2026-03-07 12:42:47,091 INFO __main__: Executing epoch 8/10.
+2026-03-07 12:42:48,368 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.6219E-04 | mean_test_loss=2.5479E-04
+2026-03-07 12:42:48,587 INFO __main__: Executing epoch 9/10.
+2026-03-07 12:42:49,888 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.5567E-04 | mean_test_loss=2.5110E-04
+2026-03-07 12:42:50,091 INFO __main__: Executing epoch 10/10.
+2026-03-07 12:42:51,398 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.5121E-04 | mean_test_loss=2.4081E-04
+2026-03-07 12:42:52,591 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:42:52,593 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:42:52,596 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:42:52,718 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:42:52,839 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:42:52,966 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_05
+2026-03-07 12:42:52,968 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps (cadence: 100, batch_steps: 3)
+2026-03-07 12:42:53,064 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:42:53,783 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 32, 32)
+2026-03-07 12:42:53,849 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:42:53,886 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:42:53,915 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:42:53,942 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:42:53,980 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:42:54,029 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:42:54,075 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:42:54,115 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:42:54,166 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:42:54,194 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:42:54,241 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:42:54,244 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:42:54,247 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_05\trajectories.zarr
+2026-03-07 12:42:54,314 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 12:42:55,295 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:43:00,714 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 12:43:00,947 INFO __main__: Executing epoch 2/10.
+2026-03-07 12:43:02,258 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7344E-04 | mean_test_loss=2.8221E-04
+2026-03-07 12:43:02,494 INFO __main__: Executing epoch 3/10.
+2026-03-07 12:43:03,803 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7216E-04 | mean_test_loss=2.8175E-04
+2026-03-07 12:43:04,000 INFO __main__: Executing epoch 4/10.
+2026-03-07 12:43:05,290 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.6915E-04 | mean_test_loss=2.8378E-04
+2026-03-07 12:43:05,503 INFO __main__: Executing epoch 5/10.
+2026-03-07 12:43:06,789 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7573E-04 | mean_test_loss=2.6137E-04
+2026-03-07 12:43:07,003 INFO __main__: Executing epoch 6/10.
+2026-03-07 12:43:08,286 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7063E-04 | mean_test_loss=2.6346E-04
+2026-03-07 12:43:08,494 INFO __main__: Executing epoch 7/10.
+2026-03-07 12:43:09,787 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6387E-04 | mean_test_loss=2.6649E-04
+2026-03-07 12:43:09,996 INFO __main__: Executing epoch 8/10.
+2026-03-07 12:43:11,279 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.6219E-04 | mean_test_loss=2.5479E-04
+2026-03-07 12:43:11,495 INFO __main__: Executing epoch 9/10.
+2026-03-07 12:43:12,753 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.5567E-04 | mean_test_loss=2.5110E-04
+2026-03-07 12:43:12,961 INFO __main__: Executing epoch 10/10.
+2026-03-07 12:43:14,242 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.5121E-04 | mean_test_loss=2.4081E-04
+2026-03-07 12:43:28,239 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:43:28,240 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:43:28,242 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:43:28,367 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:43:28,470 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:43:28,641 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_06
+2026-03-07 12:43:28,645 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps (cadence: 100, batch_steps: 3)
+2026-03-07 12:43:28,728 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:43:29,905 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 32, 32)
+2026-03-07 12:43:29,950 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:43:29,976 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:43:30,010 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:43:30,048 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:43:30,080 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:43:30,127 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:43:30,155 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:43:30,181 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:43:30,217 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:43:30,247 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:43:30,275 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:43:30,277 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:43:30,279 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_06\trajectories.zarr
+2026-03-07 12:43:30,323 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 12:43:31,181 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:43:36,557 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 12:43:36,750 INFO __main__: Executing epoch 2/10.
+2026-03-07 12:43:38,106 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7344E-04 | mean_test_loss=2.8221E-04
+2026-03-07 12:43:38,283 INFO __main__: Executing epoch 3/10.
+2026-03-07 12:43:39,605 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7216E-04 | mean_test_loss=2.8175E-04
+2026-03-07 12:43:39,807 INFO __main__: Executing epoch 4/10.
+2026-03-07 12:43:41,133 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.6915E-04 | mean_test_loss=2.8378E-04
+2026-03-07 12:43:41,315 INFO __main__: Executing epoch 5/10.
+2026-03-07 12:43:42,624 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7573E-04 | mean_test_loss=2.6137E-04
+2026-03-07 12:43:42,828 INFO __main__: Executing epoch 6/10.
+2026-03-07 12:43:44,140 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7063E-04 | mean_test_loss=2.6346E-04
+2026-03-07 12:43:44,285 INFO __main__: Executing epoch 7/10.
+2026-03-07 12:43:45,842 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6387E-04 | mean_test_loss=2.6649E-04
+2026-03-07 12:43:46,089 INFO __main__: Executing epoch 8/10.
+2026-03-07 12:43:47,527 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.6219E-04 | mean_test_loss=2.5479E-04
+2026-03-07 12:43:47,719 INFO __main__: Executing epoch 9/10.
+2026-03-07 12:43:49,095 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.5567E-04 | mean_test_loss=2.5110E-04
+2026-03-07 12:43:49,298 INFO __main__: Executing epoch 10/10.
+2026-03-07 12:43:50,747 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.5121E-04 | mean_test_loss=2.4081E-04
+2026-03-07 12:44:25,131 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:44:25,133 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:44:25,137 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:44:25,278 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:44:25,415 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:44:25,554 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01
+2026-03-07 12:44:25,557 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps (cadence: 100, batch_steps: 3)
+2026-03-07 12:44:25,647 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:44:26,403 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 32, 32)
+2026-03-07 12:44:26,463 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:44:26,495 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:44:26,518 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:44:26,540 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:44:26,562 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:44:26,583 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:44:26,606 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:44:26,627 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:44:26,647 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:44:26,707 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:44:26,732 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:44:26,734 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:44:26,736 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01\trajectories.zarr
+2026-03-07 12:44:26,792 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 12:44:27,686 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:44:33,388 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 12:44:33,603 INFO __main__: Executing epoch 2/10.
+2026-03-07 12:44:34,894 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7344E-04 | mean_test_loss=2.8221E-04
+2026-03-07 12:44:35,101 INFO __main__: Executing epoch 3/10.
+2026-03-07 12:44:36,399 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7216E-04 | mean_test_loss=2.8175E-04
+2026-03-07 12:44:36,597 INFO __main__: Executing epoch 4/10.
+2026-03-07 12:44:37,868 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.6915E-04 | mean_test_loss=2.8378E-04
+2026-03-07 12:44:38,067 INFO __main__: Executing epoch 5/10.
+2026-03-07 12:44:39,360 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7573E-04 | mean_test_loss=2.6137E-04
+2026-03-07 12:44:39,581 INFO __main__: Executing epoch 6/10.
+2026-03-07 12:44:40,871 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7063E-04 | mean_test_loss=2.6346E-04
+2026-03-07 12:44:41,080 INFO __main__: Executing epoch 7/10.
+2026-03-07 12:44:42,350 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6387E-04 | mean_test_loss=2.6649E-04
+2026-03-07 12:44:42,540 INFO __main__: Executing epoch 8/10.
+2026-03-07 12:44:43,807 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.6219E-04 | mean_test_loss=2.5479E-04
+2026-03-07 12:44:43,999 INFO __main__: Executing epoch 9/10.
+2026-03-07 12:44:45,290 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.5567E-04 | mean_test_loss=2.5110E-04
+2026-03-07 12:44:45,492 INFO __main__: Executing epoch 10/10.
+2026-03-07 12:44:46,777 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.5121E-04 | mean_test_loss=2.4081E-04
+2026-03-07 12:44:48,806 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:44:48,808 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:44:48,812 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:44:48,958 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:44:49,084 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:44:49,238 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 12:44:49,317 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 12:44:49,556 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:44:55,338 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 12:44:55,556 INFO __main__: Executing epoch 2/10.
+2026-03-07 12:44:56,881 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7344E-04 | mean_test_loss=2.8221E-04
+2026-03-07 12:44:57,108 INFO __main__: Executing epoch 3/10.
+2026-03-07 12:44:58,642 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7216E-04 | mean_test_loss=2.8175E-04
+2026-03-07 12:44:58,873 INFO __main__: Executing epoch 4/10.
+2026-03-07 12:45:00,299 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.6915E-04 | mean_test_loss=2.8378E-04
+2026-03-07 12:45:00,496 INFO __main__: Executing epoch 5/10.
+2026-03-07 12:45:01,918 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7573E-04 | mean_test_loss=2.6137E-04
+2026-03-07 12:45:02,153 INFO __main__: Executing epoch 6/10.
+2026-03-07 12:45:03,577 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7063E-04 | mean_test_loss=2.6346E-04
+2026-03-07 12:45:03,761 INFO __main__: Executing epoch 7/10.
+2026-03-07 12:45:05,082 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6387E-04 | mean_test_loss=2.6649E-04
+2026-03-07 12:45:05,290 INFO __main__: Executing epoch 8/10.
+2026-03-07 12:45:06,666 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.6219E-04 | mean_test_loss=2.5479E-04
+2026-03-07 12:45:06,847 INFO __main__: Executing epoch 9/10.
+2026-03-07 12:45:08,261 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.5567E-04 | mean_test_loss=2.5110E-04
+2026-03-07 12:45:08,473 INFO __main__: Executing epoch 10/10.
+2026-03-07 12:45:09,807 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.5121E-04 | mean_test_loss=2.4081E-04
+2026-03-07 12:46:06,048 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:46:06,050 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:46:06,053 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:46:06,193 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:46:06,338 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:46:06,476 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 12:46:06,544 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 12:46:06,843 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:46:12,580 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 12:46:12,788 INFO __main__: Executing epoch 2/10.
+2026-03-07 12:46:14,086 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7344E-04 | mean_test_loss=2.8221E-04
+2026-03-07 12:46:14,295 INFO __main__: Executing epoch 3/10.
+2026-03-07 12:46:15,574 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7216E-04 | mean_test_loss=2.8175E-04
+2026-03-07 12:46:15,764 INFO __main__: Executing epoch 4/10.
+2026-03-07 12:46:17,068 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.6915E-04 | mean_test_loss=2.8378E-04
+2026-03-07 12:46:17,274 INFO __main__: Executing epoch 5/10.
+2026-03-07 12:46:18,560 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7573E-04 | mean_test_loss=2.6137E-04
+2026-03-07 12:46:18,763 INFO __main__: Executing epoch 6/10.
+2026-03-07 12:46:20,058 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7063E-04 | mean_test_loss=2.6346E-04
+2026-03-07 12:46:20,277 INFO __main__: Executing epoch 7/10.
+2026-03-07 12:46:21,563 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6387E-04 | mean_test_loss=2.6649E-04
+2026-03-07 12:46:21,764 INFO __main__: Executing epoch 8/10.
+2026-03-07 12:46:23,081 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.6219E-04 | mean_test_loss=2.5479E-04
+2026-03-07 12:46:23,291 INFO __main__: Executing epoch 9/10.
+2026-03-07 12:46:24,596 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.5567E-04 | mean_test_loss=2.5110E-04
+2026-03-07 12:46:24,794 INFO __main__: Executing epoch 10/10.
+2026-03-07 12:46:26,098 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.5121E-04 | mean_test_loss=2.4081E-04
+2026-03-07 12:48:43,948 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:48:43,950 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:48:43,954 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:48:44,126 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:48:44,282 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:48:44,409 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 12:48:44,494 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 12:48:44,789 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:48:50,478 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6651E-04
+2026-03-07 12:48:50,711 INFO __main__: Executing epoch 2/10.
+2026-03-07 12:48:52,033 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7344E-04 | mean_test_loss=2.8221E-04
+2026-03-07 12:48:54,940 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:48:54,941 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:48:54,944 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:48:55,149 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:48:55,293 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:48:55,428 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01
+2026-03-07 12:48:55,432 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps (cadence: 100, batch_steps: 3)
+2026-03-07 12:48:55,562 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:50:23,597 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:50:23,599 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:50:23,602 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:50:23,745 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:50:23,854 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:50:23,999 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 12:50:35,377 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:50:35,378 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:50:35,381 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:50:35,501 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:50:35,603 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:50:35,704 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01
+2026-03-07 12:50:35,836 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:50:36,368 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 128, 128)
+2026-03-07 12:50:36,422 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:50:36,491 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:50:36,522 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:50:36,549 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:50:36,631 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:50:36,661 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:50:36,692 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:50:36,723 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:50:36,754 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:50:36,791 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:50:36,824 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:50:36,826 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:50:36,827 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01\trajectories.zarr
+2026-03-07 12:50:36,906 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 12:50:37,868 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:51:18,825 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:51:18,827 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:51:18,829 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:51:18,956 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:51:19,078 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:51:19,215 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01
+2026-03-07 12:51:19,337 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 12:51:19,806 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 128, 128)
+2026-03-07 12:51:19,867 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 12:51:19,903 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 12:51:19,932 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 12:51:19,962 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 12:51:19,994 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 12:51:20,026 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 12:51:20,058 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 12:51:20,090 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 12:51:20,125 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 12:51:20,157 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 12:51:20,191 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 12:51:20,192 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 12:51:20,194 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01\trajectories.zarr
+2026-03-07 12:51:20,245 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 12:51:21,156 INFO __main__: Executing epoch 1/10.
+2026-03-07 12:51:26,283 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 12:51:26,285 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 12:51:26,288 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 12:51:26,436 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 12:51:26,565 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 12:51:26,717 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 12:51:26,781 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 12:51:27,036 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:00:22,664 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:00:22,666 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:00:22,668 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:00:22,809 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:00:22,915 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:00:23,047 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:00:23,103 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:00:23,352 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:08:41,049 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:08:41,050 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:08:41,052 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:08:41,167 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:08:41,258 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:08:41,375 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:08:41,449 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:08:41,643 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:08:55,970 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:08:55,972 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:08:55,975 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:08:56,112 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:08:56,244 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:08:56,338 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:08:56,397 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:08:56,673 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:09:11,478 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:09:11,480 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:09:11,483 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:09:11,623 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:09:11,733 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:09:11,863 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:09:11,926 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:09:12,160 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:09:31,786 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:09:31,787 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:09:31,791 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:09:31,909 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:09:32,023 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:09:32,132 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:09:32,179 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:09:32,392 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:09:51,613 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:09:51,616 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:09:51,619 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:09:51,756 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:09:51,859 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:09:51,957 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:09:52,003 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:09:52,230 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:10:14,336 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:10:14,338 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:10:14,342 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:10:14,489 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:10:14,609 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:10:14,726 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:10:14,767 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:10:15,015 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:11:11,360 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:11:11,362 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:11:11,367 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:11:11,606 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:11:11,795 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:11:12,071 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:11:12,163 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:11:12,587 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:11:42,230 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:11:42,232 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:11:42,234 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:11:42,454 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:11:42,604 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:11:42,751 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:11:42,817 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:11:43,245 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:11:57,084 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:11:57,089 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:11:57,095 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:11:57,310 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:11:57,401 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:11:57,584 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:11:57,684 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:11:58,137 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:12:12,976 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:12:12,978 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:12:12,982 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:12:13,172 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:12:13,288 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:12:13,431 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:12:13,494 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:12:13,808 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:12:28,369 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:12:28,370 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:12:28,374 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:12:28,499 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:12:28,605 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:12:28,719 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:12:28,767 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:12:29,032 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:13:19,618 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:13:19,619 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:13:19,622 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:13:19,747 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:13:19,855 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:13:19,989 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:13:20,035 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:13:20,267 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:13:46,613 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:13:46,615 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:13:46,617 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:13:46,755 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:13:46,878 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:13:47,003 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:13:47,045 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:13:47,269 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:14:50,038 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:14:50,040 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:14:50,044 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:14:50,202 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:14:50,317 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:14:50,419 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:14:50,471 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:14:50,727 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:16:11,252 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:16:11,256 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:16:11,260 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:16:11,385 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:16:11,487 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:16:11,633 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:16:11,675 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:16:11,866 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:17:12,395 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:17:12,396 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:17:12,399 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:17:12,527 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:17:12,640 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:17:12,750 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:17:12,793 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:17:13,045 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:17:27,655 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:17:27,657 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:17:27,660 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:17:27,805 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:17:27,914 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:17:28,042 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:17:28,084 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:17:28,326 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:18:07,732 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:18:07,734 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:18:07,737 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:18:07,870 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:18:08,005 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:18:08,112 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:18:08,159 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:18:08,401 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:25:11,750 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:25:11,752 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:25:11,756 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:25:11,890 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:25:11,990 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:25:12,110 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 13:25:12,154 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:25:12,382 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:29:24,454 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:29:24,457 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:29:24,461 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:29:24,594 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:29:24,711 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:29:24,851 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01
+2026-03-07 13:29:24,974 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 13:29:25,477 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 128, 128)
+2026-03-07 13:29:25,526 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 13:29:25,578 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 13:29:25,605 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 13:29:25,680 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 13:29:25,718 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 13:29:25,765 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 13:29:25,795 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 13:29:25,846 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 13:29:25,873 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 13:29:25,899 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 13:29:25,926 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 13:29:25,927 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 13:29:25,928 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01\trajectories.zarr
+2026-03-07 13:29:26,032 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:29:27,099 INFO __main__: Executing epoch 1/10.
+2026-03-07 13:30:42,659 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 13:30:42,661 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 13:30:42,663 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 13:30:42,830 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 13:30:42,943 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 13:30:43,053 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01, loading data from there.
+2026-03-07 13:30:43,091 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 13:30:43,362 INFO __main__: Executing epoch 1/10.
+2026-03-07 20:26:32,091 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 20:26:32,093 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 20:26:32,095 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 20:26:32,240 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 20:26:32,390 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 20:26:32,530 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01, loading data from there.
+2026-03-07 20:26:32,579 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 20:26:32,864 INFO __main__: Executing epoch 1/10.

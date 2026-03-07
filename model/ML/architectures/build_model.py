@@ -2,12 +2,15 @@ import importlib
 import model.ML.architectures.zero
 import model.ML.architectures.cnn
 import model.ML.architectures.unet
+import model.ML.architectures.fno
 importlib.reload(model.ML.architectures.zero)
 importlib.reload(model.ML.architectures.cnn)
 importlib.reload(model.ML.architectures.unet)
+importlib.reload(model.ML.architectures.fno)
 from model.ML.architectures.cnn import CNN
 from model.ML.architectures.zero import ZeroModel
 from model.ML.architectures.unet import UNet
+from model.ML.architectures.fno import FNO
 
 
 def _normalize(name):
@@ -35,6 +38,7 @@ def build_closure(cfg):
         "zero": ZeroModel,
         "cnn": CNN,
         'unet': UNet,
+        'fno': FNO,
     }
 
     arch_name = _resolve_arch_name(cfg)

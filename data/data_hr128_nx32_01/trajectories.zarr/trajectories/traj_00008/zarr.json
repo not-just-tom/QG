@@ -2,18 +2,18 @@
   "shape": [
     10,
     1,
-    32,
-    32
+    128,
+    128
   ],
   "data_type": "float32",
   "chunk_grid": {
     "name": "regular",
     "configuration": {
       "chunk_shape": [
-        10,
+        3,
         1,
-        32,
-        32
+        128,
+        128
       ]
     }
   },

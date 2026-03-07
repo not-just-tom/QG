@@ -1,207 +1,92 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 import matplotlib.animation as animation
-import cmocean as cmo
 import jax.numpy as jnp
 import matplotlib.gridspec as gridspec
+import os
+import re
+import json
 
+RUN_RE = re.compile(r"output_nx(?P<hr>\d+)_(?P<idx>\d{2})")
 
+def metadata_matches(requested: dict, stored: dict) -> bool:
+    return canonicalize(requested) == canonicalize(stored)
 
+def canonicalize(params: dict) -> dict:
+    def round_floats(x):
+        if isinstance(x, float):
+            return round(x, 12)
+        if isinstance(x, dict):
+            return {k: round_floats(v) for k, v in sorted(x.items())}
+        if isinstance(x, list):
+            return [round_floats(v) for v in x]
+        return x
 
+    return round_floats(params)
 
-def animate(recorder, grid, cadence=100, outname="test.gif", plots: list | None = None):
+def find_output_dir(base_dir, params):
     """
-    Build an animation from data already stored in `recorder`.
-    
-    Automatically detects single-layer vs two-layer model and uses appropriate plotting.
-    Uses Recorder's animate_buffers and final_buffers, aligned with its diagnostics.
+    Function for finding the output dir so I can keep 
+    some seblance of organisation in the outputs
     """
-    # Check if we have two-layer data
-    available_plots = list(recorder.diagnostics.keys())
-    plots = plots or available_plots
-    plots = [p for p in plots if p in available_plots]
+    hr_nx = params["nx"] # dunno if i want this or the actual hr_nx
+    prefix = f"output_nx{hr_nx}_"
+    candidates = []
+
+    # just in case lmao 
+    os.makedirs(base_dir, exist_ok=True)
+
+    for name in os.listdir(base_dir):
+        m = RUN_RE.fullmatch(name)
+        if m is None:
+            continue
+        if int(m["hr"]) != hr_nx:
+            continue
+
+        run_dir = os.path.join(base_dir, name)
+        meta_path = os.path.join(run_dir, "metadata.json")
+        if not os.path.exists(meta_path):
+            continue
+
+        try:
+            with open(meta_path) as f:
+                stored_meta = json.load(f)
+        except Exception:
+            continue
+
+        # Exact metadata match
+        if metadata_matches(params, stored_meta.get("parameters", {})):
+            return run_dir, True
+
+        try:
+            candidates.append(int(m["idx"]))
+        except Exception:
+            continue
+
+    # No match found
+    next_idx = max(candidates, default=0) + 1
+    run_name = f"{prefix}{next_idx:02d}"
+    run_dir = os.path.join(base_dir, run_name)
+    os.makedirs(run_dir, exist_ok=True)
+
+    meta_path = os.path.join(run_dir, "metadata.json")
+    metadata = {"parameters": params}
+    try:
+        with open(meta_path, "w") as f:
+            json.dump(metadata, f, indent=4)
+    except Exception:
+        # If writing fails, still return the path so caller can attempt to write
+        pass
+
+    return run_dir, False
+
+
+
+
     
-    if not plots:
-        raise ValueError("No valid diagnostics available for animation")
-    
-    """
-    Build an animation for two-layer model data from `recorder`.
-    
-    For 2D fields with two layers, creates side-by-side plots for each layer.
-    """
-    # Only include plots that actually exist in recorder diagnostics
-    available_plots = list(recorder.diagnostics.keys())
-    plots = plots or available_plots
-    plots = [p for p in plots if p in available_plots]
-    if not plots:
-        raise ValueError("No valid diagnostics available for animation")
-
-    # Gather series data
-    series = {}
-    max_frames = 0
-    for name in plots:
-        if name in recorder.animate_buffers:
-            arr = recorder.animate_buffers.get(name, [])
-            if len(arr) > 0:
-                series[name] = np.stack([np.array(a) for a in arr])
-                max_frames = max(max_frames, series[name].shape[0])
-            else:
-                series[name] = np.empty((0,))
-        elif name in recorder.final_buffers:
-            val = recorder.final_buffers.get(name)
-            series[name] = np.array([val]) if np.isscalar(val) else np.array(val)
-            max_frames = max(max_frames, series[name].shape[0])
-        else:
-            series[name] = np.empty((0,))
-
-    if max_frames == 0:
-        raise ValueError("No recorded data available for requested plots")
-
-    # Determine subplot layout - 1 column per layer for multi-layer fields
-    n_base_plots = len(plots)
-    subplot_cols = []
-    for name in plots:
-        data = series[name]
-        if data.ndim == 4:  # (time, nz, ny, nx) - multi-layer field
-            nz = data.shape[1]
-            subplot_cols.extend([1] * nz)
-        else:
-            subplot_cols.append(1)
-    
-    n_total_cols = sum(subplot_cols)
-    fig, axs_flat = plt.subplots(1, n_total_cols, figsize=(5 * n_total_cols, 5))
-    axs_flat = [axs_flat] if n_total_cols == 1 else list(np.ravel(axs_flat))
-
-    artists = {}
-    xs = np.arange(max_frames) * cadence
-    ax_idx = 0
-
-    # Initialize plots
-    for name in plots:
-        data = series[name]
-        if name == "ke_spectrum":
-            ax = axs_flat[ax_idx]
-            ek = data[0] if len(data) > 0 else np.zeros(1)
-            k = np.arange(len(ek))
-            artists[name], = ax.plot(k, ek, lw=2)
-            ax.set_xlabel("k")
-            ax.set_ylabel("E(k)")
-            ax.set_title("KE Spectrum")
-            ax.set_yscale("log")
-            ax_idx += 1
-        elif data.ndim == 4:  # Multi-layer 2D field (time, nz, ny, nx)
-            extent = [-grid.Lx/2, grid.Lx/2, -grid.Ly/2, grid.Ly/2] if grid else None
-            nz = data.shape[1]
-            for layer in range(nz):
-                ax_layer = axs_flat[ax_idx]
-                im = ax_layer.imshow(data[0, layer], origin="lower", cmap="RdBu_r", extent=extent)
-                fig.colorbar(im, ax=ax_layer)
-                ax_layer.set_title(f"{name} - Layer {layer+1}")
-                if grid:
-                    ax_layer.set_xlabel("x")
-                    ax_layer.set_ylabel("y")
-                artists[f"{name}_layer{layer}"] = im
-                ax_idx += 1
-        elif data.ndim == 3:  # Single-layer 2D field (time, ny, nx)
-            ax = axs_flat[ax_idx]
-            extent = [-grid.Lx/2, grid.Lx/2, -grid.Ly/2, grid.Ly/2] if grid else None
-            im = ax.imshow(data[0], origin="lower", cmap="RdBu_r", extent=extent)
-            fig.colorbar(im, ax=ax)
-            ax.set_title(name)
-            if grid:
-                ax.set_xlabel("x")
-                ax.set_ylabel("y")
-            artists[name] = im
-            ax_idx += 1
-        elif name == "zonal":
-            # data shape: (time, nz, ny) or (time, ny)
-            data = series[name]
-            y = np.arange(0.5, grid.ny, 1.0) / grid.ny * grid.Ly if grid else np.arange(data.shape[-1])
-            if data.ndim == 3:
-                nz = data.shape[1]
-                for layer in range(nz):
-                    ax_layer = axs_flat[ax_idx]
-                    line, = ax_layer.plot(y, data[0, layer], lw=2)
-                    ax_layer.set_xlabel("y")
-                    ax_layer.set_ylabel("zonal")
-                    ax_layer.set_title(f"{name} - Layer {layer+1}")
-                    artists[f"{name}_layer{layer}"] = line
-                    ax_idx += 1
-            else:
-                ax = axs_flat[ax_idx]
-                line, = ax.plot(y, data[0], lw=2)
-                ax.set_xlabel("y")
-                ax.set_ylabel("zonal")
-                ax.set_title(name)
-                artists[name] = line
-                ax_idx += 1
-        else:  # Time series scalar
-            ax = axs_flat[ax_idx]
-            line, = ax.plot([], [], lw=2)
-            artists[name] = line
-            ax.set_xlabel("Step")
-            ax.set_ylabel(name)
-            ax.set_title(name)
-            ax.set_xlim(0, max_frames * cadence)
-            ax.set_ylim(0, max(1.0, data.max() if data.size else 1.0))
-            ax_idx += 1
-
-    def update(i):
-        ax_idx = 0
-        for name in plots:
-            data = series[name]
-            if name == "ke_spectrum":
-                ek = data[min(i, len(data) - 1)]
-                k = np.arange(len(ek))
-                artists[name].set_data(k, ek)
-                ax = axs_flat[ax_idx]
-                ax.set_ylim(max(1e-12, ek.min()), max(ek.max() * 1.1, 1e-12))
-                ax.set_title(f"{name} (Step {i * cadence})")
-                ax_idx += 1
-            elif data.ndim == 4:  # Multi-layer field
-                idx = min(i, data.shape[0] - 1)
-                nz = data.shape[1]
-                for layer in range(nz):
-                    artists[f"{name}_layer{layer}"].set_array(data[idx, layer])
-                    axs_flat[ax_idx].set_title(f"{name} - Layer {layer+1} (Step {i * cadence})")
-                    ax_idx += 1
-            elif name == "zonal":
-                data = series[name]
-                idx = min(i, data.shape[0] - 1)
-                if data.ndim == 3:
-                    nz = data.shape[1]
-                    for layer in range(nz):
-                        artists[f"{name}_layer{layer}"].set_ydata(data[idx, layer])
-                        axs_flat[ax_idx].set_title(f"{name} - Layer {layer+1} (Step {i * cadence})")
-                        ax_idx += 1
-                else:
-                    artists[name].set_ydata(data[idx])
-                    axs_flat[ax_idx].set_title(f"{name} (Step {i * cadence})")
-                    ax_idx += 1
-            elif data.ndim == 3:  # Single-layer field
-                idx = min(i, data.shape[0] - 1)
-                artists[name].set_array(data[idx])
-                axs_flat[ax_idx].set_title(f"{name} (Step {i * cadence})")
-                ax_idx += 1
-            else:  # Time series
-                ys = data[: min(i + 1, len(data))]
-                xi = xs[: len(ys)]
-                artists[name].set_data(xi, ys)
-                ax = axs_flat[ax_idx]
-                ax.relim()
-                ax.autoscale_view()
-                ax.set_title(f"{name} (Step {i * cadence})")
-                ax_idx += 1
-
-        return list(artists.values())
-
-    anim = FuncAnimation(fig, update, frames=max_frames, blit=False)
-    anim.save(outname, fps=10)
-    plt.close(fig)
-    print(f"Saved animation to {outname}")
-    
-
+# =====================================================================
+# This was legacy code and idk if it works or not but it stays for now
+# =====================================================================
 
 
 def make_triple_gif(hr_q, lr_q, sgs_q, out_file="q_triple.gif", cadence=100):

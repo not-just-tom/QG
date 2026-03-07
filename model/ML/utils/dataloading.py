@@ -1,13 +1,21 @@
 import os
+import jax
 import json
 import re
 import zarr
 import numpy as np
-from typing import Optional, Tuple, List
+from typing import Optional, List
 import logging
 logger = logging.getLogger(__name__)
 
 RUN_RE = re.compile(r"data_hr(?P<hr>\d+)_nx(?P<lr>\d+)_(?P<idx>\d{2})")
+
+def checkpointer(optim_state, model_dir):
+    '''
+    loads the model weights into the appropriate dir, hopefully efficiently 
+    '''
+    #print(optim_state)
+    pass
 
 def metadata_matches(requested: dict, stored: dict) -> bool:
     return canonicalize(requested) == canonicalize(stored)
@@ -24,11 +32,45 @@ def canonicalize(params: dict) -> dict:
 
     return round_floats(params)
 
-def find_existing_closure(dir, cfg):
-    '''Search not implemented yet'''
-    return False
+def find_existing_closure(model_dir, params, timing_metadata, model_type):
+    hr_nx = params['hr_nx']
+    lr_nx = params['nx']
+    prefix = f"{model_type}_hr{hr_nx}_nx{lr_nx}_"
+    candidates = []
 
-def find_existing_run(base_dir, hr_nx, lr_nx, params, timing_metadata):
+    for name in os.listdir(model_dir):
+        m = RUN_RE.fullmatch(name)
+        if m is None:
+            continue
+        if int(m["hr"]) != hr_nx or int(m["lr"]) != lr_nx:
+            continue
+
+        run_dir = os.path.join(model_dir, name)
+        meta_path = os.path.join(run_dir, "metadata.json")
+        if not os.path.exists(meta_path):
+            continue
+
+        try:
+            with open(meta_path) as f:
+                stored_meta = json.load(f)
+        except Exception:
+            continue
+
+        # Exact metadata match
+        if (metadata_matches(params, stored_meta["parameters"])) and (metadata_matches(timing_metadata, stored_meta['timing'])) and (model_type == stored_meta['model_type']):
+            return run_dir, True
+        candidates.append(int(m["idx"]))
+
+    # No match found
+    next_idx = max(candidates, default=0) + 1
+    run_name = f"{prefix}{next_idx:02d}"
+    run_dir = os.path.join(model_dir, run_name)
+    return run_dir, False
+
+
+def find_existing_run(base_dir, params, timing_metadata):
+    hr_nx = params['hr_nx']
+    lr_nx = params['nx']
     prefix = f"data_hr{hr_nx}_nx{lr_nx}_"
     candidates = []
 
@@ -51,9 +93,8 @@ def find_existing_run(base_dir, hr_nx, lr_nx, params, timing_metadata):
             continue
 
         # Exact metadata match
-        if (metadata_matches(params, stored_meta["parameters"])):
+        if (metadata_matches(params, stored_meta["parameters"])) and (metadata_matches(timing_metadata, stored_meta['timing'])):
             return run_dir, True
-
         candidates.append(int(m["idx"]))
 
     # No match found
@@ -138,7 +179,7 @@ class ZarrDataLoader:
         self, 
         traj_idx: int, 
         start_time: int, 
-        window_size: int
+        batch_steps: int
     ) -> np.ndarray:
         """Load a time window from a trajectory.
         
@@ -150,18 +191,18 @@ class ZarrDataLoader:
             Trajectory index
         start_time : int
             Starting time step
-        window_size : int
+        batch_steps : int
             Number of time steps to load
             
         Returns
         -------
         np.ndarray
-            Shape (window_size, layers, ny, nx)
+            Shape (batch_steps, layers, ny, nx)
         """
         traj_name = self.traj_names[traj_idx]
         traj = self.traj_group[traj_name]
         
-        end_time = start_time + window_size
+        end_time = start_time + batch_steps
         if end_time > traj.shape[0]:
             raise ValueError(
                 f"Window [{start_time}:{end_time}] exceeds trajectory length {traj.shape[0]}"
@@ -169,88 +210,19 @@ class ZarrDataLoader:
         
         return traj[start_time:end_time]
     
-    def sample_windows(
-        self,
-        n_samples: int,
-        window_size: int,
-        rng: Optional[np.random.Generator] = None,
-        fixed_traj_idx: Optional[int] = None,
-        subset_traj_indices: Optional[List[int]] = None,
-        return_indices: bool = False,
-    ) -> np.ndarray | Tuple[np.ndarray, List[Tuple[int, int]]]:
+    def sample_windows(self, n_samples, batch_steps, key, traj_indices):
         """Sample random time windows from trajectories.
-
-        Parameters
-        ----------
-        n_samples : int
-            Number of windows to sample
-        window_size : int
-            Length of each time window
-        rng : np.random.Generator, optional
-            Random number generator. If None, creates a new one.
-        fixed_traj_idx : int, optional
-            If provided, only sample from this trajectory. Otherwise sample from all.
-        subset_traj_indices : list of int, optional
-            If provided, only sample from these trajectory indices.
-        return_indices : bool, default=False
-            If True, also return (traj_idx, start_time) for each sample
-            
-        Returns
-        -------
-        windows : np.ndarray
-            Shape (n_samples, window_size, layers, ny, nx)
-        indices : list of (traj_idx, start_time), optional
-            Only returned if return_indices=True
         """
-        if rng is None:
-            rng = np.random.default_rng()
-        
-        max_start_time = self.traj_shape[0] - window_size
-        if max_start_time < 0:
-            raise ValueError(
-                f"Window size {window_size} exceeds trajectory length {self.traj_shape[0]}"
-            )
-        
-        # Sample start times
-        start_times = rng.integers(0, max_start_time + 1, size=n_samples)
-        
-        # Sample trajectories (fixed or random)
-        if fixed_traj_idx is not None:
-            traj_indices = np.full(n_samples, fixed_traj_idx, dtype=int)
-        elif subset_traj_indices is not None:
-            traj_indices = rng.choice(subset_traj_indices, size=n_samples)
-        else:
-            traj_indices = rng.integers(0, self.n_trajectories, size=n_samples)
-        
-        # Load the windows
+        start_times = jax.random.permutation(key, n_samples) * batch_steps 
         windows = []
-        indices = []
-        for traj_idx, start_time in zip(traj_indices, start_times):
-            window = self.get_trajectory_window(traj_idx, start_time, window_size)
-            windows.append(window)
-            indices.append((int(traj_idx), int(start_time)))
+        for traj_idx in traj_indices: 
+            for start_time in start_times:
+                # ^^^ this means that right now this has the same order of times for each traj
+                window = self.get_trajectory_window(traj_idx, start_time, batch_steps)
+                windows.append(window)
         
         windows = np.stack(windows, axis=0)
-        
-        if return_indices:
-            return windows, indices
         return windows
-    
-    def get_all_trajectory_indices(self) -> List[Tuple[int, int]]:
-        """Get all valid (traj_idx, time_idx) pairs.
-        
-        Useful for creating epoch-based training with full data coverage.
-        
-        Returns
-        -------
-        list of (traj_idx, time_idx)
-            All valid combinations
-        """
-        indices = []
-        for traj_idx in range(self.n_trajectories):
-            for time_idx in range(self.traj_shape[0]):
-                indices.append((traj_idx, time_idx))
-        return indices
     
     def __repr__(self) -> str:
         return (

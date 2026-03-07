@@ -226,7 +226,7 @@ class Recorder:
     # animation
     # ------------------------------------------------------------------
 
-    def animate(self, cfg, q_traj=None, outname: str = "../outputs/diagnostics.gif", fps: int = 10):
+    def animate(self, cfg, outbase, q_traj=None, outname: str = "animations.gif", fps: int = 10):
         """
         Animate diagnostics listed in cfg.diagnostics.animate.
         """
@@ -323,7 +323,7 @@ class Recorder:
         anim = FuncAnimation(fig, _update, frames=n_frames, blit=False)
 
         try:
-            anim.save(outname, writer=PillowWriter(fps=fps))
+            anim.save(f'{outbase}/{outname}', writer=PillowWriter(fps=fps))
         finally:
             plt.close(fig)
 
@@ -369,7 +369,7 @@ class Recorder:
                 )
 
             fig.tight_layout()
-            fig.savefig(f"{outbase}_{name}.png", bbox_inches="tight")
+            fig.savefig(f"{outbase}/{name}.png", bbox_inches="tight")
             plt.close(fig)
 
     # ------------------------------------------------------------------
@@ -758,15 +758,16 @@ class KESpectrumDiagnostic(Diagnostic):
         U_target = self.beta * (self.Ly / (jnp.pi * self.njets))**2
         L_rh = (2*U_target / self.beta) ** 0.5
         k_rh = 1 / L_rh
-
-        ax.axvline(x=k_rh, color="C1", ls="--", label="Rhines Scale k")
+        kR = 2 * jnp.pi * self.njets / self.Ly
+        ax.axvline(x=k_rh, color="C4", ls="--", label="Rhines Scale Wavenumber")
+        ax.axvline(x=kR, color="C1", ls="--", label="initial jet wavenumber (post-scaling)")
 
         _k = np.asarray(k[1:])
-        _ref_clipped = np.clip(_k, 1, 4)
+        _ref_clipped = np.clip(_k, 1, kR)
         ax.loglog(_ref_clipped, (10 * _ref_clipped **(-5.0)), color="C3", ls="--", label="$k^{-5}$")
 
         _k = np.asarray(k[1:])
-        _ref_clipped = np.clip(_k, 4, 10)
+        _ref_clipped = np.clip(_k, kR, 10)
         ax.loglog(_ref_clipped, (1e-3 * _ref_clipped **(-5/3))+1e-3, color="C2", ls="--", label="$k^{-5/3}$")
         #ax.loglog(k[1:], (1e-3 * k[1:] **(-3.0))+1e-2, color="C4", ls="--", label="$k^{-3}$")
 
