@@ -132,7 +132,10 @@ def make_test_epoch(coarse, hr_model, optim):
             stepper=stepper_obj,
         )
 
-        def step_fn(batch):
+        def step_fn(carry, batch):
+            # carry is (closure_params, optim_state) but test epoch does not update
+            closure_params, optim_state = carry
+
             def loss_fn(params, batch):
                 err = jax.vmap(
                     functools.partial(compute_traj_errors,
@@ -143,7 +146,8 @@ def make_test_epoch(coarse, hr_model, optim):
                 return jnp.mean(err ** 2)
 
             loss, _ = eqx.filter_value_and_grad(loss_fn)(closure_params, batch)
-            return loss
+            # Return unchanged carry and the computed loss
+            return (closure_params, optim_state), loss
 
         (final_closure_params, final_optim_state), losses = jax.lax.scan(
             step_fn, (closure_params, optim_state), test_trajs

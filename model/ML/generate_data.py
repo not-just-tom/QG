@@ -15,10 +15,8 @@ logger = logging.getLogger(__name__)
 def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
     '''aiming for this to generate the zarr file for hr training data, and 
     also save the metadata for the run in a json file.'''
-
     os.makedirs(hr_dir, exist_ok=True)
 
-    
     # Timing parameters
     dt = cfg.plotting.dt
     nsteps = cfg.plotting.nsteps
@@ -26,7 +24,7 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
     batch_size = getattr(cfg.ml, "batch_size", 5)
     batch_steps = getattr(cfg.ml, "batch_steps", 1)  # Get batch_steps for chunking
     
-    logger.info(f"Generating %d trajectories with %d steps", cfg.ml.n_train + cfg.ml.n_test, nsteps)
+    logger.info(f"Generating %d trajectories with %d steps.", cfg.ml.n_train + cfg.ml.n_test, nsteps)
     
     # JIT the trajectory generation
     @functools.partial(jax.jit, static_argnames=["nsteps", "cadence"])
@@ -34,7 +32,8 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
         """Generate coarsened trajectory with subsampling."""
         def step(carry, _x):
             next_state = hr_model.step_model(carry)
-            return next_state, next_state.state.q
+            lr_state = coarse.coarsen_state(next_state.state)
+            return next_state, lr_state.q
         
         _, traj_q = jax.lax.scan(step, init_state, None, length=nsteps)
         return traj_q
@@ -46,9 +45,9 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
     )
 
     timing_metadata = {
+        'nsteps': int(nsteps),
         "dt": float(dt),
-        'steps': nsteps,
-        'batch_steps': int(batch_steps),
+        'batch_steps': int(cfg.ml.batch_steps),
     }
 
     metadata = {

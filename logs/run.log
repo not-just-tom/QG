@@ -3239,3 +3239,487 @@
 2026-03-07 20:26:32,530 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx128_01, loading data from there.
 2026-03-07 20:26:32,579 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
 2026-03-07 20:26:32,864 INFO __main__: Executing epoch 1/10.
+2026-03-07 20:32:25,412 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 20:32:25,415 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 20:32:25,419 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 20:32:25,564 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 20:32:25,684 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 20:32:25,874 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 20:32:25,990 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 20:32:26,945 INFO __main__: Executing epoch 1/10.
+2026-03-07 20:39:21,445 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 20:39:21,446 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 20:39:21,449 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 20:39:21,606 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 20:39:21,745 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 20:39:21,912 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 20:39:21,974 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 128, 128), batch_steps=3
+2026-03-07 20:39:22,212 INFO __main__: Executing epoch 1/10.
+2026-03-07 20:39:44,541 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 20:39:44,543 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 20:39:44,545 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 20:39:44,692 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 20:39:44,803 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 20:39:45,675 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01
+2026-03-07 20:39:45,678 INFO model.ML.generate_data: Generating 10 trajectories with 10 steps.
+2026-03-07 20:39:45,790 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-07 20:39:46,598 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10, 1, 32, 32)
+2026-03-07 20:39:46,642 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-07 20:39:46,697 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-07 20:39:46,723 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-07 20:39:46,745 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-07 20:39:46,767 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-07 20:39:46,788 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-07 20:39:46,810 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-07 20:39:46,831 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-07 20:39:46,853 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-07 20:39:46,874 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-07 20:39:46,908 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-07 20:39:46,910 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-07 20:39:46,911 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01\trajectories.zarr
+2026-03-07 20:39:46,983 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 20:39:47,868 INFO __main__: Executing epoch 1/10.
+2026-03-07 20:45:40,612 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 20:45:40,614 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 20:45:40,616 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 20:45:40,777 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 20:45:40,881 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 20:45:41,022 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 20:45:41,064 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 20:45:41,324 INFO __main__: Executing epoch 1/10.
+2026-03-07 20:45:45,902 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6658E-04
+2026-03-07 20:45:46,116 INFO __main__: Executing epoch 2/10.
+2026-03-07 20:45:47,147 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7367E-04 | mean_test_loss=2.8254E-04
+2026-03-07 20:45:47,377 INFO __main__: Executing epoch 3/10.
+2026-03-07 20:45:48,387 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7279E-04 | mean_test_loss=2.8258E-04
+2026-03-07 20:45:48,608 INFO __main__: Executing epoch 4/10.
+2026-03-07 20:45:49,631 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.7045E-04 | mean_test_loss=2.8539E-04
+2026-03-07 20:45:49,826 INFO __main__: Executing epoch 5/10.
+2026-03-07 20:45:50,847 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7810E-04 | mean_test_loss=2.6419E-04
+2026-03-07 20:45:51,050 INFO __main__: Executing epoch 6/10.
+2026-03-07 20:45:52,075 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7443E-04 | mean_test_loss=2.6832E-04
+2026-03-07 20:45:52,278 INFO __main__: Executing epoch 7/10.
+2026-03-07 20:45:53,328 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6979E-04 | mean_test_loss=2.7368E-04
+2026-03-07 20:45:53,554 INFO __main__: Executing epoch 8/10.
+2026-03-07 20:45:54,591 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.7097E-04 | mean_test_loss=2.6422E-04
+2026-03-07 20:45:54,823 INFO __main__: Executing epoch 9/10.
+2026-03-07 20:45:55,838 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.6742E-04 | mean_test_loss=2.6404E-04
+2026-03-07 20:45:56,016 INFO __main__: Executing epoch 10/10.
+2026-03-07 20:45:57,042 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.6593E-04 | mean_test_loss=2.5762E-04
+2026-03-07 21:58:03,404 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 21:58:03,407 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 21:58:03,412 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 21:58:03,624 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 21:58:03,800 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 21:58:04,005 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 21:58:04,074 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 21:58:04,388 INFO __main__: Executing epoch 1/10.
+2026-03-07 21:58:09,089 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6658E-04
+2026-03-07 21:58:09,315 INFO __main__: Executing epoch 2/10.
+2026-03-07 21:58:10,354 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7367E-04 | mean_test_loss=2.8254E-04
+2026-03-07 21:58:10,547 INFO __main__: Executing epoch 3/10.
+2026-03-07 21:58:11,560 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7279E-04 | mean_test_loss=2.8258E-04
+2026-03-07 21:58:11,754 INFO __main__: Executing epoch 4/10.
+2026-03-07 21:58:12,779 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.7045E-04 | mean_test_loss=2.8539E-04
+2026-03-07 21:58:12,976 INFO __main__: Executing epoch 5/10.
+2026-03-07 21:58:13,995 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7810E-04 | mean_test_loss=2.6419E-04
+2026-03-07 21:58:14,193 INFO __main__: Executing epoch 6/10.
+2026-03-07 21:58:15,241 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7443E-04 | mean_test_loss=2.6832E-04
+2026-03-07 21:58:15,445 INFO __main__: Executing epoch 7/10.
+2026-03-07 21:58:16,504 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6979E-04 | mean_test_loss=2.7368E-04
+2026-03-07 21:58:16,717 INFO __main__: Executing epoch 8/10.
+2026-03-07 21:58:17,716 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.7097E-04 | mean_test_loss=2.6422E-04
+2026-03-07 21:58:17,919 INFO __main__: Executing epoch 9/10.
+2026-03-07 21:58:18,929 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.6742E-04 | mean_test_loss=2.6404E-04
+2026-03-07 21:58:19,127 INFO __main__: Executing epoch 10/10.
+2026-03-07 21:58:20,136 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.6593E-04 | mean_test_loss=2.5762E-04
+2026-03-07 21:58:20,177 ERROR model.ML.utils.dataloading: Failed to save closure checkpoint
+Traceback (most recent call last):
+  File "C:\Users\C5044892\Documents\Code\QG\model\ML\utils\dataloading.py", line 56, in checkpointer
+    _save_pytree(closure_obj, closure_base)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\C5044892\Documents\Code\QG\model\ML\utils\dataloading.py", line 19, in _save_pytree
+    np.savez_compressed(basepath + ".npz", *leaves_np)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\C5044892\AppData\Local\anaconda3\Lib\site-packages\numpy\lib\_npyio_impl.py", line 753, in savez_compressed
+    _savez(file, args, kwds, True)
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\C5044892\AppData\Local\anaconda3\Lib\site-packages\numpy\lib\_npyio_impl.py", line 786, in _savez
+    format.write_array(fid, val,
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+                       allow_pickle=allow_pickle,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+                       pickle_kwargs=pickle_kwargs)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\C5044892\AppData\Local\anaconda3\Lib\site-packages\numpy\lib\format.py", line 746, in write_array
+    pickle.dump(array, fp, protocol=4, **pickle_kwargs)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_pickle.PicklingError: Can't pickle <function relu at 0x0000024AD98FECA0>: it's not the same object as jax._src.nn.functions.relu
+2026-03-07 21:58:20,324 INFO __main__: Saved checkpoint and metadata to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:04:00,880 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 22:04:00,884 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 22:04:00,889 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 22:04:01,049 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 22:04:01,213 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 22:04:01,398 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 22:04:01,471 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 22:04:01,748 INFO __main__: Executing epoch 1/10.
+2026-03-07 22:04:07,320 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6658E-04
+2026-03-07 22:04:07,524 INFO __main__: Executing epoch 2/10.
+2026-03-07 22:04:08,575 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7367E-04 | mean_test_loss=2.8254E-04
+2026-03-07 22:04:08,786 INFO __main__: Executing epoch 3/10.
+2026-03-07 22:04:09,833 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7279E-04 | mean_test_loss=2.8258E-04
+2026-03-07 22:04:10,047 INFO __main__: Executing epoch 4/10.
+2026-03-07 22:04:11,143 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.7045E-04 | mean_test_loss=2.8539E-04
+2026-03-07 22:04:11,366 INFO __main__: Executing epoch 5/10.
+2026-03-07 22:04:12,403 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7810E-04 | mean_test_loss=2.6419E-04
+2026-03-07 22:04:12,617 INFO __main__: Executing epoch 6/10.
+2026-03-07 22:04:13,671 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7443E-04 | mean_test_loss=2.6832E-04
+2026-03-07 22:04:13,900 INFO __main__: Executing epoch 7/10.
+2026-03-07 22:04:14,986 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6979E-04 | mean_test_loss=2.7368E-04
+2026-03-07 22:04:15,204 INFO __main__: Executing epoch 8/10.
+2026-03-07 22:04:16,269 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.7097E-04 | mean_test_loss=2.6422E-04
+2026-03-07 22:04:16,495 INFO __main__: Executing epoch 9/10.
+2026-03-07 22:04:17,602 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.6742E-04 | mean_test_loss=2.6404E-04
+2026-03-07 22:04:17,839 INFO __main__: Executing epoch 10/10.
+2026-03-07 22:04:18,964 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.6593E-04 | mean_test_loss=2.5762E-04
+2026-03-07 22:04:19,004 INFO __main__: Saved checkpoint and metadata to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:06:14,165 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 22:06:14,168 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 22:06:14,171 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 22:06:14,334 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 22:06:14,472 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 22:06:14,624 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 22:06:14,686 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 22:06:14,956 INFO __main__: Executing epoch 1/10.
+2026-03-07 22:06:20,121 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6658E-04
+2026-03-07 22:06:20,149 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:06:20,488 INFO __main__: Executing epoch 2/10.
+2026-03-07 22:06:21,724 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7367E-04 | mean_test_loss=2.8254E-04
+2026-03-07 22:06:21,759 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:06:22,024 INFO __main__: Executing epoch 3/10.
+2026-03-07 22:06:23,404 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7279E-04 | mean_test_loss=2.8258E-04
+2026-03-07 22:06:23,431 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:06:23,776 INFO __main__: Executing epoch 4/10.
+2026-03-07 22:06:24,907 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.7045E-04 | mean_test_loss=2.8539E-04
+2026-03-07 22:06:24,958 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:06:25,323 INFO __main__: Executing epoch 5/10.
+2026-03-07 22:06:26,477 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7810E-04 | mean_test_loss=2.6419E-04
+2026-03-07 22:06:26,504 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:06:26,737 INFO __main__: Executing epoch 6/10.
+2026-03-07 22:06:27,800 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7443E-04 | mean_test_loss=2.6832E-04
+2026-03-07 22:06:27,825 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:06:28,065 INFO __main__: Executing epoch 7/10.
+2026-03-07 22:06:29,189 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6979E-04 | mean_test_loss=2.7368E-04
+2026-03-07 22:06:29,215 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:06:29,373 INFO __main__: Executing epoch 8/10.
+2026-03-07 22:06:30,453 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.7097E-04 | mean_test_loss=2.6422E-04
+2026-03-07 22:06:30,480 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:06:30,864 INFO __main__: Executing epoch 9/10.
+2026-03-07 22:06:32,058 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.6742E-04 | mean_test_loss=2.6404E-04
+2026-03-07 22:06:32,085 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:06:32,262 INFO __main__: Executing epoch 10/10.
+2026-03-07 22:06:33,474 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.6593E-04 | mean_test_loss=2.5762E-04
+2026-03-07 22:06:33,499 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:06:33,544 INFO __main__: Saved checkpoint and metadata to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:09:27,475 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 22:09:27,479 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 22:09:27,484 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 22:09:27,695 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 22:09:27,869 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 22:09:28,044 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 22:09:28,099 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 22:09:28,380 INFO __main__: Executing epoch 1/10.
+2026-03-07 22:09:33,191 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6658E-04
+2026-03-07 22:09:33,222 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:09:33,474 INFO __main__: Executing epoch 2/10.
+2026-03-07 22:09:34,544 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7367E-04 | mean_test_loss=2.8254E-04
+2026-03-07 22:09:34,571 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:09:34,825 INFO __main__: Executing epoch 3/10.
+2026-03-07 22:09:35,887 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7279E-04 | mean_test_loss=2.8258E-04
+2026-03-07 22:09:35,913 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:09:36,163 INFO __main__: Executing epoch 4/10.
+2026-03-07 22:09:37,232 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.7045E-04 | mean_test_loss=2.8539E-04
+2026-03-07 22:09:37,256 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:09:37,494 INFO __main__: Executing epoch 5/10.
+2026-03-07 22:09:43,730 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 22:09:43,731 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 22:09:43,733 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 22:09:43,842 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 22:09:43,951 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 22:09:44,102 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 22:09:44,177 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 22:09:44,426 INFO __main__: Executing epoch 1/10.
+2026-03-07 22:09:49,691 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.8122E-04 | mean_test_loss=2.6658E-04
+2026-03-07 22:09:49,716 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:09:49,964 INFO __main__: Executing epoch 2/10.
+2026-03-07 22:09:50,978 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7367E-04 | mean_test_loss=2.8254E-04
+2026-03-07 22:09:51,002 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:09:51,247 INFO __main__: Executing epoch 3/10.
+2026-03-07 22:09:52,262 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.7279E-04 | mean_test_loss=2.8258E-04
+2026-03-07 22:09:52,285 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:09:52,489 INFO __main__: Executing epoch 4/10.
+2026-03-07 22:09:53,512 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.7045E-04 | mean_test_loss=2.8539E-04
+2026-03-07 22:09:53,553 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:09:53,789 INFO __main__: Executing epoch 5/10.
+2026-03-07 22:09:54,815 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7810E-04 | mean_test_loss=2.6419E-04
+2026-03-07 22:09:54,846 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:09:55,074 INFO __main__: Executing epoch 6/10.
+2026-03-07 22:09:56,125 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7443E-04 | mean_test_loss=2.6832E-04
+2026-03-07 22:09:56,152 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:09:56,397 INFO __main__: Executing epoch 7/10.
+2026-03-07 22:09:57,463 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6979E-04 | mean_test_loss=2.7368E-04
+2026-03-07 22:09:57,488 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:09:57,700 INFO __main__: Executing epoch 8/10.
+2026-03-07 22:11:54,482 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 22:11:54,484 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 22:11:54,487 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 22:11:54,657 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 22:11:54,807 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 22:11:54,997 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 22:11:55,032 INFO __main__: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01, attempting to load checkpoint.
+2026-03-07 22:11:55,086 INFO __main__: Resuming training from epoch 7 (saved) out of 10
+2026-03-07 22:11:55,114 ERROR __main__: Failed to reconstruct closure from params; falling back to fresh closure
+Traceback (most recent call last):
+  File "C:\Users\C5044892\Documents\Code\QG\run.py", line 191, in main
+    closure_model = eqx.combine(loaded_params, template_static)
+  File "c:\Users\C5044892\AppData\Local\anaconda3\Lib\site-packages\equinox\_filters.py", line 232, in combine
+    return jtu.tree_map(_combine, *pytrees, is_leaf=_is_leaf)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\C5044892\AppData\Local\anaconda3\Lib\site-packages\jax\_src\tree_util.py", line 363, in tree_map
+    all_leaves = [leaves] + [treedef.flatten_up_to(r) for r in rest]
+                             ~~~~~~~~~~~~~~~~~~~~~^^^
+ValueError: Mismatch custom node data: ('layers',), () != ('layers',), (); value: CNN(
+  layers=[
+    Conv2d(
+      num_spatial_dims=2,
+      weight=None,
+      bias=None,
+      in_channels=1,
+      out_channels=64,
+      kernel_size=(3, 3),
+      stride=(1, 1),
+      padding=((1, 1), (1, 1)),
+      dilation=(1, 1),
+      groups=1,
+      use_bias=True,
+      padding_mode='CIRCULAR'
+    ),
+    Lambda(fn=<PjitFunction of <function relu at 0x0000024AD98FECA0>>),
+    Conv2d(
+      num_spatial_dims=2,
+      weight=None,
+      bias=None,
+      in_channels=64,
+      out_channels=64,
+      kernel_size=(3, 3),
+      stride=(1, 1),
+      padding=((1, 1), (1, 1)),
+      dilation=(1, 1),
+      groups=1,
+      use_bias=True,
+      padding_mode='CIRCULAR'
+    ),
+    Lambda(fn=<PjitFunction of <function relu at 0x0000024AD98FECA0>>),
+    Conv2d(
+      num_spatial_dims=2,
+      weight=None,
+      bias=None,
+      in_channels=64,
+      out_channels=1,
+      kernel_size=(3, 3),
+      stride=(1, 1),
+      padding=((1, 1), (1, 1)),
+      dilation=(1, 1),
+      groups=1,
+      use_bias=True,
+      padding_mode='CIRCULAR'
+    )
+  ]
+).
+2026-03-07 22:11:55,226 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 22:11:55,512 INFO __main__: Executing epoch 8/10.
+2026-03-07 22:16:25,667 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 22:16:25,670 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 22:16:25,673 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 22:16:25,811 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 22:16:25,927 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 22:16:26,061 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 22:16:26,082 INFO __main__: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01, attempting to load checkpoint.
+2026-03-07 22:16:26,095 INFO __main__: Resuming training from epoch 7 (saved) out of 10
+2026-03-07 22:16:26,105 INFO __main__: Reconstructed closure from loaded params
+2026-03-07 22:16:26,111 INFO __main__: Reconstructed optimizer state from checkpoint
+2026-03-07 22:16:26,129 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 22:16:26,297 INFO __main__: Executing epoch 8/10.
+2026-03-07 22:16:31,164 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.7097E-04 | mean_test_loss=2.6422E-04
+2026-03-07 22:16:31,191 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:16:31,467 INFO __main__: Executing epoch 9/10.
+2026-03-07 22:16:32,574 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.6742E-04 | mean_test_loss=2.6404E-04
+2026-03-07 22:16:32,601 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:16:32,819 INFO __main__: Executing epoch 10/10.
+2026-03-07 22:16:33,857 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.6593E-04 | mean_test_loss=2.5762E-04
+2026-03-07 22:16:33,881 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:16:33,923 INFO __main__: Saved checkpoint and metadata to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:19:18,067 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 22:19:18,069 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 22:19:18,072 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 22:19:18,231 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 22:19:18,354 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 22:19:18,507 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 22:19:18,533 INFO __main__: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01, attempting to load checkpoint.
+2026-03-07 22:19:18,552 INFO __main__: Resuming training from epoch 0 (saved) out of 10
+2026-03-07 22:19:18,564 INFO __main__: Reconstructed closure from loaded params
+2026-03-07 22:19:18,571 INFO __main__: Reconstructed optimizer state from checkpoint
+2026-03-07 22:19:18,592 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 22:19:18,801 INFO __main__: Executing epoch 1/10.
+2026-03-07 22:19:27,119 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 22:19:27,122 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 22:19:27,126 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 22:19:27,268 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 22:19:27,400 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 22:19:27,540 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 22:19:27,573 INFO __main__: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01, attempting to load checkpoint.
+2026-03-07 22:19:27,593 INFO __main__: Resuming training from epoch 0 (saved) out of 10
+2026-03-07 22:19:27,603 INFO __main__: Reconstructed closure from loaded params
+2026-03-07 22:19:27,610 INFO __main__: Reconstructed optimizer state from checkpoint
+2026-03-07 22:19:27,629 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 22:19:27,848 INFO __main__: Executing epoch 1/10.
+2026-03-07 22:19:32,320 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.7339E-04 | mean_test_loss=2.5828E-04
+2026-03-07 22:19:32,346 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:19:32,595 INFO __main__: Executing epoch 2/10.
+2026-03-07 22:19:33,653 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.6385E-04 | mean_test_loss=2.7231E-04
+2026-03-07 22:19:33,678 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:19:33,909 INFO __main__: Executing epoch 3/10.
+2026-03-07 22:19:34,934 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.6078E-04 | mean_test_loss=2.7002E-04
+2026-03-07 22:19:34,960 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:19:35,196 INFO __main__: Executing epoch 4/10.
+2026-03-07 22:19:36,218 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.5601E-04 | mean_test_loss=2.7026E-04
+2026-03-07 22:19:36,243 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:19:36,586 INFO __main__: Executing epoch 5/10.
+2026-03-07 22:19:38,536 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-07 22:19:38,539 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-07 22:19:38,544 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-07 22:19:38,686 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-07 22:19:38,797 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-07 22:19:38,922 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-07 22:19:38,945 INFO __main__: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01, attempting to load checkpoint.
+2026-03-07 22:19:39,076 INFO __main__: Resuming training from epoch 4 (saved) out of 10
+2026-03-07 22:19:39,087 INFO __main__: Reconstructed closure from loaded params
+2026-03-07 22:19:39,094 INFO __main__: Reconstructed optimizer state from checkpoint
+2026-03-07 22:19:39,121 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10, 1, 32, 32), batch_steps=3
+2026-03-07 22:19:39,125 INFO __main__: Loaded existing loss history: 4 train entries, 4 test entries
+2026-03-07 22:19:39,360 INFO __main__: Executing epoch 5/10.
+2026-03-07 22:19:43,780 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.6090E-04 | mean_test_loss=2.4665E-04
+2026-03-07 22:19:43,804 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:19:44,133 INFO __main__: Executing epoch 6/10.
+2026-03-07 22:19:45,187 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.5513E-04 | mean_test_loss=2.4634E-04
+2026-03-07 22:19:45,214 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:19:45,466 INFO __main__: Executing epoch 7/10.
+2026-03-07 22:19:46,523 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.4760E-04 | mean_test_loss=2.4945E-04
+2026-03-07 22:19:46,551 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:19:46,801 INFO __main__: Executing epoch 8/10.
+2026-03-07 22:19:47,849 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.4545E-04 | mean_test_loss=2.3955E-04
+2026-03-07 22:19:47,875 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:19:48,125 INFO __main__: Executing epoch 9/10.
+2026-03-07 22:19:49,166 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.4004E-04 | mean_test_loss=2.3602E-04
+2026-03-07 22:19:49,215 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:19:49,484 INFO __main__: Executing epoch 10/10.
+2026-03-07 22:19:50,534 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.3713E-04 | mean_test_loss=2.2695E-04
+2026-03-07 22:19:50,561 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-07 22:19:50,597 INFO __main__: Saved checkpoint and metadata to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_01
+2026-03-08 09:50:13,416 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-08 09:50:13,418 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-08 09:50:13,420 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-08 09:50:13,527 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-08 09:50:13,652 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-08 09:50:13,777 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-08 09:50:13,779 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-03-08 09:50:13,898 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-08 09:50:14,535 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 1000, 1, 32, 32)
+2026-03-08 09:50:20,113 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-08 09:50:20,984 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-08 09:50:21,762 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-08 09:50:22,528 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-08 09:50:23,323 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-08 09:50:24,231 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-08 09:50:24,912 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-08 09:50:25,711 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-08 09:50:26,543 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-08 09:50:27,427 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-08 09:50:28,181 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-08 09:50:28,183 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-08 09:50:28,183 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02\trajectories.zarr
+2026-03-08 09:50:28,243 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-08 09:52:08,552 INFO __main__: Executing epoch 1/10.
+2026-03-08 10:07:49,374 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.7923E-04 | mean_test_loss=2.6142E-04
+2026-03-08 10:07:49,414 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02
+2026-03-08 10:09:23,242 INFO __main__: Executing epoch 2/10.
+2026-03-08 10:32:36,834 INFO __main__: Finished epoch 2/10 | mean_train_loss=2.7147E-04 | mean_test_loss=2.7783E-04
+2026-03-08 10:32:36,879 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02
+2026-03-08 10:34:16,188 INFO __main__: Executing epoch 3/10.
+2026-03-08 10:55:25,010 INFO __main__: Finished epoch 3/10 | mean_train_loss=2.6957E-04 | mean_test_loss=2.8018E-04
+2026-03-08 10:55:25,039 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02
+2026-03-08 10:57:05,497 INFO __main__: Executing epoch 4/10.
+2026-03-08 11:16:06,543 INFO __main__: Finished epoch 4/10 | mean_train_loss=2.6872E-04 | mean_test_loss=2.7949E-04
+2026-03-08 11:16:06,567 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02
+2026-03-08 11:17:46,042 INFO __main__: Executing epoch 5/10.
+2026-03-08 12:08:33,490 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.7527E-04 | mean_test_loss=2.6076E-04
+2026-03-08 12:08:33,573 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02
+2026-03-08 12:10:38,494 INFO __main__: Executing epoch 6/10.
+2026-03-08 12:59:44,471 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.7050E-04 | mean_test_loss=2.6737E-04
+2026-03-08 12:59:44,537 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02
+2026-03-08 13:01:35,759 INFO __main__: Executing epoch 7/10.
+2026-03-08 15:47:15,241 INFO __main__: Finished epoch 7/10 | mean_train_loss=2.6615E-04 | mean_test_loss=2.7197E-04
+2026-03-08 15:47:15,275 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02
+2026-03-08 15:49:00,803 INFO __main__: Executing epoch 8/10.
+2026-03-08 16:19:17,347 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.6753E-04 | mean_test_loss=2.6204E-04
+2026-03-08 16:19:17,388 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02
+2026-03-08 16:20:58,245 INFO __main__: Executing epoch 9/10.
+2026-03-08 16:54:10,581 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.6646E-04 | mean_test_loss=2.5608E-04
+2026-03-08 16:54:10,605 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02
+2026-03-08 16:56:06,191 INFO __main__: Executing epoch 10/10.
+2026-03-08 17:18:19,772 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.6088E-04 | mean_test_loss=2.5924E-04
+2026-03-08 17:18:19,803 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02
+2026-03-08 17:18:19,886 INFO __main__: Saved checkpoint and metadata to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02
+2026-03-16 14:26:20,332 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-16 14:26:20,335 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-16 14:26:20,338 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-16 16:41:15,307 INFO main: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02, attempting to load checkpoint.
+2026-03-16 16:41:17,821 INFO main: Reconstructed closure from checkpoint parameters
+2026-03-16 16:41:30,575 INFO main: Saved comparison plot to ..\outputs\coarsened_vs_pred.png
+2026-03-16 16:42:58,305 INFO main: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02, attempting to load checkpoint.
+2026-03-16 16:42:58,469 INFO main: Reconstructed closure from checkpoint parameters
+2026-03-16 16:43:08,757 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-16 16:43:08,760 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\coarsened_vs_pred.gif'
+2026-03-16 16:52:22,249 INFO main: Saved comparison GIF to ..\outputs\coarsened_vs_pred.gif
+2026-03-16 17:31:19,961 INFO main: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02, attempting to load checkpoint.
+2026-03-16 17:31:20,133 INFO main: Reconstructed closure from checkpoint parameters
+2026-03-16 17:33:04,849 INFO main: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_02, attempting to load checkpoint.
+2026-03-16 17:33:04,877 INFO main: Reconstructed closure from checkpoint parameters
+2026-03-16 17:33:14,120 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-16 17:33:14,122 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\coarsened_vs_pred.gif'
+2026-03-16 17:36:58,044 INFO main: Saved comparison GIF to ..\outputs\coarsened_vs_pred.gif
+2026-03-16 17:49:50,645 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-16 17:49:50,647 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-16 17:49:50,648 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-16 17:49:53,528 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-16 17:49:53,709 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-16 17:49:53,809 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01
+2026-03-16 17:49:53,812 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-03-16 17:49:55,701 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-16 17:49:56,905 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 1000, 1, 32, 32)
+2026-03-16 17:50:01,738 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-16 17:50:02,514 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-16 17:50:03,243 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-16 17:50:03,967 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-16 17:50:04,764 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-16 17:50:05,609 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-16 17:50:06,482 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-16 17:50:07,245 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-16 17:50:07,993 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-16 17:50:08,810 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-16 17:50:09,615 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-16 17:50:09,616 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-16 17:50:09,617 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01\trajectories.zarr
+2026-03-16 17:50:09,719 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-16 17:51:34,677 INFO __main__: Executing epoch 1/10.

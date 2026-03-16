@@ -4,18 +4,139 @@ import json
 import re
 import zarr
 import numpy as np
+import equinox as eqx
 from typing import Optional, List
 import logging
 logger = logging.getLogger(__name__)
 
-RUN_RE = re.compile(r"data_hr(?P<hr>\d+)_nx(?P<lr>\d+)_(?P<idx>\d{2})")
+# Match either data or model run directories, e.g.:
+#  - data_hr128_nx32_01
+#  - cnn_hr128_nx32_01
+RUN_RE = re.compile(r".*_hr(?P<hr>\d+)_nx(?P<lr>\d+)_(?P<idx>\d{2})")
 
-def checkpointer(optim_state, model_dir):
+def _save_pytree(obj, basepath: str):
+    import pickle
+    leaves, treedef = jax.tree_util.tree_flatten(obj)
+    # convert leaves to numpy for saving
+    leaves_np = [np.asarray(x) for x in leaves]
+    # save leaves as compressed npz
+    np.savez_compressed(basepath + ".npz", *leaves_np)
+    # save treedef separately
+    with open(basepath + ".treedef", "wb") as f:
+        pickle.dump(treedef, f)
+
+
+def _load_pytree(basepath: str):
+    import pickle
+    if not os.path.exists(basepath + ".npz") or not os.path.exists(basepath + ".treedef"):
+        raise FileNotFoundError(f"Checkpoint files not found for {basepath}")
+    arrs = np.load(basepath + ".npz")
+    leaves = [arrs[f"arr_{i}"] for i in range(len(arrs.files))]
+    with open(basepath + ".treedef", "rb") as f:
+        treedef = pickle.load(f)
+    return jax.tree_util.tree_unflatten(treedef, leaves)
+
+
+def _load_leaves(basepath: str):
+    """Return the raw saved leaves (numpy arrays) for a checkpointed pytree."""
+    if not os.path.exists(basepath + ".npz"):
+        raise FileNotFoundError(f"Checkpoint npz not found for {basepath}")
+    arrs = np.load(basepath + ".npz")
+    leaves = [arrs[f"arr_{i}"] for i in range(len(arrs.files))]
+    return leaves
+
+
+def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save: bool = False, epoch: int = None, n_epochs: int = None, losses: dict = None):
     '''
-    loads the model weights into the appropriate dir, hopefully efficiently 
+    Save or load a checkpoint (closure module + optimizer state) to/from `model_dir`.
+
+    Usage:
+      - To load:  `closure_obj, optim_state = checkpointer(None, None, model_dir, save=False)`
+      - To save:  `checkpointer(closure_obj, optim_state, model_dir, save=True)`
     '''
-    #print(optim_state)
-    pass
+    if model_dir is None:
+        raise ValueError("model_dir must be provided")
+
+    os.makedirs(model_dir, exist_ok=True)
+    closure_base = os.path.join(model_dir, "closure_ckpt")
+    optim_base = os.path.join(model_dir, "optim_ckpt")
+
+    if save:
+        if closure_obj is None or optim_state is None:
+            raise ValueError("Both closure_obj and optim_state required for saving")
+        # Partition closure into arrays (params) and static
+        try:
+            closure_params, _static = eqx.partition(closure_obj, eqx.is_array)
+        except Exception:
+            logger.exception("Failed to partition closure for saving")
+            raise
+
+        # Save closure params and optimizer state (array pytrees)
+        try:
+            _save_pytree(closure_params, closure_base)
+        except Exception:
+            logger.exception("Failed to save closure checkpoint")
+            raise
+        try:
+            _save_pytree(optim_state, optim_base)
+        except Exception:
+            logger.exception("Failed to save optimizer checkpoint")
+            raise
+
+        # Write a minimal checkpoint metadata file (include epoch info if provided)
+        meta = {"saved_utc": __import__("datetime").datetime.utcnow().isoformat() + "Z"}
+        if epoch is not None:
+            meta["epoch"] = int(epoch)
+        if n_epochs is not None:
+            meta["n_epochs"] = int(n_epochs)
+        try:
+            with open(os.path.join(model_dir, "checkpoint_meta.json"), "w") as f:
+                json.dump(meta, f, indent=4)
+        except Exception:
+            logger.exception("Failed to write checkpoint meta file")
+        # Optionally save loss history as JSON
+        if losses is not None:
+            try:
+                lh_path = os.path.join(model_dir, "loss_history.json")
+                with open(lh_path, "w") as f:
+                    json.dump({"train": list(losses.get("train", [])), "test": list(losses.get("test", []))}, f, indent=4)
+            except Exception:
+                logger.exception("Failed to write loss history")
+        return True
+    else:
+        # load params and optimizer state (may be None if missing)
+        try:
+            # load raw leaves for params so we can reinsert them into a fresh template
+            loaded_params_leaves = _load_leaves(closure_base)
+        except Exception:
+            logger.exception("Failed to load closure checkpoint leaves")
+            loaded_params_leaves = None
+        try:
+            loaded_optim = _load_pytree(optim_base)
+        except Exception:
+            logger.exception("Failed to load optimizer checkpoint")
+            loaded_optim = None
+        # attempt to read checkpoint metadata
+        ckpt_meta = None
+        try:
+            meta_path = os.path.join(model_dir, "checkpoint_meta.json")
+            if os.path.exists(meta_path):
+                with open(meta_path) as f:
+                    ckpt_meta = json.load(f)
+        except Exception:
+            logger.exception("Failed to read checkpoint metadata")
+
+        # attempt to read loss history
+        loss_history = None
+        try:
+            lh_path = os.path.join(model_dir, "loss_history.json")
+            if os.path.exists(lh_path):
+                with open(lh_path) as f:
+                    loss_history = json.load(f)
+        except Exception:
+            logger.exception("Failed to read loss history")
+
+        return loaded_params_leaves, loaded_optim, ckpt_meta, loss_history
 
 def metadata_matches(requested: dict, stored: dict) -> bool:
     return canonicalize(requested) == canonicalize(stored)
