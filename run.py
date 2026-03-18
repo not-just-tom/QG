@@ -124,6 +124,7 @@ def main():
 
     # === dataloading === #
     timing_metadata = {
+        'spinup': int(cfg.plotting.spinup),
         'nsteps': int(cfg.plotting.nsteps),
         "dt": float(cfg.plotting.dt),
         'batch_steps': int(cfg.ml.batch_steps),

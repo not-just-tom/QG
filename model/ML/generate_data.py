@@ -45,6 +45,7 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
     )
 
     timing_metadata = {
+        'spinup': int(cfg.plotting.spinup),
         'nsteps': int(nsteps),
         "dt": float(dt),
         'batch_steps': int(cfg.ml.batch_steps),
@@ -76,9 +77,27 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
     )
     
 
-    rng = jax.random.key(params["seed"])
+    rng = jax.random.PRNGKey(int(params.get("seed", 0)))
     n_total = cfg.ml.n_train + cfg.ml.n_test
     n_generated = 0
+
+    # How many spinup steps to run before recording trajectories
+    spinup = int(getattr(cfg.plotting, 'spinup', 0))
+
+    # If spinup>0, define a jitted routine to step the high-res model
+    if spinup > 0:
+        @functools.partial(jax.jit, static_argnames=["spinup"])
+        def _spinup_state(init_state, spinup):
+            def _step(carry, _x):
+                next_state = hr_model.step_model(carry)
+                return next_state, None
+            final_state, _ = jax.lax.scan(_step, init_state, None, length=spinup)
+            return final_state
+
+        # Vectorize the spinup across the batch; `_spinup_state` already
+        # has `spinup` as a static arg via `static_argnames`, so a plain
+        # `vmap` over the batch axis is sufficient.
+        _spinup_batched = jax.vmap(_spinup_state, in_axes=(0, None))
 
     while n_generated < n_total:
 
@@ -90,6 +109,11 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
         init_states = jax.vmap(functools.partial(hr_model.initialise))(keys)
         
         logger.info(f"Initialised batch of {current_batch} trajectories")
+
+        # Run spinup on each initial state if requested
+        if spinup > 0:
+            logger.info(f"Running spinup of {spinup} steps for the batch")
+            init_states = _spinup_batched(init_states, spinup)
 
         # Generate batch
         traj_batch = batched_traj(init_states, nsteps, cadence)

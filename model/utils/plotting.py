@@ -87,6 +87,32 @@ def find_output_dir(base_dir, params):
 # =====================================================================
 # This was legacy code and idk if it works or not but it stays for now
 # =====================================================================
+def gif_that(q_state, out_file='plotting.gif', cadence=100):
+    'just a simple plotting'
+    q_state = q_state[::cadence] 
+    nt = q_state.shape[0]
+    print(f'Shape of the input array: {q_state.shape}')
+
+    # Determine global vmin/vmax for HR and LR
+    fig = plt.figure(figsize=(4, 4), constrained_layout=True)
+    gs = gridspec.GridSpec(1, 1, figure=fig)
+
+    ax = fig.add_subplot(gs[0])
+
+    im = ax .imshow(q_state[0])#, cmap=cmo.balance)#, vmin=-hr_vmax, vmax=hr_vmax)
+    ax.set_title("State")
+    ax.axis("off")
+
+    def update(frame):
+        im.set_array(q_state[frame])
+        ax.set_title(f"PV state, step={frame*cadence}")
+        return im
+
+    ani = animation.FuncAnimation(
+        fig, update, frames=nt, blit=False
+    )
+    ani.save(out_file, fps=10)
+
 
 
 def make_triple_gif(hr_q, lr_q, sgs_q, out_file="q_triple.gif", cadence=100):
@@ -96,13 +122,18 @@ def make_triple_gif(hr_q, lr_q, sgs_q, out_file="q_triple.gif", cadence=100):
     - lr_q: low-res field, shape (nt, ny, nx)
     - sgs_q: SGS forcing, shape (nt, ny, nx)
     """
-    nt = hr_q.shape[0]
+    # Subsample by cadence first, then determine number of frames
+    hr_q = hr_q[::cadence]
+    lr_q = lr_q[::cadence]
+    sgs_q = sgs_q[::cadence]
+
+    # Ensure all inputs have the same number of frames to avoid index errors
+    nt = min(hr_q.shape[0], lr_q.shape[0], sgs_q.shape[0])
+    hr_q = hr_q[:nt]
+    lr_q = lr_q[:nt]
+    sgs_q = sgs_q[:nt]
 
     # Determine global vmin/vmax for HR and LR
-    hr_vmax = jnp.max(jnp.abs(hr_q))
-    lr_vmax = jnp.max(jnp.abs(lr_q))
-    sgs_vmax = jnp.max(jnp.abs(sgs_q))
-
     fig = plt.figure(figsize=(12, 4), constrained_layout=True)
     gs = gridspec.GridSpec(1, 3, figure=fig)
 
@@ -126,8 +157,8 @@ def make_triple_gif(hr_q, lr_q, sgs_q, out_file="q_triple.gif", cadence=100):
         im_hr.set_array(hr_q[frame])
         im_lr.set_array(lr_q[frame])
         im_sgs.set_array(sgs_q[frame])
-        ax_hr.set_title(f"High-Res, n=256 step={frame*cadence}")
-        ax_lr.set_title(f"Low-, n=64 step={frame*cadence}")
+        ax_hr.set_title(f"Ground truth coarsened to n=32 step={frame*cadence}")
+        ax_lr.set_title(f"ML adjusted, step={frame*cadence}")
         ax_sgs.set_title(f"SGS step={frame*cadence}")
         return [im_hr, im_lr, im_sgs]
 

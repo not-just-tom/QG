@@ -1,0 +1,28 @@
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+logs/
+*.log
+
+# Data and large binary artifacts (do not commit heavy data)
+data/
+outputs/
+**/trajectories.zarr/
+**/trajectories.zarr/**
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Build / distributions
+dist/
+build/
+*.egg-info/

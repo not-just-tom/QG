@@ -3723,3 +3723,416 @@ ValueError: Mismatch custom node data: ('layers',), () != ('layers',), (); value
 2026-03-16 17:50:09,617 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01\trajectories.zarr
 2026-03-16 17:50:09,719 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
 2026-03-16 17:51:34,677 INFO __main__: Executing epoch 1/10.
+2026-03-16 18:01:36,778 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.7923E-04 | mean_test_loss=2.6142E-04
+2026-03-16 18:01:36,839 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_03
+2026-03-16 18:18:35,961 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-16 18:18:35,963 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-16 18:18:35,966 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-16 18:18:36,089 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-16 18:18:36,178 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-16 18:18:36,262 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01
+2026-03-16 18:18:36,265 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-03-16 18:18:36,352 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-16 18:18:36,888 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 1000, 1, 32, 32)
+2026-03-16 18:18:42,263 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-16 18:18:43,320 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-16 18:18:44,233 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-16 18:18:45,147 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-16 18:18:46,104 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-16 18:18:47,020 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-16 18:18:48,009 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-16 18:18:48,985 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-16 18:18:49,931 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-16 18:18:50,869 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-16 18:18:51,840 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-16 18:18:51,842 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-16 18:18:51,843 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01\trajectories.zarr
+2026-03-16 18:18:51,928 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-16 18:35:00,472 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-16 18:35:00,476 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\coarsened_vs_pred.gif'
+2026-03-16 18:38:25,639 INFO main: Saved comparison GIF to ..\outputs\coarsened_vs_pred.gif
+2026-03-16 18:39:47,901 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-16 18:39:47,903 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\coarsened_vs_pred.gif'
+2026-03-16 18:43:24,942 INFO main: Saved comparison GIF to ..\outputs\coarsened_vs_pred.gif
+2026-03-16 18:51:47,993 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-16 18:51:47,994 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-16 18:51:47,997 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-16 18:51:51,778 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-16 18:51:52,083 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-16 18:51:52,260 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-16 18:51:52,263 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-03-16 18:51:54,724 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-16 18:51:55,361 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 1000, 1, 32, 32)
+2026-03-16 18:51:59,962 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-16 18:52:01,105 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-16 18:52:02,115 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-16 18:52:02,962 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-16 18:52:03,961 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-16 18:52:04,860 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-16 18:52:05,669 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-16 18:52:06,593 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-16 18:52:07,454 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-16 18:52:08,286 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-16 18:52:09,174 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-16 18:52:09,176 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-16 18:52:09,177 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02\trajectories.zarr
+2026-03-16 18:52:09,253 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-16 18:55:41,553 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-16 18:55:41,555 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\coarsened_vs_pred.gif'
+2026-03-16 18:59:17,570 INFO main: Saved comparison GIF to ..\outputs\coarsened_vs_pred.gif
+2026-03-16 19:29:07,239 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-16 19:29:07,241 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\coarsened_vs_pred.gif'
+2026-03-16 19:34:47,992 INFO main: Saved comparison GIF to ..\outputs\coarsened_vs_pred.gif
+2026-03-16 19:38:55,719 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-16 19:38:55,721 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\coarsened_vs_pred.gif'
+2026-03-16 19:41:27,109 INFO main: Saved comparison GIF to ..\outputs\coarsened_vs_pred.gif
+2026-03-16 19:44:12,379 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-16 19:44:12,381 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\coarsened_vs_pred.gif'
+2026-03-16 19:45:31,979 INFO main: Saved comparison GIF to ..\outputs\coarsened_vs_pred.gif
+2026-03-16 19:47:48,076 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-16 19:47:48,078 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\PV.gif'
+2026-03-16 19:47:49,166 INFO main: Saved comparison GIF to ..\outputs\PV.gif
+2026-03-17 09:41:28,616 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-17 09:41:28,618 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\PV.gif'
+2026-03-17 09:41:29,802 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-17 09:41:29,804 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y triple.gif
+2026-03-17 09:43:57,306 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-17 09:43:57,308 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\PV.gif'
+2026-03-17 09:43:58,027 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-17 09:43:58,029 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y triple.gif
+2026-03-17 09:44:00,313 INFO main: Saved comparison GIF to ..\outputs\PV.gif
+2026-03-17 10:04:09,788 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-17 10:04:09,790 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-17 10:04:09,791 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-17 10:04:09,952 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-17 10:04:10,057 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-17 10:04:10,166 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01
+2026-03-17 10:04:10,168 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-03-17 10:04:10,256 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-17 10:04:10,962 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 1000, 1, 32, 32)
+2026-03-17 10:04:15,422 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-17 10:04:16,320 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-17 10:04:17,507 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-17 10:04:18,535 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-17 10:04:19,430 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-17 10:04:20,377 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-17 10:04:21,326 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-17 10:04:22,234 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-17 10:04:23,158 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-17 10:04:24,058 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-17 10:04:24,925 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-17 10:04:24,927 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-17 10:04:24,928 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01\trajectories.zarr
+2026-03-17 10:04:25,058 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-17 10:05:49,558 INFO __main__: Executing epoch 1/10.
+2026-03-17 10:08:45,917 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-17 10:08:45,920 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-17 10:08:45,927 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-17 10:08:56,034 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-17 10:08:56,569 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-17 10:09:05,676 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01
+2026-03-17 10:09:05,692 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-03-17 10:09:14,575 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-17 10:09:17,660 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 1000, 1, 32, 32)
+2026-03-17 10:09:32,718 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-17 10:09:39,762 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-17 10:09:46,308 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-17 10:09:54,415 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-17 10:10:00,650 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-17 10:10:07,008 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-17 10:10:13,812 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-17 10:10:20,347 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-17 10:10:25,536 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-17 10:10:30,141 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-17 10:10:32,876 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-17 10:10:32,881 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-17 10:10:32,885 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01\trajectories.zarr
+2026-03-17 10:10:44,755 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-17 10:13:24,152 INFO __main__: Executing epoch 1/10.
+2026-03-17 11:19:17,866 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-17 11:19:17,867 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\PV.gif'
+2026-03-17 11:19:18,500 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-17 11:19:18,502 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y triple.gif
+2026-03-17 11:19:19,642 INFO main: Saved comparison GIF to ..\outputs\PV.gif
+2026-03-17 11:23:02,778 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-17 11:23:02,779 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-17 11:23:02,780 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-17 11:23:02,835 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-17 11:23:02,881 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-17 11:23:02,937 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01
+2026-03-17 11:23:02,939 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-03-17 11:24:23,602 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-17 11:24:23,603 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-17 11:24:23,604 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-17 11:24:23,660 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-17 11:24:23,715 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-17 11:24:23,778 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-17 11:24:37,406 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-17 11:24:37,407 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-17 11:24:37,408 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-17 11:24:37,478 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-17 11:24:37,540 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-17 11:24:37,606 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01
+2026-03-17 11:24:37,608 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-03-17 11:24:37,673 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-17 11:24:37,674 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-03-17 11:24:38,664 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 1000, 1, 32, 32)
+2026-03-17 11:25:03,492 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-17 11:25:04,262 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-17 11:25:05,010 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-17 11:25:05,756 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-17 11:25:06,515 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-17 11:25:07,251 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-17 11:25:07,982 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-17 11:25:08,703 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-17 11:25:09,513 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-17 11:25:10,163 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-17 11:25:10,932 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-17 11:25:10,933 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-17 11:25:10,935 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01\trajectories.zarr
+2026-03-17 11:25:11,087 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-17 11:26:39,532 INFO __main__: Executing epoch 1/10.
+2026-03-17 11:38:24,897 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.0027E-04 | mean_test_loss=1.9735E-04
+2026-03-17 11:38:24,919 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_03
+2026-03-17 11:38:33,546 INFO __main__: Executing epoch 2/10.
+2026-03-17 11:49:30,382 INFO __main__: Finished epoch 2/10 | mean_train_loss=1.9766E-04 | mean_test_loss=2.0182E-04
+2026-03-17 11:49:30,402 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_03
+2026-03-17 11:51:03,575 INFO __main__: Executing epoch 3/10.
+2026-03-17 12:02:28,724 INFO __main__: Finished epoch 3/10 | mean_train_loss=1.9809E-04 | mean_test_loss=1.9888E-04
+2026-03-17 12:02:28,752 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_03
+2026-03-17 12:03:44,866 INFO __main__: Executing epoch 4/10.
+2026-03-17 12:14:32,129 INFO __main__: Finished epoch 4/10 | mean_train_loss=1.9280E-04 | mean_test_loss=2.0875E-04
+2026-03-17 12:14:32,151 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_03
+2026-03-17 12:16:05,467 INFO __main__: Executing epoch 5/10.
+2026-03-17 12:48:10,785 INFO __main__: Finished epoch 5/10 | mean_train_loss=1.9784E-04 | mean_test_loss=1.9382E-04
+2026-03-17 12:48:10,808 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_03
+2026-03-17 12:49:56,533 INFO __main__: Executing epoch 6/10.
+2026-03-17 14:22:16,872 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-17 14:22:16,874 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-17 14:22:16,877 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-17 14:22:21,697 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-17 14:22:21,921 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-17 14:22:23,702 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-17 14:22:23,835 INFO __main__: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_03, attempting to load checkpoint.
+2026-03-17 14:22:23,952 INFO __main__: Resuming training from epoch 5 (saved) out of 10
+2026-03-17 14:22:26,251 INFO __main__: Reconstructed closure from loaded params
+2026-03-17 14:22:26,451 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-03-17 14:22:26,474 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-17 14:22:26,825 INFO __main__: Loaded existing loss history: 5 train entries, 5 test entries
+2026-03-17 14:23:43,600 INFO __main__: Executing epoch 6/10.
+2026-03-17 15:25:42,875 INFO __main__: Finished epoch 6/10 | mean_train_loss=1.9657E-04 | mean_test_loss=1.9271E-04
+2026-03-17 15:25:42,930 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx32_03
+2026-03-17 15:26:53,613 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-17 15:26:53,615 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-17 15:26:53,617 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-17 15:26:53,741 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-17 15:26:53,849 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-17 15:26:53,993 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_01, loading data from there.
+2026-03-17 15:26:54,151 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 32, 32), batch_steps=3
+2026-03-17 15:28:09,621 INFO __main__: Executing epoch 1/10.
+2026-03-17 15:28:11,561 INFO __main__: Finished epoch 1/10 | mean_train_loss=2.0050E-04 | mean_test_loss=1.9783E-04
+2026-03-17 15:28:11,587 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_04
+2026-03-17 15:28:31,700 INFO __main__: Executing epoch 2/10.
+2026-03-17 15:28:32,071 INFO __main__: Finished epoch 2/10 | mean_train_loss=1.9838E-04 | mean_test_loss=2.0278E-04
+2026-03-17 15:28:32,086 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_04
+2026-03-17 15:28:52,066 INFO __main__: Executing epoch 3/10.
+2026-03-17 15:28:52,422 INFO __main__: Finished epoch 3/10 | mean_train_loss=1.9937E-04 | mean_test_loss=2.0046E-04
+2026-03-17 15:28:52,431 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_04
+2026-03-17 15:29:11,024 INFO __main__: Executing epoch 4/10.
+2026-03-17 15:29:11,355 INFO __main__: Finished epoch 4/10 | mean_train_loss=1.9477E-04 | mean_test_loss=2.1119E-04
+2026-03-17 15:29:11,364 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_04
+2026-03-17 15:29:30,757 INFO __main__: Executing epoch 5/10.
+2026-03-17 15:29:31,100 INFO __main__: Finished epoch 5/10 | mean_train_loss=2.0077E-04 | mean_test_loss=1.9720E-04
+2026-03-17 15:29:31,111 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_04
+2026-03-17 15:29:50,757 INFO __main__: Executing epoch 6/10.
+2026-03-17 15:29:51,214 INFO __main__: Finished epoch 6/10 | mean_train_loss=2.0063E-04 | mean_test_loss=1.9753E-04
+2026-03-17 15:29:51,222 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_04
+2026-03-17 15:30:11,832 INFO __main__: Executing epoch 7/10.
+2026-03-17 15:30:12,163 INFO __main__: Finished epoch 7/10 | mean_train_loss=1.9791E-04 | mean_test_loss=2.0386E-04
+2026-03-17 15:30:12,172 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_04
+2026-03-17 15:30:32,017 INFO __main__: Executing epoch 8/10.
+2026-03-17 15:30:32,434 INFO __main__: Finished epoch 8/10 | mean_train_loss=2.0447E-04 | mean_test_loss=1.8856E-04
+2026-03-17 15:30:32,448 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_04
+2026-03-17 15:30:52,032 INFO __main__: Executing epoch 9/10.
+2026-03-17 15:30:52,511 INFO __main__: Finished epoch 9/10 | mean_train_loss=2.0110E-04 | mean_test_loss=1.9643E-04
+2026-03-17 15:30:52,523 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_04
+2026-03-17 15:31:14,238 INFO __main__: Executing epoch 10/10.
+2026-03-17 15:31:14,730 INFO __main__: Finished epoch 10/10 | mean_train_loss=2.0241E-04 | mean_test_loss=1.9337E-04
+2026-03-17 15:31:14,744 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_04
+2026-03-17 15:31:14,864 INFO __main__: Saved checkpoint and metadata to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_04
+2026-03-17 15:47:10,625 INFO main: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_04, attempting to load checkpoint.
+2026-03-17 15:47:10,809 INFO main: Reconstructed closure from checkpoint parameters
+2026-03-17 15:47:12,360 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-17 15:47:12,363 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\PV.gif'
+2026-03-17 15:47:13,413 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-17 15:47:13,415 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y triple.gif
+2026-03-17 15:47:16,077 INFO main: Saved comparison GIF to ..\outputs\PV.gif
+2026-03-17 15:48:05,264 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-17 15:48:05,266 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-17 15:48:05,268 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-17 15:48:05,361 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-17 15:48:05,449 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-17 15:48:05,550 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02
+2026-03-17 15:48:05,552 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps.
+2026-03-17 15:48:07,161 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-17 15:48:07,162 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-03-17 15:48:09,012 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10000, 1, 32, 32)
+2026-03-17 15:49:40,918 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-17 15:49:50,669 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-17 15:50:00,243 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-17 15:50:09,648 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-17 15:50:18,927 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-17 15:50:28,446 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-17 15:50:37,487 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-17 15:50:46,380 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-17 15:50:55,316 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-17 15:51:04,214 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-17 15:51:13,299 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-17 15:51:13,300 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-17 15:51:13,302 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02\trajectories.zarr
+2026-03-17 15:51:13,384 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-17 15:52:35,610 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-17 15:52:35,613 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\PV.gif'
+2026-03-17 15:52:42,582 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-17 15:52:42,584 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y triple.gif
+2026-03-17 15:53:02,751 INFO main: Saved comparison GIF to ..\outputs\PV.gif
+2026-03-17 16:01:52,309 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-17 16:01:52,310 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-17 16:01:52,313 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-17 16:01:52,431 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-17 16:01:52,526 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-17 16:01:52,708 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-17 16:01:52,862 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-17 16:17:02,640 INFO __main__: Executing epoch 1/10.
+2026-03-17 16:17:08,556 INFO __main__: Finished epoch 1/10 | mean_train_loss=1.7036E-04 | mean_test_loss=1.7202E-04
+2026-03-17 16:17:08,568 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05
+2026-03-17 16:23:41,434 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-17 16:23:41,437 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-17 16:23:41,442 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-17 16:23:41,616 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-17 16:23:41,779 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-17 16:23:42,027 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-17 16:23:42,247 INFO __main__: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05, attempting to load checkpoint.
+2026-03-17 16:23:42,406 INFO __main__: Resuming training from epoch 1 (saved) out of 10
+2026-03-17 16:23:42,409 INFO __main__: Reconstructed closure from loaded params
+2026-03-17 16:23:42,412 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-03-17 16:23:42,444 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-17 16:23:42,450 INFO __main__: Loaded existing loss history: 1 train entries, 1 test entries
+2026-03-17 16:34:41,400 INFO __main__: Executing epoch 2/10.
+2026-03-17 16:35:05,085 INFO __main__: Finished epoch 2/10 | mean_train_loss=1.7056E-04 | mean_test_loss=1.7156E-04
+2026-03-17 16:35:05,096 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05
+2026-03-17 20:18:11,859 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-17 20:18:11,860 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-17 20:18:11,861 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-17 20:18:11,942 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-17 20:18:11,999 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-17 20:18:12,079 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx32_02, loading data from there.
+2026-03-17 20:18:12,159 INFO __main__: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05, attempting to load checkpoint.
+2026-03-17 20:18:12,220 INFO __main__: Resuming training from epoch 2 (saved) out of 10
+2026-03-17 20:18:12,221 INFO __main__: Reconstructed closure from loaded params
+2026-03-17 20:18:12,222 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-03-17 20:18:12,231 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 32, 32), batch_steps=3
+2026-03-17 20:18:12,233 INFO __main__: Loaded existing loss history: 2 train entries, 2 test entries
+2026-03-17 20:22:34,405 INFO __main__: Executing epoch 3/10.
+2026-03-17 20:22:37,635 INFO __main__: Finished epoch 3/10 | mean_train_loss=1.7114E-04 | mean_test_loss=1.7019E-04
+2026-03-17 20:22:37,642 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05
+2026-03-17 20:25:08,987 INFO __main__: Executing epoch 4/10.
+2026-03-17 20:25:11,161 INFO __main__: Finished epoch 4/10 | mean_train_loss=1.6719E-04 | mean_test_loss=1.7943E-04
+2026-03-17 20:25:11,168 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05
+2026-03-17 20:32:54,635 INFO __main__: Executing epoch 5/10.
+2026-03-17 20:32:56,980 INFO __main__: Finished epoch 5/10 | mean_train_loss=1.7041E-04 | mean_test_loss=1.7190E-04
+2026-03-17 20:32:56,988 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05
+2026-03-17 20:39:12,091 INFO __main__: Executing epoch 6/10.
+2026-03-17 20:39:14,671 INFO __main__: Finished epoch 6/10 | mean_train_loss=1.7091E-04 | mean_test_loss=1.7073E-04
+2026-03-17 20:39:14,680 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05
+2026-03-17 20:47:17,115 INFO __main__: Executing epoch 7/10.
+2026-03-17 20:47:20,565 INFO __main__: Finished epoch 7/10 | mean_train_loss=1.6909E-04 | mean_test_loss=1.7499E-04
+2026-03-17 20:47:20,574 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05
+2026-03-17 20:54:58,254 INFO __main__: Executing epoch 8/10.
+2026-03-17 20:55:02,315 INFO __main__: Finished epoch 8/10 | mean_train_loss=1.7404E-04 | mean_test_loss=1.6344E-04
+2026-03-17 20:55:02,325 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05
+2026-03-17 20:57:06,751 INFO __main__: Executing epoch 9/10.
+2026-03-17 20:57:10,766 INFO __main__: Finished epoch 9/10 | mean_train_loss=1.7223E-04 | mean_test_loss=1.6766E-04
+2026-03-17 20:57:10,775 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05
+2026-03-17 20:59:18,070 INFO __main__: Executing epoch 10/10.
+2026-03-17 20:59:21,642 INFO __main__: Finished epoch 10/10 | mean_train_loss=1.7365E-04 | mean_test_loss=1.6435E-04
+2026-03-17 20:59:21,651 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05
+2026-03-17 20:59:21,668 INFO __main__: Saved checkpoint and metadata to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05
+2026-03-17 21:00:48,109 INFO main: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05, attempting to load checkpoint.
+2026-03-17 21:00:48,182 INFO main: Reconstructed closure from checkpoint parameters
+2026-03-17 21:00:51,098 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-17 21:00:51,100 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\PV.gif'
+2026-03-17 21:00:55,164 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-17 21:00:55,165 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y triple.gif
+2026-03-17 21:01:08,091 INFO main: Saved comparison GIF to ..\outputs\PV.gif
+2026-03-17 21:47:29,331 INFO main: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx32_05, attempting to load checkpoint.
+2026-03-17 21:47:29,385 INFO main: Reconstructed closure from checkpoint parameters
+2026-03-17 21:47:36,448 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-17 21:47:36,450 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\PV.gif'
+2026-03-17 21:47:40,225 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-17 21:47:40,226 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y triple.gif
+2026-03-17 21:47:51,017 INFO main: Saved comparison GIF to ..\outputs\PV.gif
+2026-03-17 21:47:51,178 INFO main: Saved MSE plot to ..\outputs\mse_per_timestep.png
+2026-03-18 11:28:34,829 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-18 11:28:34,830 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-18 11:28:34,831 INFO __main__: Auto-setting initial dt using CFL condition on a sample initial state.
+2026-03-18 11:28:34,902 INFO model.core.model: Initialised state with U_rms=0.033, scaled to U_target=1.111 with scale factor 33.464
+2026-03-18 11:28:34,955 INFO model.core.model: Suggested initial dt for stability: 0.001
+2026-03-18 11:28:35,900 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01
+2026-03-18 11:28:35,902 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps.
+2026-03-18 11:28:35,996 INFO model.ML.generate_data: Initialised batch of 10 trajectories
+2026-03-18 11:28:35,997 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-03-18 11:28:36,765 INFO model.ML.generate_data: Generated batch of 10 trajectories, shape: (10, 10000, 1, 64, 64)
+2026-03-18 11:29:35,553 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-18 11:29:46,197 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-18 11:29:55,669 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-18 11:30:05,739 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-18 11:30:14,726 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-18 11:30:23,769 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-18 11:30:32,394 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-18 11:30:40,760 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-18 11:30:48,910 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-18 11:30:58,329 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-18 11:31:06,883 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-18 11:31:06,885 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-18 11:31:06,887 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01\trajectories.zarr
+2026-03-18 11:31:07,030 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(10000, 1, 64, 64), batch_steps=3
+2026-03-18 11:39:14,673 INFO __main__: Executing epoch 1/10.
+2026-03-18 11:39:24,973 INFO __main__: Finished epoch 1/10 | mean_train_loss=6.1355E-06 | mean_test_loss=5.6716E-06
+2026-03-18 11:39:24,986 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-18 11:47:02,400 INFO __main__: Executing epoch 2/10.
+2026-03-18 11:47:13,295 INFO __main__: Finished epoch 2/10 | mean_train_loss=5.8061E-06 | mean_test_loss=6.4404E-06
+2026-03-18 11:47:13,304 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-18 11:49:30,933 INFO __main__: Executing epoch 3/10.
+2026-03-18 11:49:43,465 INFO __main__: Finished epoch 3/10 | mean_train_loss=5.8854E-06 | mean_test_loss=6.2553E-06
+2026-03-18 11:49:43,474 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-18 11:52:04,395 INFO __main__: Executing epoch 4/10.
+2026-03-18 11:52:17,044 INFO __main__: Finished epoch 4/10 | mean_train_loss=5.9145E-06 | mean_test_loss=6.1874E-06
+2026-03-18 11:52:17,054 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-18 11:55:59,715 INFO __main__: Executing epoch 5/10.
+2026-03-18 11:56:11,674 INFO __main__: Finished epoch 5/10 | mean_train_loss=6.1183E-06 | mean_test_loss=5.7118E-06
+2026-03-18 11:56:11,683 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-18 12:03:48,768 INFO __main__: Executing epoch 6/10.
+2026-03-18 12:04:01,880 INFO __main__: Finished epoch 6/10 | mean_train_loss=6.1252E-06 | mean_test_loss=5.6957E-06
+2026-03-18 12:04:01,891 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-18 12:09:32,744 INFO __main__: Executing epoch 7/10.
+2026-03-18 12:09:45,292 INFO __main__: Finished epoch 7/10 | mean_train_loss=6.0033E-06 | mean_test_loss=5.9802E-06
+2026-03-18 12:09:45,303 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-18 12:17:05,668 INFO __main__: Executing epoch 8/10.
+2026-03-18 12:17:17,913 INFO __main__: Finished epoch 8/10 | mean_train_loss=5.9638E-06 | mean_test_loss=6.0724E-06
+2026-03-18 12:17:17,924 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-18 12:19:32,532 INFO __main__: Executing epoch 9/10.
+2026-03-18 12:19:44,524 INFO __main__: Finished epoch 9/10 | mean_train_loss=6.0127E-06 | mean_test_loss=5.9582E-06
+2026-03-18 12:19:44,536 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-18 12:21:53,739 INFO __main__: Executing epoch 10/10.
+2026-03-18 12:22:05,603 INFO __main__: Finished epoch 10/10 | mean_train_loss=5.9230E-06 | mean_test_loss=6.1675E-06
+2026-03-18 12:22:05,613 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-18 12:22:05,642 INFO __main__: Saved checkpoint and metadata to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-18 17:18:49,931 INFO main: Found existing closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01, attempting to load checkpoint.
+2026-03-18 17:18:50,122 INFO main: Reconstructed closure from checkpoint parameters
+2026-03-18 17:19:09,018 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-18 17:19:09,020 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '..\outputs\PV.gif'
+2026-03-18 17:19:16,702 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-18 17:19:16,704 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y triple.gif
+2026-03-18 17:19:39,541 INFO main: Saved comparison GIF to ..\outputs\PV.gif
+2026-03-18 17:19:40,138 INFO main: Saved MSE plot to ..\outputs\mse_per_timestep.png

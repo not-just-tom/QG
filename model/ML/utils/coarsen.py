@@ -82,7 +82,7 @@ class Coarsener(ABC):
         self._lr_model = coarsen(self.hr_physics, self.n_lr)
         
         # Create a template state for the low res grid
-        dummy_key = jax.random.key(0)
+        dummy_key = jax.random.PRNGKey(0)
         self._lr_template = self._lr_model.initialise(dummy_key)
         
         # Pre-calculate ratio

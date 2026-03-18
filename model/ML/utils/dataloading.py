@@ -334,14 +334,20 @@ class ZarrDataLoader:
     def sample_windows(self, n_samples, batch_steps, key, traj_indices):
         """Sample random time windows from trajectories.
         """
-        start_times = jax.random.permutation(key, n_samples) * batch_steps 
+        # Generate permuted start times on the device, then convert to
+        # host-side Python ints for indexing zarr arrays (which expect
+        # native Python/numpy types, not JAX DeviceArrays).
+        perm = jax.random.permutation(key, n_samples)
+        perm_host = np.asarray(jax.device_get(perm))
+        start_times = [int(x * batch_steps) for x in perm_host]
+
         windows = []
-        for traj_idx in traj_indices: 
+        for traj_idx in traj_indices:
             for start_time in start_times:
-                # ^^^ this means that right now this has the same order of times for each traj
-                window = self.get_trajectory_window(traj_idx, start_time, batch_steps)
+                # Use Python int for zarr indexing
+                window = self.get_trajectory_window(int(traj_idx), int(start_time), batch_steps)
                 windows.append(window)
-        
+
         windows = np.stack(windows, axis=0)
         return windows
     
