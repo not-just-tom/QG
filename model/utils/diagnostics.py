@@ -88,9 +88,9 @@ class Diagnostic(ABC):
         """Update the given artists with new `sample` data (one frame)."""
         raise NotImplementedError()
 
-class Recorder:
+class Animator:
     """
-    Recorder orchestrates
+    Animator orchestrates
       - buffering diagnostic outputs
       - animation layout
       - final plot layout
@@ -395,7 +395,7 @@ class VorticityDiagnostic(Diagnostic):
 
     name = "PV"
 
-    # semantic metadata (used by Recorder)
+    # semantic metadata (used by Animator)
     kind = "field"                 # "field" | "scalar" | "spectrum"
     temporal = "instant"           # "instant" | "timeseries"
     cmap = "RdBu_r"
@@ -436,7 +436,7 @@ class VorticityDiagnostic(Diagnostic):
         """
         Number of matplotlib axes required for animation.
 
-        Recorder uses this to allocate subplots.
+        Animator uses this to allocate subplots.
         """
         return self.nz
 

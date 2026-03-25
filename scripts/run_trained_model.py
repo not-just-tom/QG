@@ -24,13 +24,13 @@ from model.utils.config import Config
 from model.utils.logging import configure_logging
 from model.core.steppers import SteppedModel, AB3Stepper
 from model.utils.plotting import make_triple_gif, gif_that
-from model.ML.utils.dataloading import find_existing_closure, find_existing_run, ZarrDataLoader, checkpointer
+from model.ML.utils.dataloading import find_existing_closure, find_existing_run, checkpointer, ZarrDataLoader
 from model.ML.architectures.build_model import build_closure
-from model.ML.utils.utils import module_to_single, parameterization
+from model.ML.utils.utils import parameterization
 from model.ML.train import roll_out_with_forced_model
 from model.ML.forced_model import ForcedModel
 from model.core.model import QGM
-from model.ML.utils.coarsen import Coarsen
+from model.ML.utils.coarsen import coarsen
 
 
 # === just loading in params as dict === #
@@ -52,8 +52,6 @@ def run():
     # load config values
     dt = cfg.plotting.dt
     nsteps = cfg.plotting.nsteps
-    cadence = cfg.plotting.cadence
-    outname = getattr(cfg.filepaths, "outname", "../outputs/qg_closure_comparison.gif")
 
     # locate model checkpoint
     timing_metadata = {
@@ -73,37 +71,12 @@ def run():
             logger.exception("Failed to load checkpoint.")
 
     # Build closure template and reconstruct if checkpoint available
-    closure_template = build_closure(cfg)
-    if loaded_leaves is not None:
-        try:
-            template_params, template_static = eqx.partition(closure_template, eqx.is_array)
-            tpl_leaves, tpl_treedef = jax.tree_util.tree_flatten(template_params)
-            if len(tpl_leaves) != len(loaded_leaves):
-                raise ValueError("Checkpoint parameter count mismatch with template")
-            new_leaves = []
-            for tpl, ld in zip(tpl_leaves, loaded_leaves):
-                arr = np.asarray(ld)
-                try:
-                    arr = arr.astype(np.asarray(tpl).dtype)
-                except Exception:
-                    pass
-                new_leaves.append(jax.device_put(arr))
-            new_params = jax.tree_util.tree_unflatten(tpl_treedef, new_leaves)
-            closure_model = eqx.combine(new_params, template_static)
-            logger.info("Reconstructed closure from checkpoint parameters")
-        except Exception:
-            logger.exception("Failed to reconstruct closure from checkpoint; using fresh template")
-            closure_model = closure_template
-    else:
-        closure_model = closure_template
-
-    # make single-precision closure suitable for inference
-    closure = module_to_single(closure_model)
+    closure = build_closure(cfg, loaded_leaves)
 
     # build HR model and coarsener
     dt = cfg.plotting.dt
     hr_model = SteppedModel(model=QGM({**params, "nx": params['hr_nx']}), stepper=AB3Stepper(dt=dt))
-    coarse = Coarsen(hr_model, params['nx'])
+    coarse = coarsen(hr_model.model, params['nx'])
 
     # load a high-res trajectory (first available)
     data_dir, found_run = find_existing_run(os.path.join(BASE_DIR, "data"), params, timing_metadata)
@@ -111,7 +84,6 @@ def run():
         raise FileNotFoundError("No matching high-resolution data run found for provided parameters.")
     loader = ZarrDataLoader(data_dir)
     truth_traj = loader.get_trajectory(0)  # shape (time, layers, ny, nx)
-
 
     nsteps = truth_traj.shape[0]
 
@@ -126,19 +98,18 @@ def run():
 
     closure_func = parameterization(_param_adapter)
     forced_hr_static = SteppedModel(
-        model=ForcedModel(model=coarse.lr_model, closure=closure_func, init_param_aux_func=init_param_func),
+        model=ForcedModel(model=coarse, closure=closure_func, init_param_aux_func=init_param_func),
         stepper=hr_model.stepper,
     )
 
     # template state for the forced model (low-res initialiser)
-    template_state = coarse.lr_model.initialise(jax.random.PRNGKey(0))
+    template_state = coarse.initialise(jax.random.PRNGKey(0))
 
     # Use the first coarsened frame as init and roll out for full length
     init_q = jnp.asarray(truth_traj[0])
     pred_traj = roll_out_with_forced_model(init_q, forced_hr_static, template_state, nsteps, closure_params)
     pred_traj = np.asarray(pred_traj)
 
-    # Create GIF comparing coarsened truth, ML-predicted, and their difference
     layer = 0
     hr_frames = np.asarray(truth_traj[:, layer])
     pred_frames = np.asarray(pred_traj[:, layer])

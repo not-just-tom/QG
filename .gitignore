@@ -1,3 +1,5 @@
+# Ignore outputs likely to be large
+outputs/diagnostics.gif
 # Python cache and bytecode
 __pycache__/
 *.py[cod]

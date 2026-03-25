@@ -34,7 +34,7 @@ importlib.reload(model.utils.plotting)
 from model.utils.logging import configure_logging
 from model.core.steppers import SteppedModel, AB3Stepper
 from model.core.model import QGM
-from model.utils.diagnostics import Recorder
+from model.utils.diagnostics import Animator
 from model.utils.plotting import find_output_dir
 import logging
 import jax
@@ -101,7 +101,7 @@ def main():
     indices = np.arange(0, nsteps, cadence)
     q_traj = q_traj[indices]
 
-    # recorder and animation
+    # Animator and animation
     outbase = os.path.join(cfg.filepaths.out_dir)
     run_dir, found = find_output_dir(outbase, params)
     if found:
@@ -110,9 +110,9 @@ def main():
         # Ensure the output directory exists when creating a new run directory
         os.makedirs(run_dir, exist_ok=True)
 
-    recorder = Recorder(cfg, sm)
-    recorder.animate(cfg, run_dir, q_traj)
-    recorder.plot_final(run_dir)
+    Animator = Animator(cfg, sm)
+    Animator.animate(cfg, run_dir, q_traj)
+    Animator.plot_final(run_dir)
 
     # ============================
 

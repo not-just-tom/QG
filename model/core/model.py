@@ -303,19 +303,12 @@ class QGM(Kernel):
         return Lr, U_rms
 
     def estimate_cfl_dt(self, state: states.State, cfl=0.1):
-        """Estimate a stable `dt` based on CFL: dt = cfl * min(dx/umax, dy/vmax).
-
-        Returns (dt, umax, vmax).
+        """Estimate a stable `dt` based on CFL: dt = courant_no. * x_lengthscale/abs(U)
         """
         full = self.get_full_state(state)
-        u = full.u
-        v = full.v
-        umax = float(jnp.max(jnp.abs(u)))
-        vmax = float(jnp.max(jnp.abs(v)))
-        dx = float(self.dx)
-        dy = float(self.dy)
-        eps = 1e-12
-        dt = float(cfl * min(dx / (umax + eps), dy / (vmax + eps))) #is min best here?
+        U_rms = jnp.sqrt(jnp.mean(full.u ** 2 + full.v ** 2)).astype(jnp.float64)
+        
+        dt = float(cfl * self.dx / abs(U_rms + 1e-12))
         return dt
 
     @classmethod

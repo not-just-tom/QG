@@ -91,7 +91,6 @@ def gif_that(q_state, out_file='plotting.gif', cadence=100):
     'just a simple plotting'
     q_state = q_state[::cadence] 
     nt = q_state.shape[0]
-    print(f'Shape of the input array: {q_state.shape}')
 
     # Determine global vmin/vmax for HR and LR
     fig = plt.figure(figsize=(4, 4), constrained_layout=True)

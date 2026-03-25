@@ -12,13 +12,14 @@ from zarr.codecs import BloscCodec
 
 logger = logging.getLogger(__name__)
 
-def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
-    '''aiming for this to generate the zarr file for hr training data, and 
-    also save the metadata for the run in a json file.'''
+def generate_train_data(cfg, params, dt, hr_model, lr_model, hr_dir):
+    '''Generate zarr training data from the high-res `hr_model` and coarsen
+    on-the-fly using `lr_model` as the low-resolution physics template.
+    Saves metadata and trajectories into `hr_dir`.
+    '''
     os.makedirs(hr_dir, exist_ok=True)
 
     # Timing parameters
-    dt = cfg.plotting.dt
     nsteps = cfg.plotting.nsteps
     cadence = cfg.plotting.cadence if hasattr(cfg.plotting, 'cadence') else 1
     batch_size = getattr(cfg.ml, "batch_size", 5)
@@ -26,15 +27,31 @@ def generate_train_data(cfg, params, hr_model, coarse, hr_dir):
     
     logger.info(f"Generating %d trajectories with %d steps.", cfg.ml.n_train + cfg.ml.n_test, nsteps)
     
-    # JIT the trajectory generation
+    # Prepare low-resolution template and ratio for coarsening
+    dummy_key = jax.random.PRNGKey(0)
+    lr_template = lr_model.initialise(dummy_key)
+    ratio = float(hr_model.model.nx) / float(lr_model.nx)
+
+    # JIT the trajectory generation; closure captures `lr_template`, `lr_model._dealias`, and `ratio`.
     @functools.partial(jax.jit, static_argnames=["nsteps", "cadence"])
     def generate_trajectory(init_state, nsteps, cadence):
         """Generate coarsened trajectory with subsampling."""
         def step(carry, _x):
             next_state = hr_model.step_model(carry)
-            lr_state = coarse.coarsen_state(next_state.state)
+            state = next_state.state
+            # Galerkin truncation to low-res spectral coefficients
+            nk = lr_template.qh.shape[-2] // 2
+            trunc = jnp.concatenate(
+                [
+                    state.qh[:, :nk, :nk + 1],
+                    state.qh[:, -nk:, :nk + 1],
+                ],
+                axis=-2,
+            )
+            filtered = trunc * lr_model._dealias / (ratio ** 2)
+            lr_state = lr_template.update(qh=filtered)
             return next_state, lr_state.q
-        
+
         _, traj_q = jax.lax.scan(step, init_state, None, length=nsteps)
         return traj_q
     

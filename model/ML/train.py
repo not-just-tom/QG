@@ -9,7 +9,7 @@ importlib.reload(model.core.steppers)
 importlib.reload(model.ML.forced_model)
 from model.ML.utils.utils import parameterization
 from model.ML.forced_model import ForcedModel
-from model.core.steppers import SteppedModel
+from model.core.steppers import SteppedModel, AB3Stepper
 
 
 def closure_combiner(state, closure_params, static_closure_obj=None):
@@ -47,17 +47,17 @@ def compute_traj_errors(target_traj, forced_hr_model, template_state, closure_pa
     )
     return rolled_out - target_traj
 
-def make_train_epoch(coarse, hr_model, optim):
+def make_train_epoch(lr_model, dt, optim):
     """Factory that returns a JIT-compiled `train_epoch` function bound to
-    the provided `coarse`, `hr_model`, and `optim` objects.
+    the provided low-resolution physics model `lr_model`, a step `dt`, and optimizer.
     """
     # Prepare any template state that is static and can be captured
-    template_state = coarse.lr_model.initialise(jax.random.PRNGKey(0))
+    template_state = lr_model.initialise(jax.random.PRNGKey(0))
 
     def _train_epoch(train_trajs, closure, optim_state):
         # Use the low-resolution physics model for training 
-        lr_base_model = coarse.lr_model
-        stepper_obj = hr_model.stepper
+        lr_base_model = lr_model
+        stepper = AB3Stepper(dt=dt)
 
         # Partition the closure into dynamic arrays and static structure
         closure_params, static_closure_obj = eqx.partition(closure, eqx.is_array)
@@ -75,7 +75,7 @@ def make_train_epoch(coarse, hr_model, optim):
                 closure=closure_func,
                 init_param_aux_func=init_param_func,
             ),
-            stepper=stepper_obj,
+            stepper=stepper,
         )
 
         def step_fn(carry, batch):
@@ -88,7 +88,7 @@ def make_train_epoch(coarse, hr_model, optim):
                                       template_state=template_state,
                                       closure_params=params)
                 )(batch)
-                return jnp.mean(err ** 2)
+                return jnp.mean(err**2)
 
             loss, grads = eqx.filter_value_and_grad(loss_fn)(closure_params, batch)
             updates, new_optim_state = optim.update(grads, optim_state, closure_params)
@@ -102,16 +102,16 @@ def make_train_epoch(coarse, hr_model, optim):
 
     return eqx.filter_jit(_train_epoch)
 
-def make_test_epoch(coarse, hr_model, optim):
+def make_test_epoch(lr_model, dt):
     """basically the same minus the optim update. 
     """
     # Prepare any template state that is static and can be captured
-    template_state = coarse.lr_model.initialise(jax.random.PRNGKey(0))
+    template_state = lr_model.initialise(jax.random.PRNGKey(0))
 
     def _test_epoch(test_trajs, closure, optim_state):
         # Use the low-resolution physics model for testing 
-        lr_base_model = coarse.lr_model
-        stepper_obj = hr_model.stepper
+        lr_base_model = lr_model
+        stepper = AB3Stepper(dt=dt)
 
         # Partition the closure into dynamic arrays and static structure
         closure_params, static_closure_obj = eqx.partition(closure, eqx.is_array)
@@ -129,7 +129,7 @@ def make_test_epoch(coarse, hr_model, optim):
                 closure=closure_func,
                 init_param_aux_func=init_param_func,
             ),
-            stepper=stepper_obj,
+            stepper=stepper,
         )
 
         def step_fn(carry, batch):

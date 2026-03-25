@@ -7,12 +7,15 @@ import numpy as np
 import equinox as eqx
 from typing import Optional, List
 import logging
+import threading
+import queue
 logger = logging.getLogger(__name__)
 
 # Match either data or model run directories, e.g.:
 #  - data_hr128_nx32_01
 #  - cnn_hr128_nx32_01
 RUN_RE = re.compile(r".*_hr(?P<hr>\d+)_nx(?P<lr>\d+)_(?P<idx>\d{2})")
+MODELTYPE_RE = re.compile(r"^(?P<type>.+)_(?P<idx>\d{2})$")
 
 def _save_pytree(obj, basepath: str):
     import pickle
@@ -83,7 +86,7 @@ def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save
             logger.exception("Failed to save optimizer checkpoint")
             raise
 
-        # Write a minimal checkpoint metadata file (include epoch info if provided)
+        # checkpoint metadata
         meta = {"saved_utc": __import__("datetime").datetime.utcnow().isoformat() + "Z"}
         if epoch is not None:
             meta["epoch"] = int(epoch)
@@ -154,37 +157,50 @@ def canonicalize(params: dict) -> dict:
     return round_floats(params)
 
 def find_existing_closure(model_dir, params, timing_metadata, model_type):
+    # Keep hr/lr in the directory name but allocate the numeric suffix
+    # exclusively within the `model_type` namespace. Example new name:
+    #   unet_hr128_nx64_01  (01 is unique among all `unet_` runs)
     hr_nx = params['hr_nx']
     lr_nx = params['nx']
-    prefix = f"{model_type}_hr{hr_nx}_nx{lr_nx}_"
     candidates = []
 
-    for name in os.listdir(model_dir):
-        m = RUN_RE.fullmatch(name)
-        if m is None:
-            continue
-        if int(m["hr"]) != hr_nx or int(m["lr"]) != lr_nx:
-            continue
+    # Regex to capture trailing two-digit index
+    IDX_RE = re.compile(r".*_(?P<idx>\d{2})$")
 
+    for name in os.listdir(model_dir):
+        # Only consider directories that start with the model_type prefix
+        if not name.startswith(f"{model_type}_"):
+            continue
         run_dir = os.path.join(model_dir, name)
         meta_path = os.path.join(run_dir, "metadata.json")
-        if not os.path.exists(meta_path):
-            continue
 
+        # Try to parse trailing index
+        m_idx = IDX_RE.match(name)
+        if m_idx is None:
+            continue
         try:
-            with open(meta_path) as f:
-                stored_meta = json.load(f)
+            idx = int(m_idx.group('idx'))
         except Exception:
             continue
 
-        # Exact metadata match
-        if (metadata_matches(params, stored_meta["parameters"])) and (metadata_matches(timing_metadata, stored_meta['timing'])) and (model_type == stored_meta['model_type']):
-            return run_dir, True
-        candidates.append(int(m["idx"]))
+        # If metadata exists, check for exact parameter+timing match
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path) as f:
+                    stored_meta = json.load(f)
+            except Exception:
+                candidates.append(idx)
+                continue
 
-    # No match found
+            if (metadata_matches(params, stored_meta.get("parameters", {}))) and (metadata_matches(timing_metadata, stored_meta.get('timing', {}))) and (model_type == stored_meta.get('model_type')):
+                return run_dir, True
+
+        # Keep the index as a candidate (even if metadata missing or mismatched)
+        candidates.append(idx)
+
+    # No exact match found; select next index within model_type namespace
     next_idx = max(candidates, default=0) + 1
-    run_name = f"{prefix}{next_idx:02d}"
+    run_name = f"{model_type}_hr{hr_nx}_nx{lr_nx}_{next_idx:02d}"
     run_dir = os.path.join(model_dir, run_name)
     return run_dir, False
 
@@ -350,13 +366,69 @@ class ZarrDataLoader:
 
         windows = np.stack(windows, axis=0)
         return windows
-    
-    def __repr__(self) -> str:
-        return (
-            f"ZarrDataLoader(\n"
-            f"  path={self.zarr_path}\n"
-            f"  n_trajectories={self.n_trajectories}\n"
-            f"  traj_shape={self.traj_shape}\n"
-            f"  dtype={self.dtype}\n"
-            f")"
-        )
+
+    def iterate_minibatches(self, *, traj_indices, n_samples, batch_steps, key, minibatch_size=1):
+        """Stream minibatches of windows without materialising entire epoch.
+
+        Yields numpy arrays shaped `(minibatch_size, batch_steps, layers, ny, nx)`.
+
+        Parameters
+        ----------
+        traj_indices : sequence[int]
+            Indices of trajectories to sample from.
+        n_samples : int
+            Number of start times to sample per-trajectory (will be permuted).
+        batch_steps : int
+            Number of timesteps in each window.
+        key : jax.random.PRNGKey
+            PRNG key used to generate permutation of start times.
+        minibatch_size : int
+            Number of windows per yielded minibatch.
+        """
+        # Build start times (device permutation -> host ints)
+        perm = jax.random.permutation(key, n_samples)
+        perm_host = np.asarray(jax.device_get(perm))
+        start_times = [int(x * batch_steps) for x in perm_host]
+
+        batch = []
+        for traj_idx in traj_indices:
+            for start_time in start_times:
+                window = self.get_trajectory_window(int(traj_idx), int(start_time), batch_steps)
+                batch.append(window)
+                if len(batch) == minibatch_size:
+                    yield np.stack(batch, axis=0)
+                    batch = []
+
+        # yield remainder
+        if batch:
+            yield np.stack(batch, axis=0)
+
+
+def prefetch_generator(generator, size: int = 2):
+    """Prefetch items from a blocking generator into a small queue using a background thread.
+
+    Usage:
+      prefetch_gen = prefetch_generator(my_generator(), size=4)
+      for minibatch in prefetch_gen:
+          process(minibatch)
+
+    This is thread-safe for zarr/numpy reads and reduces I/O stalls.
+    """
+    q: "queue.Queue[object]" = queue.Queue(maxsize=size)
+    sentinel = object()
+
+    def _worker():
+        try:
+            for item in generator:
+                q.put(item)
+        finally:
+            q.put(sentinel)
+
+    thread = threading.Thread(target=_worker, daemon=True)
+    thread.start()
+
+    while True:
+        item = q.get()
+        if item is sentinel:
+            return
+        yield item

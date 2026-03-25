@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+import subprocess
+import sys
+import os
+
+MAX_BYTES = 100 * 1024 * 1024
+
+def staged_files():
+    p = subprocess.run(["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"], capture_output=True, text=True)
+    if p.returncode != 0:
+        return []
+    return [l for l in p.stdout.splitlines() if l.strip()]
+
+def main():
+    files = staged_files()
+    large = []
+    for f in files:
+        if os.path.isfile(f):
+            try:
+                size = os.path.getsize(f)
+            except OSError:
+                continue
+            if size > MAX_BYTES:
+                large.append((f, size))
+
+    if not large:
+        return 0
+
+    gi = ".gitignore"
+    try:
+        with open(gi, "a+", encoding="utf-8") as g:
+            g.seek(0)
+            existing = set(line.strip() for line in g if line.strip())
+            for f, size in large:
+                if f not in existing:
+                    g.write(f + "\n")
+    except OSError:
+        print("Failed to update .gitignore; aborting commit.")
+        for f, size in large:
+            print(f"- {f}: {size/1024/1024:.1f} MB")
+        print("Please add large files to .gitignore or use Git LFS.")
+        return 1
+
+    print("Commit blocked: the following staged files are larger than 100 MB and were added to .gitignore:")
+    for f, size in large:
+        print(f"- {f}: {size/1024/1024:.1f} MB")
+    print("")
+    print("The files were appended to .gitignore. To complete the commit, run:")
+    print("  git add .gitignore")
+    print("  git commit -m \"<your message>\"")
+    print("")
+    print("If you intended to track large files, consider using Git LFS instead: https://git-lfs.github.com/")
+    return 1
+
+if __name__ == '__main__':
+    sys.exit(main())
