@@ -157,9 +157,6 @@ def canonicalize(params: dict) -> dict:
     return round_floats(params)
 
 def find_existing_closure(model_dir, params, timing_metadata, model_type):
-    # Keep hr/lr in the directory name but allocate the numeric suffix
-    # exclusively within the `model_type` namespace. Example new name:
-    #   unet_hr128_nx64_01  (01 is unique among all `unet_` runs)
     hr_nx = params['hr_nx']
     lr_nx = params['nx']
     candidates = []

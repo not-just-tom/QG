@@ -41,8 +41,8 @@ forcing:
 
 ml:
   enabled: true
-  model_type: zero
-  device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
+  model_type: cnn
+  device: 'gpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   use_float64: false
   n_train: 7
   n_test: 3

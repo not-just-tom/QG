@@ -4753,3 +4753,233 @@ ValueError: Mismatch custom node data: ('layers',), () != ('layers',), (); value
 2026-03-25 08:35:30,864 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\PV.gif'
 2026-03-25 08:35:32,002 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
 2026-03-25 08:35:32,004 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 1200x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\triple.gif'
+2026-03-25 11:08:52,696 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 11:08:52,698 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 11:08:52,699 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 11:08:52,793 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-25 11:08:53,032 INFO __main__: Found existing zero closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_06, attempting to load checkpoint.
+2026-03-25 11:08:53,200 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_06 already trained for 10 epochs; skipping training loop.
+2026-03-25 11:10:13,399 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 11:10:13,400 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 11:10:13,402 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 11:10:13,409 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-25 11:10:13,439 INFO __main__: Found existing zero closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_06, attempting to load checkpoint.
+2026-03-25 11:10:13,448 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_06 already trained for 10 epochs; skipping training loop.
+2026-03-25 11:10:13,451 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-03-25 11:10:13,471 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 64, 64), batch_steps=3
+2026-03-25 11:10:13,475 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-03-25 11:10:14,573 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-03-25 11:10:15,979 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-25 11:10:15,982 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\PV.gif'
+2026-03-25 11:10:16,887 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-25 11:10:16,889 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\quad.gif'
+2026-03-25 11:14:09,107 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 11:14:09,108 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 11:14:09,110 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 11:14:09,116 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-25 11:14:09,141 INFO __main__: Found existing zero closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_06, attempting to load checkpoint.
+2026-03-25 11:14:09,151 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_06 already trained for 10 epochs; skipping training loop.
+2026-03-25 11:14:09,154 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-03-25 11:14:09,173 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 64, 64), batch_steps=3
+2026-03-25 11:14:09,177 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-03-25 11:14:09,981 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-03-25 11:14:11,393 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-25 11:14:11,395 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\PV.gif'
+2026-03-25 11:14:12,237 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-25 11:14:12,239 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\quad.gif'
+2026-03-25 12:25:15,537 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 12:25:15,539 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 12:25:15,540 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 12:25:15,630 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-25 12:25:15,818 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 64, 64), batch_steps=3
+2026-03-25 12:26:53,231 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=1.4583E-05 | mean_test_loss=1.6714E-05
+2026-03-25 12:26:53,242 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-25 12:27:13,823 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=1.5099E-05 | mean_test_loss=1.5512E-05
+2026-03-25 12:27:13,831 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-25 12:27:35,882 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=1.5586E-05 | mean_test_loss=1.4381E-05
+2026-03-25 12:27:35,892 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-25 12:28:35,519 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=1.5293E-05 | mean_test_loss=1.5058E-05
+2026-03-25 12:28:35,529 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-25 12:29:23,460 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=1.4834E-05 | mean_test_loss=1.6124E-05
+2026-03-25 12:29:23,470 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-25 12:29:44,093 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=1.5463E-05 | mean_test_loss=1.4659E-05
+2026-03-25 12:29:44,102 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-25 12:30:04,569 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=1.4996E-05 | mean_test_loss=1.5754E-05
+2026-03-25 12:30:04,579 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-25 12:30:25,574 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=1.4980E-05 | mean_test_loss=1.5793E-05
+2026-03-25 12:30:25,583 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-25 12:30:46,170 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=1.5351E-05 | mean_test_loss=1.4928E-05
+2026-03-25 12:30:46,184 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-25 12:31:07,049 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=1.5521E-05 | mean_test_loss=1.4527E-05
+2026-03-25 12:31:07,060 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01
+2026-03-25 12:31:07,839 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-03-25 12:31:09,430 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-25 12:31:09,435 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\PV.gif'
+2026-03-25 12:31:10,470 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-25 12:31:10,472 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\quad.gif'
+2026-03-25 12:32:16,441 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 12:32:16,442 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 12:32:16,444 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 12:32:16,451 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-25 12:32:16,481 INFO __main__: Found existing zero closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01, attempting to load checkpoint.
+2026-03-25 12:32:16,489 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01 already trained for 10 epochs; skipping training loop.
+2026-03-25 12:32:16,491 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-03-25 12:32:16,511 INFO __main__: Training with chunked windows from Zarr: n_traj=10, traj_shape=(1000, 1, 64, 64), batch_steps=3
+2026-03-25 12:32:16,514 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-03-25 12:32:17,071 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-03-25 12:32:18,640 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-25 12:32:18,643 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\PV.gif'
+2026-03-25 12:32:19,518 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-25 12:32:19,520 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\quad.gif'
+2026-03-25 12:34:56,309 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 12:34:56,311 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 12:34:56,312 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 12:34:56,322 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-25 12:34:56,359 INFO __main__: Found existing zero closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01, attempting to load checkpoint.
+2026-03-25 12:34:56,372 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01 already trained for 10 epochs; skipping training loop.
+2026-03-25 12:34:56,376 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-03-25 12:34:56,416 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-03-25 12:34:57,303 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-03-25 12:34:59,412 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-25 12:34:59,415 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\PV.gif'
+2026-03-25 12:35:00,241 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-25 12:35:00,243 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\quad.gif'
+2026-03-25 12:48:37,410 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 12:48:37,412 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 12:48:37,413 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 12:48:37,492 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-25 12:48:40,940 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0005
+2026-03-25 12:50:07,958 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 12:50:07,960 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 12:50:07,961 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 12:50:07,968 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-25 12:50:08,120 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0005
+2026-03-25 12:54:55,242 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 12:54:55,244 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 12:54:55,245 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 12:54:55,252 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_02, loading data from there.
+2026-03-25 12:55:08,819 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 12:55:08,821 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 12:55:08,822 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 12:55:08,829 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_02, loading data from there.
+2026-03-25 12:55:13,238 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 12:55:13,240 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 12:55:13,241 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 12:55:13,248 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_02, loading data from there.
+2026-03-25 12:55:44,952 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 12:55:44,953 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 12:55:44,955 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 12:55:44,962 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_04
+2026-03-25 12:55:44,965 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps.
+2026-03-25 12:55:47,466 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-03-25 12:55:47,468 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-03-25 12:55:49,237 INFO model.ML.generate_data: Generated batch of 5 trajectories, shape: (5, 10000, 1, 64, 64)
+2026-03-25 12:56:40,233 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-03-25 12:56:52,792 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-03-25 12:57:03,753 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-03-25 12:57:15,483 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-03-25 12:57:26,763 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-03-25 12:57:37,363 INFO model.ML.generate_data: Generated 5/10 trajectories
+2026-03-25 12:57:37,392 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-03-25 12:57:37,393 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-03-25 12:57:37,397 INFO model.ML.generate_data: Generated batch of 5 trajectories, shape: (5, 10000, 1, 64, 64)
+2026-03-25 12:58:27,555 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-03-25 12:58:39,553 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-03-25 12:58:50,349 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-03-25 12:59:00,483 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-03-25 12:59:11,575 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-03-25 12:59:22,297 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-03-25 12:59:22,300 INFO model.ML.generate_data: Finished generating all trajectories
+2026-03-25 12:59:22,303 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_04\trajectories.zarr
+2026-03-25 12:59:22,441 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (10000, 1, 64, 64) and learning rate: 0.0005
+2026-03-25 13:13:26,520 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=9.0062E-06 | mean_test_loss=1.0247E-05
+2026-03-25 13:13:26,585 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_02
+2026-03-25 13:29:35,437 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=9.1637E-06 | mean_test_loss=9.8687E-06
+2026-03-25 13:29:35,446 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_02
+2026-03-25 13:47:20,144 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=9.4950E-06 | mean_test_loss=9.0662E-06
+2026-03-25 13:47:20,225 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_02
+2026-03-25 13:58:24,290 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=9.1737E-06 | mean_test_loss=9.8685E-06
+2026-03-25 13:58:24,298 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_02
+2026-03-25 14:12:35,091 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=9.2285E-06 | mean_test_loss=9.7544E-06
+2026-03-25 14:12:35,104 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_02
+2026-03-25 14:27:18,785 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=9.7584E-06 | mean_test_loss=8.5234E-06
+2026-03-25 14:27:18,823 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_02
+2026-03-25 14:47:49,251 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=9.2529E-06 | mean_test_loss=9.6731E-06
+2026-03-25 14:47:49,260 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_02
+2026-03-25 14:55:08,664 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=9.5018E-06 | mean_test_loss=9.0679E-06
+2026-03-25 14:55:08,674 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_02
+2026-03-25 14:59:12,868 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=9.3057E-06 | mean_test_loss=9.5352E-06
+2026-03-25 14:59:12,877 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_02
+2026-03-25 15:01:34,854 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=9.7335E-06 | mean_test_loss=8.5282E-06
+2026-03-25 15:01:34,863 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_02
+2026-03-25 15:01:37,999 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-03-25 15:01:43,926 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-25 15:01:43,928 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\PV.gif'
+2026-03-25 15:01:51,777 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-25 15:01:51,779 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\quad.gif'
+2026-03-25 15:10:42,878 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 15:10:42,879 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 15:10:42,880 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 15:10:42,906 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-25 15:10:43,065 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0005
+2026-03-25 16:04:32,706 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=1.4662E-05 | mean_test_loss=1.6702E-05
+2026-03-25 16:04:38,753 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\fno_hr128_nx64_01
+2026-03-25 17:20:49,106 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 17:20:49,108 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 17:20:49,109 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 17:20:49,117 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-25 17:20:49,175 INFO __main__: Found existing fno closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\fno_hr128_nx64_01, attempting to load checkpoint.
+2026-03-25 17:20:49,801 INFO __main__: Resuming training from epoch 0 (saved) out of 10
+2026-03-25 17:20:49,940 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-03-25 17:20:49,962 INFO __main__: Loaded existing loss history: 1 train entries, 1 test entries
+2026-03-25 17:21:39,089 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 17:21:39,091 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 17:21:39,092 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 17:21:39,098 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-25 17:21:39,154 INFO __main__: Found existing zero closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01, attempting to load checkpoint.
+2026-03-25 17:21:39,169 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_01 already trained for 10 epochs; skipping training loop.
+2026-03-25 17:21:39,171 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-03-25 17:21:39,210 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-03-25 17:21:40,365 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-03-25 17:21:42,155 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-25 17:21:42,158 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\PV.gif'
+2026-03-25 17:21:43,130 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-25 17:21:43,133 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\quad.gif'
+2026-03-25 17:21:58,139 INFO __main__: Found existing output directory with matching parameters
+2026-03-25 17:21:58,142 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-25 17:21:58,143 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-25 17:21:58,149 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-25 17:21:58,230 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0005
+2026-03-25 17:23:29,266 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=1.4581E-05 | mean_test_loss=1.6713E-05
+2026-03-25 17:23:29,297 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_03
+2026-03-25 21:20:25,203 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=1.5091E-05 | mean_test_loss=1.5522E-05
+2026-03-25 21:20:25,220 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_03
+2026-03-25 21:20:52,438 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=1.5575E-05 | mean_test_loss=1.4367E-05
+2026-03-25 21:20:52,450 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_03
+2026-03-25 21:21:18,214 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=1.5269E-05 | mean_test_loss=1.5072E-05
+2026-03-25 21:21:18,222 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_03
+2026-03-25 21:21:42,547 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=1.4833E-05 | mean_test_loss=1.6094E-05
+2026-03-25 21:21:42,557 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_03
+2026-03-25 21:22:16,067 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=1.5494E-05 | mean_test_loss=1.4656E-05
+2026-03-25 21:22:16,096 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_03
+2026-03-25 21:23:16,644 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=1.4987E-05 | mean_test_loss=1.5752E-05
+2026-03-25 21:23:16,677 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_03
+2026-03-25 21:24:05,176 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=1.4989E-05 | mean_test_loss=1.5779E-05
+2026-03-25 21:24:05,192 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_03
+2026-03-26 11:10:05,915 INFO __main__: Found existing output directory with matching parameters
+2026-03-26 11:10:05,918 INFO __main__: Requested device: cpu, using device: CPU
+2026-03-26 11:10:05,920 INFO __main__: Running on CPU with x64_enabled=False
+2026-03-26 11:10:05,998 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-26 11:10:06,212 INFO __main__: Found existing zero closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_03, attempting to load checkpoint.
+2026-03-26 11:10:06,358 INFO __main__: Resuming training from epoch 0 (saved) out of 10
+2026-03-26 11:10:06,363 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-03-26 11:10:09,754 INFO __main__: Loaded existing loss history: 8 train entries, 8 test entries
+2026-03-26 11:11:55,437 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=1.5325E-05 | mean_test_loss=1.4937E-05
+2026-03-26 11:11:55,474 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_03
+2026-03-26 11:13:23,744 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=1.5525E-05 | mean_test_loss=1.4509E-05
+2026-03-26 11:13:23,754 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_03
+2026-03-26 11:13:25,036 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-03-26 11:13:27,732 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-26 11:13:27,736 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\PV.gif'
+2026-03-26 11:13:28,936 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-03-26 11:13:28,939 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\quad.gif'

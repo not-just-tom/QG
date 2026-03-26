@@ -1,4 +1,5 @@
 # Ignore outputs likely to be large
+# Ignore outputs likely to be large
 outputs/diagnostics.gif
 # Python cache and bytecode
 __pycache__/
@@ -18,6 +19,16 @@ data/
 outputs/
 **/trajectories.zarr/
 **/trajectories.zarr/**
+
+# Keep metadata but ignore large generated model/results folders
+results/closures/
+
+# Logs and local runs
+logs/
+
+# Editor and OS files
+.vscode/
+.DS_Store
 
 # Virtual environments
 venv/

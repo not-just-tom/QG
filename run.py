@@ -7,12 +7,31 @@ warnings.filterwarnings(
 )
 import importlib 
 import os
+import argparse
 from model.utils.config import Config
+
+# Base repo paths
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "config", "default.yaml")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 MODEL_DIR = os.path.join(BASE_DIR, 'results', 'closures')
+
+# Parse early CLI args (allow running with --config and --outdir)
+_early_parser = argparse.ArgumentParser(add_help=False)
+_early_parser.add_argument("--config", type=str, default=None)
+_early_parser.add_argument("--outdir", type=str, default=None)
+_early_args, _ = _early_parser.parse_known_args()
+if _early_args.config:
+    CONFIG_DEFAULT_PATH = os.path.abspath(_early_args.config)
+OUTDIR_OVERRIDE = os.path.abspath(_early_args.outdir) if _early_args.outdir else None
+
+# Load config and canonicalize common paths
 cfg = Config.load_config(CONFIG_DEFAULT_PATH)
+if hasattr(cfg, "filepaths") and hasattr(cfg.filepaths, "out_dir"):
+    od = cfg.filepaths.out_dir
+    if od and not os.path.isabs(od):
+        cfg.filepaths.out_dir = os.path.abspath(os.path.join(BASE_DIR, od))
+
 use_float64 = getattr(cfg.ml, "use_float64", False)
 if use_float64:
     os.environ.setdefault("JAX_ENABLE_X64", "1") 
@@ -52,9 +71,9 @@ from model.ML.train import make_train_epoch, make_test_epoch
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import coarsen
 from model.ML.generate_data import generate_train_data
-from model.ML.utils.dataloading import find_existing_closure, find_existing_run, ZarrDataLoader, checkpointer
+from model.ML.utils.dataloading import find_existing_closure, find_existing_run, ZarrDataLoader, checkpointer, prefetch_generator
 from model.utils.logging import configure_logging
-from model.utils.plotting import find_output_dir, make_triple_gif, gif_that
+from model.utils.plotting import find_output_dir, make_quad_gif, gif_that
 from model.core.steppers import SteppedModel, AB3Stepper
 from model.core.model import QGM
 from model.ML.utils.utils import parameterization
@@ -101,13 +120,18 @@ def main():
     ratio = params["hr_nx"]/params["nx"]
     minibatch_size = cfg.ml.minibatch_size
     prefetch = cfg.ml.prefetch
+    model_type = cfg.ml.model_type
 
     logger = configure_logging(level=cfg.filepaths.log_level, out_file="../logs/run.log")
     logger = logging.getLogger(__name__)
     
     # output dir 
     outbase = os.path.join(cfg.filepaths.out_dir)
-    out_dir, found = find_output_dir(outbase, params)
+    # allow overriding outdir from early CLI arg
+    global OUTDIR_OVERRIDE
+    if OUTDIR_OVERRIDE:
+        outbase = OUTDIR_OVERRIDE
+    out_dir, found = find_output_dir(outbase, params, model_type)
     if found:
         logger.info(f"Found existing output directory with matching parameters")
     else:
@@ -160,10 +184,10 @@ def main():
         data_loader = ZarrDataLoader(run_dir)
 
     # === ML training === #
-    model_dir, found = find_existing_closure(MODEL_DIR, params, timing_metadata, cfg.ml.model_type)
+    model_dir, found = find_existing_closure(MODEL_DIR, params, timing_metadata, model_type)
     start_epoch = 0
     if found:
-        logger.info(f"Found existing {cfg.ml.model_type} closure with matching parameters at {model_dir}, attempting to load checkpoint.")
+        logger.info(f"Found existing {model_type} closure with matching parameters at {model_dir}, attempting to load checkpoint.")
         try:
             _, loaded_optim, ckpt_meta, loaded_loss_history = checkpointer(None, None, model_dir, save=False)
         except Exception:
@@ -218,11 +242,6 @@ def main():
     train_epoch = make_train_epoch(lr_model, low_res_dt, optim)
     test_epoch = make_test_epoch(lr_model, low_res_dt)
 
-    logger.info(
-        f"Training with chunked windows from Zarr: n_traj={len(data_loader)}, "
-        f"traj_shape={data_loader.traj_shape}, batch_steps={batch_steps}"
-    )
-
     # Split trajectories into train and test sets
     all_traj_indices = list(range(len(data_loader)))
     if len(all_traj_indices) < n_epochs:
@@ -254,42 +273,52 @@ def main():
         logger.exception("Failed to restore loss history; starting fresh")
 
     for epoch in range(start_epoch, n_epochs):
+        if epoch == 0:
+            logger.info(f"Starting training for {n_epochs} epochs with batch size: {batch_steps}, traj shape: {data_loader.traj_shape} and learning rate: {learning_rate}")
         # shuffle indices for train and test
         shuffled_indices = jax.random.permutation(keys[epoch], n_epochs)
         # this shuffle still doesnt guarantee a unique split every epoch
         train_indices = shuffled_indices[:n_train]
         test_indices = shuffled_indices[n_train:]
 
-        # Build start times
-        perm = jax.random.permutation(more_keys[epoch], n_samples)
-        perm_host = np.asarray(jax.device_get(perm))
-        start_times = [int(x * batch_steps) for x in perm_host]
-
         # === train ===
         train_losses_accum = []
-        for traj_idx in train_indices:
-            # iterate start_times in small groups to keep host+device memory low
-            for s in range(0, len(start_times), minibatch_size):
-                slice_times = start_times[s : s + minibatch_size]
-                windows = [data_loader.get_trajectory_window(int(traj_idx), int(st), batch_steps) for st in slice_times]
-                windows = np.stack(windows, axis=0).astype(np.float32)
-                # shape expected by train_epoch: (n_batches, n_samples, batch_steps, ...)
-                chunk = windows.reshape((1, windows.shape[0], batch_steps) + windows.shape[2:])
-                chunk = jax.device_put(chunk)
-                closure, optim_state, losses = train_epoch(chunk, closure, optim_state)
-                train_losses_accum.extend(list(np.asarray(losses).reshape(-1).tolist()))
+        # Convert JAX arrays to host-side python list of indices for zarr indexing
+        train_indices_host = list(np.asarray(jax.device_get(train_indices)).tolist())
+        # Use the data loader's minibatch iterator and prefetch to overlap I/O
+        train_gen = data_loader.iterate_minibatches(
+            traj_indices=train_indices_host,
+            n_samples=n_samples,
+            batch_steps=batch_steps,
+            key=more_keys[epoch],
+            minibatch_size=minibatch_size,
+        )
+        train_prefetch = prefetch_generator(train_gen, size=prefetch)
+        for windows in train_prefetch:
+            windows = windows.astype(np.float32)
+            # reshape to (n_batches=1, n_samples=minibatch_size, batch_steps, ...)
+            chunk = windows.reshape((1, windows.shape[0], batch_steps) + windows.shape[2:])
+            chunk = jax.device_put(chunk)
+            closure, optim_state, losses = train_epoch(chunk, closure, optim_state)
+            train_losses_accum.extend(list(np.asarray(losses).reshape(-1).tolist()))
 
         # === test ===
         test_losses_accum = []
-        for traj_idx in test_indices:
-            for s in range(0, len(start_times), minibatch_size):
-                slice_times = start_times[s : s + minibatch_size]
-                windows = [data_loader.get_trajectory_window(int(traj_idx), int(st), batch_steps) for st in slice_times]
-                windows = np.stack(windows, axis=0).astype(np.float32)
-                chunk = windows.reshape((1, windows.shape[0], batch_steps) + windows.shape[2:])
-                chunk = jax.device_put(chunk)
-                closure, optim_state, losses = test_epoch(chunk, closure, optim_state)
-                test_losses_accum.extend(list(np.asarray(losses).reshape(-1).tolist()))
+        test_indices_host = list(np.asarray(jax.device_get(test_indices)).tolist())
+        test_gen = data_loader.iterate_minibatches(
+            traj_indices=test_indices_host,
+            n_samples=n_samples,
+            batch_steps=batch_steps,
+            key=more_keys[epoch],
+            minibatch_size=minibatch_size,
+        )
+        test_prefetch = prefetch_generator(test_gen, size=prefetch)
+        for windows in test_prefetch:
+            windows = windows.astype(np.float32)
+            chunk = windows.reshape((1, windows.shape[0], batch_steps) + windows.shape[2:])
+            chunk = jax.device_put(chunk)
+            closure, optim_state, losses = test_epoch(chunk, closure, optim_state)
+            test_losses_accum.extend(list(np.asarray(losses).reshape(-1).tolist()))
 
         # compute means and continue to checkpoint/save
         train_mean = float(np.mean(np.array(train_losses_accum))) if train_losses_accum else float('nan')
@@ -303,7 +332,7 @@ def main():
             meta = {
                 "parameters": params,
                 "timing": timing_metadata,
-                "model_type": cfg.ml.model_type,
+                "model_type": model_type,
             }
             with open(os.path.join(model_dir, "metadata.json"), "w") as f:
                 json.dump(meta, f, indent=4)
@@ -331,7 +360,6 @@ def main():
     fig.savefig(loss_history)
     print(f"Saved loss plot to {loss_history}")
 
-    # ===== WIP ===== #
     try:
         loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = checkpointer(None, None, model_dir, save=False)
     except Exception:
@@ -379,16 +407,25 @@ def main():
     pred_traj = roll_out_with_forced_model(init_q, forced_hr_static, template_state, nsteps, closure_params)
     pred_traj = np.asarray(pred_traj)
 
+
+    @jax.jit
+    def _ml_contrib(q):
+        # closure expects float32, returns dq in same spatial shape
+        return closure(q.astype(jnp.float32)).astype(q.dtype)
+
+    sgs_traj = jax.vmap(_ml_contrib)(jnp.asarray(pred_traj))
+    sgs_traj = np.asarray(sgs_traj)
+
     layer = 0
     hr_frames = np.asarray(truth_traj[:, layer])
     pred_frames = np.asarray(pred_traj[:, layer])
-    diff_frames = pred_frames - hr_frames
+    sgs_frames = np.asarray(sgs_traj[:, layer])
 
     gif_out = os.path.join(out_dir, "PV.gif")
-    triple_out = os.path.join(out_dir, "triple.gif")
-    # make_triple_gif expects arrays with shape (nt, ny, nx)
+    quad_out = os.path.join(out_dir, "quad.gif")
+    # make_quad_gif expects arrays with shape (nt, ny, nx)
     gif_that(hr_frames, out_file=gif_out, cadence=100)
-    make_triple_gif(hr_frames, pred_frames, diff_frames, out_file=triple_out, cadence=100)
+    make_quad_gif(hr_frames, pred_frames, sgs_q=sgs_frames, out_file=quad_out, cadence=100)
     print(f"Saved comparison GIF to {gif_out}")
 
     try:

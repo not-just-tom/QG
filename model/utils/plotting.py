@@ -24,13 +24,14 @@ def canonicalize(params: dict) -> dict:
 
     return round_floats(params)
 
-def find_output_dir(base_dir, params):
+def find_output_dir(base_dir, params, model_type):
     """
     Function for finding the output dir so I can keep 
     some seblance of organisation in the outputs
     """
-    hr_nx = params["nx"] # dunno if i want this or the actual hr_nx
-    prefix = f"output_nx{hr_nx}_"
+    lr_nx = params["nx"]
+    hr_nx = params['hr_nx']
+    prefix = f"{model_type}_{hr_nx}to{lr_nx}_"
     candidates = []
 
     # just in case lmao 
@@ -40,7 +41,7 @@ def find_output_dir(base_dir, params):
         m = RUN_RE.fullmatch(name)
         if m is None:
             continue
-        if int(m["hr"]) != hr_nx:
+        if int(m["hr"]) != lr_nx:
             continue
 
         run_dir = os.path.join(base_dir, name)
@@ -114,52 +115,55 @@ def gif_that(q_state, out_file='plotting.gif', cadence=100):
 
 
 
-def make_triple_gif(hr_q, lr_q, sgs_q, out_file="q_triple.gif", cadence=100):
+def make_quad_gif(truth_q, ml_q, sgs_q, out_file="q_quad.gif", cadence=100):
     """
     Create a GIF with 3 panels side by side:
-    - hr_q: high-res field, shape (nt, ny, nx)
-    - lr_q: low-res field, shape (nt, ny, nx)
-    - sgs_q: SGS forcing, shape (nt, ny, nx)
+    - truth_q: hr field coarsened to lr grid
+    - ml_q: low-res field predicted by model 
     """
     # Subsample by cadence first, then determine number of frames
-    hr_q = hr_q[::cadence]
-    lr_q = lr_q[::cadence]
-    sgs_q = sgs_q[::cadence]
+    truth_q = truth_q[::cadence]
+    ml_q = ml_q[::cadence]
+    diff = ml_q - truth_q
 
     # Ensure all inputs have the same number of frames to avoid index errors
-    nt = min(hr_q.shape[0], lr_q.shape[0], sgs_q.shape[0])
-    hr_q = hr_q[:nt]
-    lr_q = lr_q[:nt]
-    sgs_q = sgs_q[:nt]
+    nt = min(truth_q.shape[0], ml_q.shape[0])
+    truth_q = truth_q[:nt]
+    ml_q = ml_q[:nt]
 
-    # Determine global vmin/vmax for HR and LR
-    fig = plt.figure(figsize=(12, 4), constrained_layout=True)
-    gs = gridspec.GridSpec(1, 3, figure=fig)
-
+    fig = plt.figure(figsize=(8, 8), constrained_layout=True)
+    gs = gridspec.GridSpec(2, 2, figure=fig)
     ax_hr = fig.add_subplot(gs[0])
     ax_lr = fig.add_subplot(gs[1])
-    ax_sgs = fig.add_subplot(gs[2])
+    ax_diff = fig.add_subplot(gs[2])
+    ax_sgs = fig.add_subplot(gs[3])
 
-    im_hr = ax_hr.imshow(hr_q[0])#, cmap=cmo.balance)#, vmin=-hr_vmax, vmax=hr_vmax)
-    ax_hr.set_title("High-Res n=256")
+    im_hr = ax_hr.imshow(truth_q[0])#, cmap=cmo.balance)#, vmin=-hr_vmax, vmax=hr_vmax)
+    ax_hr.set_title("High-Res n=256, coarsened to n=32")
     ax_hr.axis("off")
 
-    im_lr = ax_lr.imshow(lr_q[0])#, cmap=cmo.balance, vmin=-lr_vmax, vmax=lr_vmax)
+    im_lr = ax_lr.imshow(ml_q[0])#, cmap=cmo.balance, vmin=-lr_vmax, vmax=lr_vmax)
     ax_lr.set_title("Low-Res n=32")
     ax_lr.axis("off")
 
     im_sgs = ax_sgs.imshow(sgs_q[0])#, cmap=cmo.curl, vmin=-sgs_vmax, vmax=sgs_vmax)
-    ax_sgs.set_title("SGS Forcing")
+    ax_sgs.set_title("ML contribution")
     ax_sgs.axis("off")
 
+    im_diff = ax_diff.imshow(diff[0])#, cmap=cmo.curl, vmin=-sgs_vmax, vmax=sgs_vmax)
+    ax_diff.set_title("Difference between truth traj and ml prediction (error)")
+    ax_diff.axis("off")
+
     def update(frame):
-        im_hr.set_array(hr_q[frame])
-        im_lr.set_array(lr_q[frame])
+        im_hr.set_array(truth_q[frame])
+        im_lr.set_array(ml_q[frame])
         im_sgs.set_array(sgs_q[frame])
+        im_diff.set_array(diff[frame])
         ax_hr.set_title(f"Ground truth coarsened to n=32 step={frame*cadence}")
         ax_lr.set_title(f"ML adjusted, step={frame*cadence}")
         ax_sgs.set_title(f"SGS step={frame*cadence}")
-        return [im_hr, im_lr, im_sgs]
+        ax_diff.set_title(f"Error step={frame*cadence}")
+        return [im_hr, im_lr, im_sgs, im_diff]
 
     ani = animation.FuncAnimation(
         fig, update, frames=nt, blit=False
