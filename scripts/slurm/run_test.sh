@@ -1,4 +1,5 @@
 #!/bin/bash
+#SBATCH --account=rockhpc_mcposd
 #SBATCH --job-name=qg_job
 #SBATCH --partition=gpu-s_free
 #SBATCH --gres=gpu:1
