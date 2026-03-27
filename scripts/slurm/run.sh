@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --account=rockhpc_mcposd
-#SBATCH --job-name=qg_job
+#SBATCH --job-name=cnn_sweep
 #SBATCH --partition=gpu-s_free
 #SBATCH --gres=gpu:L40:1
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --time=1:00:00
+#SBATCH --time=5-1:00:00
 #SBATCH --mem=64G
 #SBATCH --output=logs/slurm-%j.out
 
