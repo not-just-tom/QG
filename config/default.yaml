@@ -20,7 +20,7 @@ params:
   delta: 0.25
   U1: 0.0
   U2: 0.0
-  hr_nx: 128
+  hr_nx: 128 # bit janky for the high res data
 
 plotting:
   nsteps: 1000
@@ -48,16 +48,24 @@ ml:
   n_test: 3
   optimiser: AdamW
   batch_steps: 3
-  learning_rate: 0.0005
   minibatch_size: 48  
   prefetch: 3       # prefetch a few batches to aid efficiency
 
 
 architectures:
   cnn:
-    seed: 42
-    nlayers: 3
-    width: 64
+    learning_rate: [0.0001, 0.0005, 0.001]
+    nlayers: [2, 3, 4]
+    width: [32, 64]
     kernel_size: 3
-  zero:
-    exists: true
+    padding: 1
+    activation: "relu"
+  unet:
+    base_channels: 32
+    depth: 4
+  fno:
+    width: 64
+    modes2: 16
+    modes1: 16
+    depth: 4
+  

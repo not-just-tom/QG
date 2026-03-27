@@ -2,7 +2,7 @@
 #SBATCH --account=rockhpc_mcposd
 #SBATCH --job-name=qg_job
 #SBATCH --partition=gpu-s_free
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:L40:1
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --time=1:00:00
@@ -26,4 +26,4 @@ cd $SLURM_SUBMIT_DIR
 # Run 
 OUTDIR=/scratch/$USER/qg_out_${SLURM_JOB_ID}
 mkdir -p $OUTDIR
-python run.py --config config/default.yaml --outdir OUTDIR
+python run.py --config config/default.yaml --outdir $OUTDIR

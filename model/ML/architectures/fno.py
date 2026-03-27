@@ -77,13 +77,13 @@ class FNO(eqx.Module):
 
     def __init__(
         self,
-        in_channels: int = 1,
-        out_channels: int = 1,
-        width: int = 64,
-        modes1: int = 16,
-        modes2: int = 16,
-        depth: int = 4,
-        key: jax.random.PRNGKey = jax.random.PRNGKey(0),
+        in_channels = 1,
+        out_channels = 1,
+        width = 64,
+        modes1 = 16,
+        modes2 = 16,
+        depth = 4,
+        key= jax.random.PRNGKey(0),
     ):
         keys = jax.random.split(key, 2 * depth + 2)
         k0 = keys[0]

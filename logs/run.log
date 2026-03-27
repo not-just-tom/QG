@@ -4983,3 +4983,13 @@ ValueError: Mismatch custom node data: ('layers',), () != ('layers',), (); value
 2026-03-26 11:13:27,736 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\PV.gif'
 2026-03-26 11:13:28,936 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
 2026-03-26 11:13:28,939 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\output_nx64_01\quad.gif'
+2026-03-27 22:16:28,529 INFO numexpr.utils: NumExpr defaulting to 16 threads.
+2026-03-27 22:16:31,224 INFO __main__: Found existing output directory with matching parameters
+2026-03-27 22:16:31,225 INFO __main__: Requested device: gpu, using device: CPU
+2026-03-27 22:16:31,226 INFO __main__: Running on GPU with x64_enabled=False
+2026-03-27 22:16:31,262 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-27 22:16:34,066 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0005
+2026-03-27 22:32:59,895 INFO __main__: Requested device: gpu, using device: CPU
+2026-03-27 22:32:59,897 INFO __main__: Running on GPU with x64_enabled=False
+2026-03-27 22:32:59,904 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-03-27 22:33:00,066 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001

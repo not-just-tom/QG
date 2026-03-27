@@ -7,8 +7,7 @@ warnings.filterwarnings(
 )
 import importlib 
 import os
-import argparse
-from model.utils.config import Config
+from omegaconf import OmegaConf
 
 # Base repo paths
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -16,27 +15,8 @@ CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "config", "default.yaml")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 MODEL_DIR = os.path.join(BASE_DIR, 'results', 'closures')
 
-# Parse early CLI args (allow running with --config and --outdir)
-_early_parser = argparse.ArgumentParser(add_help=False)
-_early_parser.add_argument("--config", type=str, default=None)
-_early_parser.add_argument("--outdir", type=str, default=None)
-_early_args, _ = _early_parser.parse_known_args()
-if _early_args.config:
-    CONFIG_DEFAULT_PATH = os.path.abspath(_early_args.config)
-OUTDIR_OVERRIDE = os.path.abspath(_early_args.outdir) if _early_args.outdir else None
-
-# Load config and canonicalize common paths
-cfg = Config.load_config(CONFIG_DEFAULT_PATH)
-if hasattr(cfg, "filepaths") and hasattr(cfg.filepaths, "out_dir"):
-    od = cfg.filepaths.out_dir
-    if od and not os.path.isabs(od):
-        cfg.filepaths.out_dir = os.path.abspath(os.path.join(BASE_DIR, od))
-
-use_float64 = getattr(cfg.ml, "use_float64", False)
-if use_float64:
-    os.environ.setdefault("JAX_ENABLE_X64", "1") 
-else:
-    os.environ.setdefault("JAX_ENABLE_X64", "0")
+# Hydra will supply `cfg` into main(); set no global config here.
+OUTDIR_OVERRIDE = None
 import model.core.grid
 import model.core.states
 import model.core.kernel
@@ -89,48 +69,39 @@ import equinox as eqx
 import matplotlib.pyplot as plt
 import optax
 import jax.numpy as jnp
-
-# === just loading in params as dict === #
-with open(CONFIG_DEFAULT_PATH) as f:
-    cfg_dict = yaml.safe_load(f)
-
-# load config values
-params = dict(cfg_dict["params"])   # pure dict for JAX  
-
-
+from sklearn.model_selection import KFold
 
 
 # =========================================
 # Main loop to run from Command Line 
 # =========================================
-def main():
+def run(cfg):
     # load values
     dt = cfg.plotting.dt
     njets= cfg.plotting.njets
     nsteps = cfg.plotting.nsteps
-    learning_rate = cfg.ml.learning_rate
     batch_steps = cfg.ml.batch_steps
     n_train = cfg.ml.n_train
     n_test = cfg.ml.n_test
     n_epochs = n_train + n_test
     n_samples = nsteps//batch_steps
     spinup = cfg.plotting.spinup
+    # params come from cfg.params (OmegaConf) -> convert to plain dict
+    params = dict(OmegaConf.to_container(cfg.params, resolve=True))
     seed = params.get("seed", 42)
     key = jax.random.PRNGKey(seed)
     ratio = params["hr_nx"]/params["nx"]
+    use_float64 = cfg.ml.use_float64
     minibatch_size = cfg.ml.minibatch_size
     prefetch = cfg.ml.prefetch
     model_type = cfg.ml.model_type
+    learning_rate = learning_rate = cfg['architectures'][model_type].get('learning_rate')
 
     logger = configure_logging(level=cfg.filepaths.log_level, out_file="../logs/run.log")
     logger = logging.getLogger(__name__)
     
     # output dir 
     outbase = os.path.join(cfg.filepaths.out_dir)
-    # allow overriding outdir from early CLI arg
-    global OUTDIR_OVERRIDE
-    if OUTDIR_OVERRIDE:
-        outbase = OUTDIR_OVERRIDE
     out_dir, found = find_output_dir(outbase, params, model_type)
     if found:
         logger.info(f"Found existing output directory with matching parameters")
@@ -242,8 +213,9 @@ def main():
     train_epoch = make_train_epoch(lr_model, low_res_dt, optim)
     test_epoch = make_test_epoch(lr_model, low_res_dt)
 
-    # Split trajectories into train and test sets
+    # Prepare trajectory indices
     all_traj_indices = list(range(len(data_loader)))
+
     if len(all_traj_indices) < n_epochs:
         raise ValueError(f"Not enough trajectories in dataset for requested train/test split.")
 
@@ -284,7 +256,9 @@ def main():
         # === train ===
         train_losses_accum = []
         # Convert JAX arrays to host-side python list of indices for zarr indexing
-        train_indices_host = list(np.asarray(jax.device_get(train_indices)).tolist())
+        # Map local shuffled positions into real trajectory IDs using all_traj_indices
+        train_pos = list(np.asarray(jax.device_get(train_indices)).tolist())
+        train_indices_host = [all_traj_indices[i] for i in train_pos]
         # Use the data loader's minibatch iterator and prefetch to overlap I/O
         train_gen = data_loader.iterate_minibatches(
             traj_indices=train_indices_host,
@@ -304,7 +278,8 @@ def main():
 
         # === test ===
         test_losses_accum = []
-        test_indices_host = list(np.asarray(jax.device_get(test_indices)).tolist())
+        test_pos = list(np.asarray(jax.device_get(test_indices)).tolist())
+        test_indices_host = [all_traj_indices[i] for i in test_pos]
         test_gen = data_loader.iterate_minibatches(
             traj_indices=test_indices_host,
             n_samples=n_samples,
@@ -446,6 +421,75 @@ def main():
 
     
     # ============================
+
+
+def main():
+    import argparse
+    from itertools import product
+    p = argparse.ArgumentParser()
+    p.add_argument('--config', default=CONFIG_DEFAULT_PATH, help='Path to YAML config file')
+    p.add_argument('--outdir', default=None, help='Optional output directory override')
+    p.add_argument('--dry-run', action='store_true', help='Print sweep jobs but do not execute')
+    args = p.parse_args()
+
+    base_cfg = OmegaConf.load(args.config)
+    # apply optional outdir override
+    if args.outdir is not None:
+        if 'filepaths' not in base_cfg:
+            base_cfg.filepaths = {}
+        base_cfg.filepaths.out_dir = args.outdir
+
+    # Convert to plain python containers for sweep detection (OmegaConf keeps ListConfig/DictConfig types)
+    cfg_plain = OmegaConf.to_container(base_cfg, resolve=True)
+    model_type = cfg_plain.get('ml', {}).get('model_type')
+    archs = cfg_plain.get('architectures', {})
+    arch_cfg = archs.get(model_type, {}) if archs else {}
+
+    # Find sweeped keys whose value is a list with length > 1
+    sweep_keys = [k for k, v in arch_cfg.items() if isinstance(v, list) and len(v) > 1]
+    if not sweep_keys:
+        # No sweep: run normally
+        if args.dry_run:
+            print('No sweep axes found; would run single job with provided config.')
+            return
+        return run(base_cfg)
+
+    # Build lists for sweep axes
+    lists = [arch_cfg[k] for k in sweep_keys]
+    total = 1
+    for l in lists:
+        total *= max(1, len(l))
+    print(f"Found sweep axes for {model_type}: {sweep_keys} -> {total} combinations")
+
+    idx = 0
+    for combo in product(*lists):
+        # deep-copy base config to plain dict then modify
+        cfg_copy = OmegaConf.to_container(base_cfg, resolve=True)
+        if 'architectures' not in cfg_copy:
+            cfg_copy['architectures'] = {}
+        if model_type not in cfg_copy['architectures']:
+            cfg_copy['architectures'][model_type] = {}
+        for k, val in zip(sweep_keys, combo):
+            cfg_copy['architectures'][model_type][k] = val
+
+        # set per-run outdir
+        out_base = cfg_copy.get('filepaths', {}).get('out_dir', 'outputs')
+        run_out = os.path.join(out_base, f"{model_type}_sweep_{idx}")
+        if 'filepaths' not in cfg_copy:
+            cfg_copy['filepaths'] = {}
+        cfg_copy['filepaths']['out_dir'] = run_out
+
+        cfg_run = OmegaConf.create(cfg_copy)
+
+        print(f"Running sweep {idx+1}/{total}: {dict(zip(sweep_keys, combo))} -> {run_out}")
+        if args.dry_run:
+            idx += 1
+            continue
+
+        run(cfg_run)
+        idx += 1
+
+
 
 if __name__ == "__main__":
     main()

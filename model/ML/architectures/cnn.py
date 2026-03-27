@@ -9,7 +9,7 @@ class CNN(eqx.Module):
 
     def __init__(
         self,
-        seed=42,
+        key=jax.random.PRNGKey(0),
         nlayers=3,
         in_channels=1,
         out_channels=1,
@@ -17,7 +17,6 @@ class CNN(eqx.Module):
         width=64,
         padding=None,
         activation="relu",
-        padding_mode="CIRCULAR",
         **kwargs,
     ):
         if nlayers < 2:
@@ -25,7 +24,6 @@ class CNN(eqx.Module):
         if padding is None:
             padding = kernel_size // 2
 
-        key = jax.random.PRNGKey(int(seed))
         keys = jax.random.split(key, nlayers)
         layers = []
 
@@ -46,7 +44,7 @@ class CNN(eqx.Module):
                     kernel_size=kernel_size,
                     padding=padding,
                     key=keys[i],
-                    padding_mode=padding_mode,
+                    padding_mode='CIRCULAR',
                 )
             )
             if i < (nlayers - 1):
