@@ -8,6 +8,8 @@
 #SBATCH --time=24:00:00
 #SBATCH --mem=64G
 #SBATCH --output=logs/slurm-%j.out
+#SBATCH -e logs/slurm-%j.err
+
 
 # Load modules - adjust to your cluster's modules
 module purge
