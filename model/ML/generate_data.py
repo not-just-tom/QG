@@ -5,7 +5,6 @@ import os
 import json
 import functools
 import logging
-import math
 import numpy as np
 import datetime
 from zarr.codecs import BloscCodec
@@ -14,27 +13,31 @@ logger = logging.getLogger(__name__)
 
 def generate_train_data(cfg, params, dt, hr_model, lr_model, hr_dir):
     '''Generate zarr training data from the high-res `hr_model` and coarsen
-    on-the-fly using `lr_model` as the low-resolution physics template.
+    on-the-fly using `lr_model` as the low-resolution physics template, and lower res dt.
     Saves metadata and trajectories into `hr_dir`.
     '''
     os.makedirs(hr_dir, exist_ok=True)
 
     # Timing parameters
-    nsteps = cfg.plotting.nsteps
-    cadence = cfg.plotting.cadence if hasattr(cfg.plotting, 'cadence') else 1
-    batch_size = getattr(cfg.ml, "batch_size", 5)
-    batch_steps = getattr(cfg.ml, "batch_steps", 1)  # Get batch_steps for chunking
-    
+    try:
+        nsteps = cfg.plotting.nsteps
+        batch_size = cfg.ml.batch_size
+        batch_steps = cfg.ml.batch_steps
+        spinup = int(cfg.plotting.spinup)
+    except AttributeError as e:
+        logger.error("Missing required configuration parameters: %s", e)
+        raise ValueError("Configuration must include plotting.nsteps, ml.batch_size, ml.batch_steps, and plotting.spinup") from e
+
     logger.info(f"Generating %d trajectories with %d steps.", cfg.ml.n_train + cfg.ml.n_test, nsteps)
     
     # Prepare low-resolution template and ratio for coarsening
     dummy_key = jax.random.PRNGKey(0)
     lr_template = lr_model.initialise(dummy_key)
-    ratio = float(hr_model.model.nx) / float(lr_model.nx)
+    ratio = int(float(hr_model.model.nx) / float(lr_model.nx))
 
     # JIT the trajectory generation; closure captures `lr_template`, `lr_model._dealias`, and `ratio`.
-    @functools.partial(jax.jit, static_argnames=["nsteps", "cadence"])
-    def generate_trajectory(init_state, nsteps, cadence):
+    @functools.partial(jax.jit, static_argnames=["nsteps"])
+    def generate_trajectory(init_state, nsteps):
         """Generate coarsened trajectory with subsampling."""
         def step(carry, _x):
             next_state = hr_model.step_model(carry)
@@ -53,12 +56,12 @@ def generate_train_data(cfg, params, dt, hr_model, lr_model, hr_dir):
             return next_state, lr_state.q
 
         _, traj_q = jax.lax.scan(step, init_state, None, length=nsteps)
-        return traj_q
+        return traj_q[::ratio]  # Subsample in time to match low-res steps
     
     # Vectorize over trajectories
     batched_traj = jax.jit(
-        jax.vmap(generate_trajectory, in_axes=(0, None, None)),
-        static_argnums=(1, 2),
+        jax.vmap(generate_trajectory, in_axes=(0, None)),
+        static_argnums=(1,),
     )
 
     timing_metadata = {
@@ -98,9 +101,6 @@ def generate_train_data(cfg, params, dt, hr_model, lr_model, hr_dir):
     n_total = cfg.ml.n_train + cfg.ml.n_test
     n_generated = 0
 
-    # How many spinup steps to run before recording trajectories
-    spinup = int(getattr(cfg.plotting, 'spinup', 0))
-
     # If spinup>0, define a jitted routine to step the high-res model
     if spinup > 0:
         @functools.partial(jax.jit, static_argnames=["spinup"])
@@ -133,9 +133,9 @@ def generate_train_data(cfg, params, dt, hr_model, lr_model, hr_dir):
             init_states = _spinup_batched(init_states, spinup)
 
         # Generate batch
-        traj_batch = batched_traj(init_states, nsteps, cadence)
+        traj_batch = batched_traj(init_states, nsteps*ratio) # multiplied so after sumsampling we get nsteps
 
-        logger.info(f"Generated batch of {current_batch} trajectories, shape: {traj_batch.shape}")
+        logger.info(f"Generating current batch of {current_batch} trajectories, shape: {traj_batch.shape}")
         # Transfer once per batch
         traj_batch = jax.device_get(traj_batch)
 

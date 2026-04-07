@@ -1,9 +1,8 @@
 import functools
 import model.core.states as states
 import jax
-import jax.numpy as jnp
 import numpy as np
-import equinox as eqx
+
 
 def parameterization(param_func):
     """Decorator implementing parameterizations in terms of potential
@@ -51,3 +50,5 @@ def param_to_single(param):
 
 def module_to_single(module):
     return jax.tree_util.tree_map(param_to_single, module)
+
+

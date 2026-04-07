@@ -13,7 +13,7 @@ from omegaconf import OmegaConf
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "config", "default.yaml")
 DATA_DIR = os.path.join(BASE_DIR, "data")
-MODEL_DIR = os.path.join(BASE_DIR, 'results', 'closures')
+MODEL_DIR = os.path.join(BASE_DIR, 'saved_closures')
 
 # Hydra will supply `cfg` into main(); set no global config here.
 OUTDIR_OVERRIDE = None
@@ -56,12 +56,9 @@ from model.utils.logging import configure_logging
 from model.utils.plotting import find_output_dir, make_quad_gif, gif_that
 from model.core.steppers import SteppedModel, AB3Stepper
 from model.core.model import QGM
-from model.ML.utils.utils import parameterization
-from model.ML.train import roll_out_with_forced_model
-from model.ML.forced_model import ForcedModel
+from model.ML.train import roll_out, load_forced_model
 import logging
 import jax
-import yaml
 import os
 import json
 import numpy as np
@@ -133,7 +130,7 @@ def run(cfg):
         model=QGM({**params, "nx": params['hr_nx']}),
         stepper=AB3Stepper(dt=dt),
     )
-    # Build low-resolution physics model (coarsened from high-res physics)
+    # build low-resolution physics model (coarsened from high-res physics)
     lr_model = coarsen(hr_model.model, params['nx'])
 
     # === dataloading === #
@@ -155,7 +152,21 @@ def run(cfg):
         data_loader = ZarrDataLoader(run_dir)
 
     # === ML training === #
-    model_dir, found = find_existing_closure(MODEL_DIR, params, timing_metadata, model_type)
+    # Build training/sweep metadata to avoid accidentally reusing closures from different sweeps
+    training_meta = {
+        "training": {
+            "optimiser": cfg.ml.optimiser,
+            "learning_rate": float(learning_rate) if learning_rate is not None else None,
+            "minibatch_size": int(minibatch_size),
+            "prefetch": int(prefetch),
+            "batch_steps": int(batch_steps),
+            "n_train": int(n_train),
+            "n_test": int(n_test),
+            "model_arch": OmegaConf.to_container(cfg['architectures'][model_type], resolve=True),
+        }
+    }
+
+    model_dir, found = find_existing_closure(MODEL_DIR, params, timing_metadata, model_type, extra_meta=training_meta)
     start_epoch = 0
     if found:
         logger.info(f"Found existing {model_type} closure with matching parameters at {model_dir}, attempting to load checkpoint.")
@@ -215,7 +226,6 @@ def run(cfg):
 
     # Prepare trajectory indices
     all_traj_indices = list(range(len(data_loader)))
-
     if len(all_traj_indices) < n_epochs:
         raise ValueError(f"Not enough trajectories in dataset for requested train/test split.")
 
@@ -308,6 +318,7 @@ def run(cfg):
                 "parameters": params,
                 "timing": timing_metadata,
                 "model_type": model_type,
+                "training": training_meta.get("training", {}),
             }
             with open(os.path.join(model_dir, "metadata.json"), "w") as f:
                 json.dump(meta, f, indent=4)
@@ -316,7 +327,7 @@ def run(cfg):
             logger.exception("Failed to save checkpoint after epoch %d", epoch + 1)
 
 
-    # Initialize interactive plotting so the loss curve updates each epoch
+    # === loss plot === #
     fig, ax = plt.subplots()
     ln1, = ax.plot([], [], label='train')
     ln2, = ax.plot([], [], label='test')
@@ -335,54 +346,26 @@ def run(cfg):
     fig.savefig(loss_history)
     print(f"Saved loss plot to {loss_history}")
 
+
+    # === test the trained closure now === #
     try:
         loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = checkpointer(None, None, model_dir, save=False)
+        closure = build_closure(cfg, loaded_leaves)
     except Exception:
         logger.exception("Failed to load trained model for testing.")
 
-    truth_traj = data_loader.get_trajectory(0)  # shape (time, layers, ny, nx)
+    forced_model, closure_params, closure_static = load_forced_model(lr_model, closure, low_res_dt)
 
-    # Build closure template and reconstruct if checkpoint available
-    closure = build_closure(cfg, loaded_leaves)
-
-    # build HR model and coarsener
-    dt = cfg.plotting.dt
-    hr_model = SteppedModel(model=QGM({**params, "nx": params['hr_nx']}), stepper=AB3Stepper(dt=dt))
-    coarse = coarsen(hr_model.model, params['nx'])
-
-    # load a high-res trajectory (first available)
-    data_dir, found_run = find_existing_run(os.path.join(BASE_DIR, "data"), params, timing_metadata)
-    if not found_run:
-        raise FileNotFoundError("No matching high-resolution data run found for provided parameters.")
-    loader = ZarrDataLoader(data_dir)
-    truth_traj = loader.get_trajectory(0)  # shape (time, layers, ny, nx)
-
+    truth_traj = data_loader.get_trajectory(0)  # shape (time, layers, ny, nx) 
     nsteps = truth_traj.shape[0]
 
-    closure_params, closure_static = eqx.partition(closure, eqx.is_array)
-    init_param_func = lambda state, model, params: params
-
-    def _param_adapter(state, param_aux, model, *args, **kwargs):
-        # param_aux holds closure params (arrays)
-        # reuse closure_combiner behaviour: combine params + static to evaluate closure
-        from model.ML.train import closure_combiner
-        return closure_combiner(state, param_aux, closure_static)
-
-    closure_func = parameterization(_param_adapter)
-    forced_hr_static = SteppedModel(
-        model=ForcedModel(model=coarse, closure=closure_func, init_param_aux_func=init_param_func),
-        stepper=hr_model.stepper,
-    )
-
     # template state for the forced model (low-res initialiser)
-    template_state = coarse.initialise(jax.random.PRNGKey(0))
+    template_state = lr_model.initialise(jax.random.PRNGKey(0))
 
-    # Use the first coarsened frame as init and roll out for full length
-    init_q = jnp.asarray(truth_traj[0])
-    pred_traj = roll_out_with_forced_model(init_q, forced_hr_static, template_state, nsteps, closure_params)
-    pred_traj = np.asarray(pred_traj)
+    pred_traj_full = roll_out(truth_traj[0], forced_model, nsteps, template_state, closure_params)
+    pred_traj = np.asarray(pred_traj_full)
 
-
+    # separate the sgs forcing from the baseline model
     @jax.jit
     def _ml_contrib(q):
         # closure expects float32, returns dq in same spatial shape
@@ -396,11 +379,14 @@ def run(cfg):
     pred_frames = np.asarray(pred_traj[:, layer])
     sgs_frames = np.asarray(sgs_traj[:, layer])
 
+    #pred_frames = pred_frames[:60]
+    #hr_frames = hr_frames[:60]
+
     gif_out = os.path.join(out_dir, "PV.gif")
     quad_out = os.path.join(out_dir, "quad.gif")
     # make_quad_gif expects arrays with shape (nt, ny, nx)
-    gif_that(hr_frames, out_file=gif_out, cadence=100)
-    make_quad_gif(hr_frames, pred_frames, sgs_q=sgs_frames, out_file=quad_out, cadence=100)
+    #gif_that(pred_frames, out_file=gif_out, cadence=100)
+    make_quad_gif(hr_frames, pred_frames, sgs_q=sgs_frames, out_file=quad_out, cadence=10)
     print(f"Saved comparison GIF to {gif_out}")
 
     try:
@@ -474,7 +460,7 @@ def main():
 
         # set per-run outdir
         out_base = cfg_copy.get('filepaths', {}).get('out_dir', 'outputs')
-        run_out = os.path.join(out_base, f"{model_type}_sweep_{idx}")
+        run_out = os.path.join(out_base, f'sweep_{model_type}', f'run_{idx+1}')
         if 'filepaths' not in cfg_copy:
             cfg_copy['filepaths'] = {}
         cfg_copy['filepaths']['out_dir'] = run_out

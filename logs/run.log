@@ -4993,3 +4993,1210 @@ ValueError: Mismatch custom node data: ('layers',), () != ('layers',), (); value
 2026-03-27 22:32:59,897 INFO __main__: Running on GPU with x64_enabled=False
 2026-03-27 22:32:59,904 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
 2026-03-27 22:33:00,066 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-01 11:19:28,864 INFO __main__: Found existing output directory with matching parameters
+2026-04-01 11:19:28,873 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-01 11:19:28,879 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-01 11:19:29,044 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-01 11:19:29,272 INFO __main__: Found existing fno closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\fno_hr128_nx64_01, attempting to load checkpoint.
+2026-04-01 11:19:30,866 INFO __main__: Resuming training from epoch 0 (saved) out of 10
+2026-04-01 11:19:38,397 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-01 11:19:42,505 INFO __main__: Loaded existing loss history: 1 train entries, 1 test entries
+2026-04-01 13:37:28,718 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-01 13:37:30,799 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\fno_hr128_nx64_01
+2026-04-01 13:44:29,016 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-01 13:44:29,017 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-01 13:44:29,062 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-01 13:44:30,428 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-01 14:31:12,978 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=1.4372E-05 | mean_test_loss=1.6134E-05
+2026-04-01 14:31:13,046 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04
+2026-04-01 15:10:34,114 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=1.4198E-05 | mean_test_loss=1.4095E-05
+2026-04-01 15:10:34,195 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04
+2026-04-01 15:49:47,610 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=1.3669E-05 | mean_test_loss=1.1964E-05
+2026-04-01 15:49:47,682 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04
+2026-04-01 18:19:46,114 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-01 18:19:46,116 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-01 18:19:46,170 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-01 18:19:46,352 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-01 18:19:46,481 INFO __main__: Resuming training from epoch 0 (saved) out of 10
+2026-04-01 18:19:49,164 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-01 18:19:50,588 INFO __main__: Loaded existing loss history: 3 train entries, 3 test entries
+2026-04-01 20:15:26,473 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=1.5024E-05 | mean_test_loss=1.4439E-05
+2026-04-01 20:15:26,556 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04
+2026-04-01 23:31:01,455 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=1.3867E-05 | mean_test_loss=1.4551E-05
+2026-04-01 23:31:01,483 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04
+2026-04-01 23:47:51,479 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=1.3455E-05 | mean_test_loss=1.2221E-05
+2026-04-01 23:47:51,515 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04
+2026-04-02 00:04:34,068 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=1.1881E-05 | mean_test_loss=1.1984E-05
+2026-04-02 00:04:34,098 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04
+2026-04-02 00:21:11,384 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=1.0889E-05 | mean_test_loss=1.1137E-05
+2026-04-02 00:21:11,430 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04
+2026-04-02 00:38:15,678 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=1.0296E-05 | mean_test_loss=9.4240E-06
+2026-04-02 00:38:15,722 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04
+2026-04-02 00:55:12,295 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=9.2901E-06 | mean_test_loss=8.1935E-06
+2026-04-02 00:55:12,324 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04
+2026-04-02 00:55:13,115 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:55:28,567 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:55:28,570 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_0\cnn_128to64_01\PV.gif'
+2026-04-02 00:55:29,500 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:55:29,502 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_0\cnn_128to64_01\quad.gif'
+2026-04-02 00:55:32,389 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:55:32,390 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:55:32,440 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:55:32,636 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:55:32,820 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:55:32,834 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:55:32,857 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:55:33,930 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:55:48,421 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:55:48,423 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_1\cnn_128to64_01\PV.gif'
+2026-04-02 00:55:49,213 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:55:49,216 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_1\cnn_128to64_01\quad.gif'
+2026-04-02 00:55:51,988 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:55:51,989 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:55:51,992 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:55:52,049 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:55:52,079 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:55:52,094 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:55:52,110 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:55:52,557 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:56:06,921 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:56:06,922 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_2\cnn_128to64_01\PV.gif'
+2026-04-02 00:56:08,061 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:56:08,063 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_2\cnn_128to64_01\quad.gif'
+2026-04-02 00:56:10,946 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:56:10,948 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:56:10,954 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:56:10,974 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:56:10,989 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:56:11,003 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:56:11,026 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:56:11,651 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:56:25,907 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:56:25,909 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_3\cnn_128to64_01\PV.gif'
+2026-04-02 00:56:26,658 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:56:26,660 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_3\cnn_128to64_01\quad.gif'
+2026-04-02 00:56:29,460 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:56:29,462 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:56:29,469 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:56:29,513 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:56:29,547 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:56:29,574 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:56:29,613 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:56:30,015 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:56:45,839 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:56:45,842 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_4\cnn_128to64_01\PV.gif'
+2026-04-02 00:56:46,536 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:56:46,538 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_4\cnn_128to64_01\quad.gif'
+2026-04-02 00:56:49,773 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:56:49,776 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:56:49,883 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:56:50,111 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:56:50,292 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:56:50,300 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:56:50,320 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:56:51,341 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:57:06,429 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:57:06,431 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_5\cnn_128to64_01\PV.gif'
+2026-04-02 00:57:07,398 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:57:07,401 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_5\cnn_128to64_01\quad.gif'
+2026-04-02 00:57:10,272 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:57:10,273 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:57:10,275 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:57:10,322 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:57:10,352 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:57:10,365 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:57:10,387 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:57:10,893 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:57:25,903 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:57:25,905 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_6\cnn_128to64_01\PV.gif'
+2026-04-02 00:57:26,629 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:57:26,631 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_6\cnn_128to64_01\quad.gif'
+2026-04-02 00:57:29,377 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:57:29,377 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:57:29,381 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:57:29,396 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:57:29,405 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:57:29,414 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:57:29,427 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:57:29,898 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:57:44,032 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:57:44,034 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_7\cnn_128to64_01\PV.gif'
+2026-04-02 00:57:44,804 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:57:44,807 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_7\cnn_128to64_01\quad.gif'
+2026-04-02 00:57:47,612 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:57:47,613 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:57:47,618 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:57:47,637 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:57:47,654 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:57:47,672 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:57:47,689 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:57:48,088 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:58:02,583 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:58:02,585 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_8\cnn_128to64_01\PV.gif'
+2026-04-02 00:58:03,342 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:58:03,344 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_8\cnn_128to64_01\quad.gif'
+2026-04-02 00:58:06,149 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:58:06,151 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:58:06,156 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:58:06,185 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:58:06,202 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:58:06,221 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:58:06,241 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:58:06,687 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:58:21,154 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:58:21,156 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_9\cnn_128to64_01\PV.gif'
+2026-04-02 00:58:22,004 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:58:22,005 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_9\cnn_128to64_01\quad.gif'
+2026-04-02 00:58:24,958 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:58:24,960 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:58:24,966 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:58:24,987 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:58:25,000 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:58:25,010 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:58:25,027 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:58:25,538 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:58:40,003 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:58:40,005 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_10\cnn_128to64_01\PV.gif'
+2026-04-02 00:58:40,861 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:58:40,864 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_10\cnn_128to64_01\quad.gif'
+2026-04-02 00:58:43,561 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:58:43,562 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:58:43,565 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:58:43,592 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:58:43,604 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:58:43,612 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:58:43,624 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:58:44,017 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:58:58,104 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:58:58,106 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_11\cnn_128to64_01\PV.gif'
+2026-04-02 00:58:58,837 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:58:58,840 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_11\cnn_128to64_01\quad.gif'
+2026-04-02 00:59:01,647 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:59:01,648 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:59:01,653 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:59:01,689 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:59:01,724 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:59:01,743 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:59:01,765 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:59:02,139 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:59:16,209 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:59:16,211 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_12\cnn_128to64_01\PV.gif'
+2026-04-02 00:59:16,943 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:59:16,946 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_12\cnn_128to64_01\quad.gif'
+2026-04-02 00:59:19,744 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:59:19,746 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:59:19,752 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:59:19,791 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:59:19,810 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:59:19,825 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:59:19,845 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:59:20,249 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:59:34,811 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:59:34,813 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_13\cnn_128to64_01\PV.gif'
+2026-04-02 00:59:35,577 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:59:35,579 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_13\cnn_128to64_01\quad.gif'
+2026-04-02 00:59:38,577 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:59:38,578 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:59:38,582 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:59:38,602 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:59:38,614 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:59:38,624 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:59:38,641 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:59:39,291 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 00:59:53,935 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:59:53,937 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_14\cnn_128to64_01\PV.gif'
+2026-04-02 00:59:54,633 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 00:59:54,636 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_14\cnn_128to64_01\quad.gif'
+2026-04-02 00:59:57,478 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 00:59:57,479 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 00:59:57,482 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 00:59:57,498 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 00:59:57,510 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 00:59:57,518 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 00:59:57,559 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 00:59:58,089 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 01:00:12,278 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 01:00:12,280 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_15\cnn_128to64_01\PV.gif'
+2026-04-02 01:00:13,061 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 01:00:13,062 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_15\cnn_128to64_01\quad.gif'
+2026-04-02 01:00:15,757 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 01:00:15,758 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 01:00:15,763 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 01:00:15,789 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 01:00:15,800 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 01:00:15,809 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 01:00:15,821 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 01:00:16,255 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 01:00:30,756 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 01:00:30,758 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_16\cnn_128to64_01\PV.gif'
+2026-04-02 01:00:31,417 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 01:00:31,419 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_16\cnn_128to64_01\quad.gif'
+2026-04-02 01:00:34,145 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 01:00:34,147 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 01:00:34,152 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 01:00:34,178 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04, attempting to load checkpoint.
+2026-04-02 01:00:34,192 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_04 already trained for 10 epochs; skipping training loop.
+2026-04-02 01:00:34,202 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-02 01:00:34,214 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-02 01:00:34,626 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 01:00:49,255 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 01:00:49,257 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_17\cnn_128to64_01\PV.gif'
+2026-04-02 01:00:49,966 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 01:00:49,967 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\cnn_sweep_17\cnn_128to64_01\quad.gif'
+2026-04-02 12:03:44,661 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 12:03:44,668 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 12:03:44,673 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 12:03:44,786 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-02 12:19:38,853 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=1.4372E-05 | mean_test_loss=1.6134E-05
+2026-04-02 12:19:38,906 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05
+2026-04-02 12:37:16,109 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=1.4198E-05 | mean_test_loss=1.4095E-05
+2026-04-02 12:37:16,173 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05
+2026-04-02 12:54:31,073 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=1.3669E-05 | mean_test_loss=1.1964E-05
+2026-04-02 12:54:31,108 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05
+2026-04-02 13:11:37,942 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=1.2287E-05 | mean_test_loss=1.1406E-05
+2026-04-02 13:11:37,997 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05
+2026-04-02 13:28:40,687 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=1.0931E-05 | mean_test_loss=1.1372E-05
+2026-04-02 13:28:40,730 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05
+2026-04-02 13:45:58,406 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=1.0491E-05 | mean_test_loss=9.5597E-06
+2026-04-02 13:45:58,459 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05
+2026-04-02 14:03:20,766 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=9.1538E-06 | mean_test_loss=9.1699E-06
+2026-04-02 14:03:20,814 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05
+2026-04-02 14:20:27,209 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=7.9972E-06 | mean_test_loss=8.0225E-06
+2026-04-02 14:20:27,261 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05
+2026-04-02 14:37:56,472 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=7.1261E-06 | mean_test_loss=6.3452E-06
+2026-04-02 14:37:56,513 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05
+2026-04-02 14:55:18,303 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=6.2603E-06 | mean_test_loss=5.5196E-06
+2026-04-02 14:55:18,346 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05
+2026-04-02 14:55:18,876 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 14:55:34,136 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 14:55:34,138 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\PV.gif'
+2026-04-02 14:55:34,796 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 14:55:34,798 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\quad.gif'
+2026-04-02 14:55:37,354 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 14:55:37,355 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 14:55:37,357 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 14:55:37,513 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-02 15:13:17,363 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=1.4372E-05 | mean_test_loss=1.6134E-05
+2026-04-02 15:13:17,411 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06
+2026-04-02 15:30:22,127 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=1.4198E-05 | mean_test_loss=1.4095E-05
+2026-04-02 15:30:22,169 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06
+2026-04-02 15:47:48,128 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=1.3669E-05 | mean_test_loss=1.1964E-05
+2026-04-02 15:47:48,166 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06
+2026-04-02 16:06:27,404 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=1.2287E-05 | mean_test_loss=1.1406E-05
+2026-04-02 16:06:27,463 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06
+2026-04-02 16:25:19,101 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=1.0931E-05 | mean_test_loss=1.1372E-05
+2026-04-02 16:25:19,160 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06
+2026-04-02 16:46:36,946 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=1.0491E-05 | mean_test_loss=9.5597E-06
+2026-04-02 16:46:37,061 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06
+2026-04-02 17:36:18,150 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=9.1538E-06 | mean_test_loss=9.1699E-06
+2026-04-02 17:36:18,200 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06
+2026-04-02 17:51:46,254 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=7.9972E-06 | mean_test_loss=8.0225E-06
+2026-04-02 17:51:46,313 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06
+2026-04-02 18:08:46,937 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=7.1261E-06 | mean_test_loss=6.3452E-06
+2026-04-02 18:08:47,000 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06
+2026-04-02 18:25:44,753 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=6.2603E-06 | mean_test_loss=5.5196E-06
+2026-04-02 18:25:44,793 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06
+2026-04-02 18:25:45,444 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-02 18:26:01,235 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 18:26:01,239 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\PV.gif'
+2026-04-02 18:26:02,031 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-02 18:26:02,034 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\quad.gif'
+2026-04-02 18:26:04,961 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-02 18:26:04,962 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-02 18:26:04,967 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-02 18:26:05,173 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-02 18:44:25,741 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=1.4372E-05 | mean_test_loss=1.6134E-05
+2026-04-02 18:44:25,783 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07
+2026-04-02 19:03:47,748 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=1.4198E-05 | mean_test_loss=1.4095E-05
+2026-04-02 19:03:47,796 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07
+2026-04-02 19:23:10,737 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=1.3669E-05 | mean_test_loss=1.1964E-05
+2026-04-02 19:23:10,789 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07
+2026-04-03 11:53:04,404 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 11:53:04,406 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 11:53:04,459 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 11:53:04,712 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 found=True
+2026-04-03 11:53:04,713 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05, attempting to load checkpoint.
+2026-04-03 11:53:04,887 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 already trained for 10 epochs; skipping training loop.
+2026-04-03 11:53:04,890 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 11:53:04,911 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 11:53:04,950 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 11:53:06,288 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 11:53:06,296 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 11:53:22,954 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 11:53:22,957 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\PV.gif'
+2026-04-03 11:53:24,039 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 11:53:24,041 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\quad.gif'
+2026-04-03 11:53:27,186 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 11:53:27,187 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 11:53:27,191 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 11:53:27,245 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 found=True
+2026-04-03 11:53:27,247 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06, attempting to load checkpoint.
+2026-04-03 11:53:27,357 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 already trained for 10 epochs; skipping training loop.
+2026-04-03 11:53:27,359 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 11:53:27,369 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 11:53:27,386 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 11:53:27,874 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 11:53:27,881 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 11:53:44,383 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 11:53:44,385 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\PV.gif'
+2026-04-03 11:53:45,224 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 11:53:45,226 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\quad.gif'
+2026-04-03 11:53:49,310 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 11:53:49,312 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 11:53:49,318 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 11:53:49,435 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07 found=True
+2026-04-03 11:53:49,438 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07, attempting to load checkpoint.
+2026-04-03 11:53:49,622 INFO __main__: Resuming training from epoch 0 (saved) out of 10
+2026-04-03 11:53:49,630 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 11:53:49,658 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 11:53:49,712 INFO __main__: Loaded existing loss history: 3 train entries, 3 test entries
+2026-04-03 13:19:24,555 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 13:19:24,558 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 13:19:24,623 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 13:19:24,920 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 found=True
+2026-04-03 13:19:24,922 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05, attempting to load checkpoint.
+2026-04-03 13:19:25,112 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 already trained for 10 epochs; skipping training loop.
+2026-04-03 13:19:25,115 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 13:19:25,132 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 13:19:25,166 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 13:19:25,372 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 13:19:25,385 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 13:19:48,585 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 13:19:48,589 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\PV.gif'
+2026-04-03 13:19:50,069 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 13:19:50,072 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\quad.gif'
+2026-04-03 13:19:53,965 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 13:19:53,967 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 13:19:53,972 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 13:19:54,033 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 found=True
+2026-04-03 13:19:54,034 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06, attempting to load checkpoint.
+2026-04-03 13:19:54,189 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 already trained for 10 epochs; skipping training loop.
+2026-04-03 13:19:54,193 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 13:19:54,212 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 13:19:54,239 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 13:19:54,369 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 13:19:54,379 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 13:20:10,443 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 13:20:10,445 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\PV.gif'
+2026-04-03 13:20:11,275 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 13:20:11,277 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\quad.gif'
+2026-04-03 13:20:14,645 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 13:20:14,646 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 13:20:14,653 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 13:20:14,727 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07 found=True
+2026-04-03 13:20:14,729 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07, attempting to load checkpoint.
+2026-04-03 13:20:14,876 INFO __main__: Resuming training from epoch 0 (saved) out of 10
+2026-04-03 13:20:14,878 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 13:20:14,892 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 13:20:14,920 INFO __main__: Loaded existing loss history: 3 train entries, 3 test entries
+2026-04-03 13:28:43,447 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 13:28:43,450 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 13:28:43,460 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 13:28:43,503 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 found=True
+2026-04-03 13:28:43,507 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05, attempting to load checkpoint.
+2026-04-03 13:28:43,533 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 already trained for 10 epochs; skipping training loop.
+2026-04-03 13:28:43,538 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 13:28:43,562 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 13:28:43,612 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 13:28:43,839 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 13:28:43,851 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 13:29:00,059 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 13:29:00,061 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\PV.gif'
+2026-04-03 13:29:01,013 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 13:29:01,015 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\quad.gif'
+2026-04-03 13:29:04,999 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 13:29:05,000 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 13:29:05,004 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 13:29:05,034 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 found=True
+2026-04-03 13:29:05,036 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06, attempting to load checkpoint.
+2026-04-03 13:29:05,056 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 already trained for 10 epochs; skipping training loop.
+2026-04-03 13:29:05,059 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 13:29:05,078 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 13:29:05,110 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 13:29:05,308 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 13:29:05,319 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 13:29:21,205 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 13:29:21,208 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\PV.gif'
+2026-04-03 13:29:22,176 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 13:29:22,180 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\quad.gif'
+2026-04-03 13:29:25,874 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 13:29:25,875 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 13:29:25,879 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 13:29:25,903 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07 found=True
+2026-04-03 13:29:25,905 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07, attempting to load checkpoint.
+2026-04-03 13:29:25,921 INFO __main__: Resuming training from epoch 0 (saved) out of 10
+2026-04-03 13:29:25,923 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 13:29:25,934 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 13:29:25,969 INFO __main__: Loaded existing loss history: 3 train entries, 3 test entries
+2026-04-03 21:15:26,937 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 21:15:26,938 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 21:15:26,976 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 21:15:27,193 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 found=True
+2026-04-03 21:15:27,195 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05, attempting to load checkpoint.
+2026-04-03 21:15:27,326 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 already trained for 10 epochs; skipping training loop.
+2026-04-03 21:15:27,328 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 21:15:27,337 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 21:15:27,354 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 21:15:27,496 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 21:15:27,506 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 21:18:55,149 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 21:18:55,150 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 21:18:55,213 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 21:18:55,471 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 found=True
+2026-04-03 21:18:55,472 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05, attempting to load checkpoint.
+2026-04-03 21:18:55,652 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 already trained for 10 epochs; skipping training loop.
+2026-04-03 21:18:55,656 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 21:18:55,671 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 21:18:55,698 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 21:18:55,884 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 21:18:55,893 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 21:19:15,985 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 21:19:15,988 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\PV.gif'
+2026-04-03 21:19:16,986 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 21:19:16,987 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\quad.gif'
+2026-04-03 21:19:20,391 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 21:19:20,395 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 21:19:20,399 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 21:19:20,512 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 found=True
+2026-04-03 21:19:20,515 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06, attempting to load checkpoint.
+2026-04-03 21:19:20,619 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 already trained for 10 epochs; skipping training loop.
+2026-04-03 21:19:20,621 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 21:19:20,635 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 21:19:20,666 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 21:19:20,823 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 21:19:20,855 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 21:19:39,347 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 21:19:39,350 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\PV.gif'
+2026-04-03 21:19:40,188 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 21:19:40,190 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\quad.gif'
+2026-04-03 21:19:43,333 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 21:19:43,334 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 21:19:43,340 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 21:19:43,386 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07 found=True
+2026-04-03 21:19:43,388 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07, attempting to load checkpoint.
+2026-04-03 21:19:43,489 INFO __main__: Resuming training from epoch 0 (saved) out of 10
+2026-04-03 21:19:43,491 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 21:19:43,502 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 21:19:43,522 INFO __main__: Loaded existing loss history: 3 train entries, 3 test entries
+2026-04-03 21:20:20,422 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 21:20:20,424 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 21:20:20,428 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 21:20:20,454 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 found=True
+2026-04-03 21:20:20,456 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05, attempting to load checkpoint.
+2026-04-03 21:20:20,470 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 already trained for 10 epochs; skipping training loop.
+2026-04-03 21:20:20,471 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 21:20:20,480 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 21:20:20,498 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 21:20:20,639 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 21:20:20,647 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 21:20:44,072 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 21:20:44,076 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\PV.gif'
+2026-04-03 21:20:45,264 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 21:20:45,267 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\quad.gif'
+2026-04-03 21:20:49,179 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 21:20:49,180 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 21:20:49,186 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 21:20:49,218 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 found=True
+2026-04-03 21:20:49,220 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06, attempting to load checkpoint.
+2026-04-03 21:20:49,234 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 already trained for 10 epochs; skipping training loop.
+2026-04-03 21:20:49,235 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 21:20:49,250 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 21:20:49,276 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 21:20:49,504 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 21:20:49,512 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 21:21:18,467 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 21:21:18,471 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\PV.gif'
+2026-04-03 21:21:19,606 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 21:21:19,608 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\quad.gif'
+2026-04-03 21:21:22,789 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 21:21:22,791 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 21:21:22,795 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 21:21:22,823 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07 found=True
+2026-04-03 21:21:22,824 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07, attempting to load checkpoint.
+2026-04-03 21:21:22,837 INFO __main__: Resuming training from epoch 0 (saved) out of 10
+2026-04-03 21:21:22,839 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 21:21:22,849 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 21:21:22,865 INFO __main__: Loaded existing loss history: 3 train entries, 3 test entries
+2026-04-03 21:57:51,019 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=1.5024E-05 | mean_test_loss=1.4439E-05
+2026-04-03 21:57:51,079 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07
+2026-04-03 22:08:37,310 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 22:08:37,311 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 22:08:37,315 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 22:08:37,518 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 found=True
+2026-04-03 22:08:37,521 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05, attempting to load checkpoint.
+2026-04-03 22:08:37,702 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 already trained for 10 epochs; skipping training loop.
+2026-04-03 22:08:37,705 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:08:37,718 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 22:08:37,746 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 22:08:37,934 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:08:37,945 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 22:08:55,328 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 22:08:55,330 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\PV.gif'
+2026-04-03 22:08:56,144 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 22:08:56,147 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\quad.gif'
+2026-04-03 22:08:59,450 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 22:08:59,451 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 22:08:59,456 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 22:08:59,515 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 found=True
+2026-04-03 22:08:59,517 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06, attempting to load checkpoint.
+2026-04-03 22:08:59,639 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 already trained for 10 epochs; skipping training loop.
+2026-04-03 22:08:59,641 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:08:59,651 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 22:08:59,667 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 22:08:59,806 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:08:59,815 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 22:09:16,767 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 22:09:16,770 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 400x400 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\PV.gif'
+2026-04-03 22:09:17,628 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 22:09:17,631 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\quad.gif'
+2026-04-03 22:10:29,886 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 22:10:29,888 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 22:10:29,895 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 22:10:29,929 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 found=True
+2026-04-03 22:10:29,931 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05, attempting to load checkpoint.
+2026-04-03 22:10:29,952 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 already trained for 10 epochs; skipping training loop.
+2026-04-03 22:10:29,955 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:10:29,970 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 22:10:29,995 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 22:10:30,173 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:10:30,183 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 22:10:57,862 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 22:10:57,865 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\quad.gif'
+2026-04-03 22:11:01,080 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 22:11:01,081 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 22:11:01,084 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 22:11:01,109 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 found=True
+2026-04-03 22:11:01,110 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06, attempting to load checkpoint.
+2026-04-03 22:11:01,126 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 already trained for 10 epochs; skipping training loop.
+2026-04-03 22:11:01,128 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:11:01,143 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 22:11:01,164 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 22:11:01,324 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:11:01,336 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 22:13:54,918 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 22:13:54,920 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 22:13:54,924 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 22:13:54,958 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 found=True
+2026-04-03 22:13:54,960 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05, attempting to load checkpoint.
+2026-04-03 22:13:54,981 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 already trained for 10 epochs; skipping training loop.
+2026-04-03 22:13:54,984 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:13:54,998 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 22:13:55,022 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 22:13:55,201 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:13:55,219 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 22:15:17,667 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 22:15:17,672 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\quad.gif'
+2026-04-03 22:15:18,801 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 22:15:18,803 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 22:15:18,810 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 22:15:18,855 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 found=True
+2026-04-03 22:15:18,857 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06, attempting to load checkpoint.
+2026-04-03 22:15:18,880 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 already trained for 10 epochs; skipping training loop.
+2026-04-03 22:15:18,882 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:15:18,901 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 22:15:18,937 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 22:15:19,309 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:15:19,330 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 22:15:48,727 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 22:15:48,730 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_1\cnn_128to64_01\quad.gif'
+2026-04-03 22:15:49,453 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 22:15:49,455 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 22:15:49,460 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 22:15:49,523 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07 found=True
+2026-04-03 22:15:49,525 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_07, attempting to load checkpoint.
+2026-04-03 22:15:49,733 INFO __main__: Resuming training from epoch 0 (saved) out of 10
+2026-04-03 22:15:49,735 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:15:49,754 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 22:15:49,794 INFO __main__: Loaded existing loss history: 4 train entries, 4 test entries
+2026-04-03 22:15:53,380 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 22:15:53,382 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 22:15:53,388 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 22:15:53,430 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 found=True
+2026-04-03 22:15:53,431 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05, attempting to load checkpoint.
+2026-04-03 22:15:53,451 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 already trained for 10 epochs; skipping training loop.
+2026-04-03 22:15:53,453 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:15:53,469 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 22:15:53,506 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 22:15:53,705 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:15:53,717 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-03 22:16:21,287 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-03 22:16:21,290 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\quad.gif'
+2026-04-03 22:16:38,878 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-03 22:16:38,880 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-03 22:16:38,888 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-03 22:16:38,926 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 found=True
+2026-04-03 22:16:38,928 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06, attempting to load checkpoint.
+2026-04-03 22:16:38,945 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_06 already trained for 10 epochs; skipping training loop.
+2026-04-03 22:16:38,947 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:16:38,956 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-03 22:16:38,975 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-03 22:16:39,099 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-03 22:16:39,108 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 10:58:24,197 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 10:58:24,198 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 10:58:24,221 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-04 10:58:24,271 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_04 found=False
+2026-04-04 10:58:24,275 INFO model.ML.architectures.build_model: Building closure 'zero' with arch params: {}
+2026-04-04 10:58:26,596 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0
+2026-04-04 10:58:51,548 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=1.4581E-05 | mean_test_loss=1.6713E-05
+2026-04-04 10:58:51,576 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_04
+2026-04-04 10:59:15,000 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=1.5091E-05 | mean_test_loss=1.5522E-05
+2026-04-04 10:59:15,011 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_04
+2026-04-04 11:00:49,722 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=1.5575E-05 | mean_test_loss=1.4367E-05
+2026-04-04 11:00:49,739 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_04
+2026-04-04 11:01:14,195 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=1.5269E-05 | mean_test_loss=1.5072E-05
+2026-04-04 11:01:14,212 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_04
+2026-04-04 11:01:37,858 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=1.4833E-05 | mean_test_loss=1.6094E-05
+2026-04-04 11:01:37,873 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_04
+2026-04-04 11:02:02,766 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=1.5494E-05 | mean_test_loss=1.4656E-05
+2026-04-04 11:02:02,782 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_04
+2026-04-04 11:02:26,052 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=1.4987E-05 | mean_test_loss=1.5752E-05
+2026-04-04 11:02:26,063 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_04
+2026-04-04 11:02:49,321 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=1.4989E-05 | mean_test_loss=1.5779E-05
+2026-04-04 11:02:49,338 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_04
+2026-04-04 11:03:11,573 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=1.5325E-05 | mean_test_loss=1.4937E-05
+2026-04-04 11:03:11,584 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_04
+2026-04-04 11:03:35,241 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=1.5525E-05 | mean_test_loss=1.4509E-05
+2026-04-04 11:03:35,266 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\results\closures\zero_hr128_nx64_04
+2026-04-04 11:03:35,730 INFO model.ML.architectures.build_model: Building closure 'zero' with arch params: {}
+2026-04-04 11:03:35,733 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 11:03:37,483 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-04 11:03:37,485 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\zero_128to64_01\quad.gif'
+2026-04-04 15:14:10,036 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 15:14:10,040 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 15:14:10,044 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01
+2026-04-04 15:14:10,048 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-04-04 15:15:10,826 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 15:15:10,828 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 15:15:10,832 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01
+2026-04-04 15:15:10,836 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-04-04 15:15:13,666 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-04-04 15:15:13,668 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-04-04 15:18:30,805 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 15:18:30,807 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 15:18:30,838 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_02
+2026-04-04 15:18:30,842 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-04-04 15:18:30,991 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-04-04 15:18:30,993 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-04-04 15:18:57,376 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 15:18:57,378 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 15:18:57,381 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01
+2026-04-04 15:18:57,385 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-04-04 15:18:57,516 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-04-04 15:18:57,518 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-04-04 15:19:42,363 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 15:19:42,364 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 15:19:42,367 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01
+2026-04-04 15:19:42,369 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-04-04 15:19:42,542 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-04-04 15:19:42,546 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-04-04 15:19:43,786 INFO model.ML.generate_data: Generated batch of 5 trajectories, shape: (5, 500, 1, 64, 64)
+2026-04-04 15:20:14,099 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-04-04 15:20:14,775 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-04-04 15:20:15,488 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-04-04 15:20:15,955 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-04-04 15:20:16,413 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-04-04 15:20:17,023 INFO model.ML.generate_data: Generated 5/10 trajectories
+2026-04-04 15:20:17,058 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-04-04 15:20:17,059 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-04-04 15:20:17,065 INFO model.ML.generate_data: Generated batch of 5 trajectories, shape: (5, 500, 1, 64, 64)
+2026-04-04 15:20:46,492 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-04-04 15:20:47,110 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-04-04 15:20:47,651 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-04-04 15:20:48,350 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-04-04 15:20:48,766 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-04-04 15:20:49,177 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-04-04 15:20:49,178 INFO model.ML.generate_data: Finished generating all trajectories
+2026-04-04 15:20:49,180 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01\trajectories.zarr
+2026-04-04 15:20:49,358 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 found=True
+2026-04-04 15:20:49,359 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05, attempting to load checkpoint.
+2026-04-04 15:20:49,531 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\results\closures\cnn_hr128_nx64_05 already trained for 10 epochs; skipping training loop.
+2026-04-04 15:20:49,534 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-04 15:20:51,947 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-04 15:20:51,971 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-04 15:20:52,145 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-04 15:20:52,156 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 15:35:01,702 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 15:35:01,703 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 15:35:01,736 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_02
+2026-04-04 15:35:01,740 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-04-04 15:35:01,952 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-04-04 15:35:01,953 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-04-04 15:35:03,980 INFO model.ML.generate_data: Generating current batch of 5 trajectories, shape: (5, 500, 1, 64, 64)
+2026-04-04 15:35:33,871 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-04-04 15:35:34,649 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-04-04 15:35:35,134 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-04-04 15:35:35,804 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-04-04 15:35:36,373 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-04-04 15:35:36,958 INFO model.ML.generate_data: Generated 5/10 trajectories
+2026-04-04 15:35:36,990 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-04-04 15:35:36,992 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-04-04 15:35:36,997 INFO model.ML.generate_data: Generating current batch of 5 trajectories, shape: (5, 500, 1, 64, 64)
+2026-04-04 15:36:32,703 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 15:36:32,707 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 15:36:32,775 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01, loading data from there.
+2026-04-04 15:37:23,234 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 15:37:23,235 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 15:37:23,240 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01, loading data from there.
+2026-04-04 15:37:23,281 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01 found=False
+2026-04-04 15:37:23,288 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-04 15:37:28,914 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (500, 1, 64, 64) and learning rate: 0.0001
+2026-04-04 15:37:29,778 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:37:29,835 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:37:30,011 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:37:30,095 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:37:30,149 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:37:30,218 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:37:30,256 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:37:30,315 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:37:30,341 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:37:30,399 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:37:30,457 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:37:30,561 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:37:30,603 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:37:30,656 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:37:30,685 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:37:30,721 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:37:30,750 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:37:30,819 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:37:30,998 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:37:31,055 ERROR model.ML.utils.dataloading: Failed to save closure or optimizer checkpoint
+Traceback (most recent call last):
+  File "C:\Users\C5044892\Documents\Code\QG\model\ML\utils\dataloading.py", line 90, in checkpointer
+    os.replace(src, dst)
+    ~~~~~~~~~~^^^^^^^^^^
+PermissionError: [WinError 5] Access is denied: 'c:\\Users\\C5044892\\Documents\\Code\\QG\\saved_closures\\cnn_hr128_nx64_01\\closure_ckpt.tmp.npz' -> 'c:\\Users\\C5044892\\Documents\\Code\\QG\\saved_closures\\cnn_hr128_nx64_01\\closure_ckpt.npz'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\C5044892\Documents\Code\QG\model\ML\utils\dataloading.py", line 93, in checkpointer
+    os.rename(src, dst)
+    ~~~~~~~~~^^^^^^^^^^
+FileExistsError: [WinError 183] Cannot create a file when that file already exists: 'c:\\Users\\C5044892\\Documents\\Code\\QG\\saved_closures\\cnn_hr128_nx64_01\\closure_ckpt.tmp.npz' -> 'c:\\Users\\C5044892\\Documents\\Code\\QG\\saved_closures\\cnn_hr128_nx64_01\\closure_ckpt.npz'
+2026-04-04 15:37:31,062 ERROR __main__: Failed to save checkpoint after epoch 10
+Traceback (most recent call last):
+  File "C:\Users\C5044892\Documents\Code\QG\model\ML\utils\dataloading.py", line 90, in checkpointer
+    os.replace(src, dst)
+    ~~~~~~~~~~^^^^^^^^^^
+PermissionError: [WinError 5] Access is denied: 'c:\\Users\\C5044892\\Documents\\Code\\QG\\saved_closures\\cnn_hr128_nx64_01\\closure_ckpt.tmp.npz' -> 'c:\\Users\\C5044892\\Documents\\Code\\QG\\saved_closures\\cnn_hr128_nx64_01\\closure_ckpt.npz'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\C5044892\Documents\Code\QG\run.py", line 318, in run
+    checkpointer(closure, optim_state, model_dir, save=True, epoch=epoch+1, n_epochs=n_epochs, losses={"train": train_mean_losses, "test": test_mean_losses})
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\C5044892\Documents\Code\QG\model\ML\utils\dataloading.py", line 93, in checkpointer
+    os.rename(src, dst)
+    ~~~~~~~~~^^^^^^^^^^
+FileExistsError: [WinError 183] Cannot create a file when that file already exists: 'c:\\Users\\C5044892\\Documents\\Code\\QG\\saved_closures\\cnn_hr128_nx64_01\\closure_ckpt.tmp.npz' -> 'c:\\Users\\C5044892\\Documents\\Code\\QG\\saved_closures\\cnn_hr128_nx64_01\\closure_ckpt.npz'
+2026-04-04 15:37:31,787 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-04 15:37:31,806 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 15:37:42,144 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-04 15:37:42,146 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_18\cnn_sweep_0\cnn_128to64_01\quad.gif'
+2026-04-04 15:40:19,039 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 15:40:19,040 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 15:40:19,062 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01, loading data from there.
+2026-04-04 15:40:19,102 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01 found=False
+2026-04-04 15:40:19,105 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-04 15:40:24,762 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (500, 1, 64, 64) and learning rate: 0.0001
+2026-04-04 15:40:25,593 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:40:25,664 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:40:25,746 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:40:25,826 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:40:25,880 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:40:25,949 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:40:25,979 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:40:26,025 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:40:26,060 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:40:26,138 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:40:26,183 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:40:26,256 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:40:26,300 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:40:26,375 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:40:26,413 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:40:26,471 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:40:26,505 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:40:26,606 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:40:26,670 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=NAN | mean_test_loss=NAN
+2026-04-04 15:40:26,735 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:40:27,205 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-04 15:40:27,220 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 15:40:36,656 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-04 15:40:36,659 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_cnn\cnn_128to64_01\quad.gif'
+2026-04-04 15:47:36,438 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 15:47:36,440 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 15:47:36,446 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01
+2026-04-04 15:47:36,469 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-04-04 15:47:39,417 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-04-04 15:47:39,418 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-04-04 15:47:40,936 INFO model.ML.generate_data: Generating current batch of 5 trajectories, shape: (5, 1000, 1, 64, 64)
+2026-04-04 15:48:22,105 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-04-04 15:48:24,058 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-04-04 15:48:26,201 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-04-04 15:48:27,157 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-04-04 15:48:28,098 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-04-04 15:48:29,879 INFO model.ML.generate_data: Generated 5/10 trajectories
+2026-04-04 15:48:30,000 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-04-04 15:48:30,004 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-04-04 15:48:30,013 INFO model.ML.generate_data: Generating current batch of 5 trajectories, shape: (5, 1000, 1, 64, 64)
+2026-04-04 15:49:07,929 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-04-04 15:49:09,342 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-04-04 15:49:10,266 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-04-04 15:49:11,210 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-04-04 15:49:12,291 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-04-04 15:49:13,229 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-04-04 15:49:13,233 INFO model.ML.generate_data: Finished generating all trajectories
+2026-04-04 15:49:13,237 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01\trajectories.zarr
+2026-04-04 15:49:13,309 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01 found=False
+2026-04-04 15:49:13,310 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-04 15:49:13,335 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-04 15:50:03,522 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 15:50:03,524 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 15:50:03,556 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01, loading data from there.
+2026-04-04 15:50:03,589 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01 found=False
+2026-04-04 15:50:03,591 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {}
+2026-04-04 15:50:03,617 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-04 15:54:34,145 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 15:54:34,147 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 15:54:34,154 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01, loading data from there.
+2026-04-04 15:54:34,193 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01 found=False
+2026-04-04 15:54:34,196 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 2, 'width': 32, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 15:54:36,627 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-04 15:56:37,169 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=1.8936E-05 | mean_test_loss=2.1092E-05
+2026-04-04 15:56:37,196 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:57:04,123 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=1.8751E-05 | mean_test_loss=1.9510E-05
+2026-04-04 15:57:04,151 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:57:30,965 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=1.8923E-05 | mean_test_loss=1.7277E-05
+2026-04-04 15:57:30,995 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:57:57,741 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=1.7862E-05 | mean_test_loss=1.8164E-05
+2026-04-04 15:57:57,773 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:58:24,859 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=1.7314E-05 | mean_test_loss=1.8082E-05
+2026-04-04 15:58:24,885 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:58:51,892 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=1.7540E-05 | mean_test_loss=1.6426E-05
+2026-04-04 15:58:51,920 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:59:18,770 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=1.6993E-05 | mean_test_loss=1.6603E-05
+2026-04-04 15:59:18,795 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 15:59:45,538 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=1.6637E-05 | mean_test_loss=1.6692E-05
+2026-04-04 15:59:45,568 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 16:00:11,662 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=1.6227E-05 | mean_test_loss=1.6867E-05
+2026-04-04 16:00:11,697 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 16:00:38,678 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=1.6689E-05 | mean_test_loss=1.5252E-05
+2026-04-04 16:00:38,707 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01
+2026-04-04 16:00:38,956 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 2, 'width': 32, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 16:00:38,962 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 16:00:41,184 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-04 16:00:41,186 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_cnn\cnn_128to64_01\quad.gif'
+2026-04-04 16:00:44,013 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 16:00:44,014 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 16:00:44,017 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01, loading data from there.
+2026-04-04 16:00:44,061 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_02 found=False
+2026-04-04 16:00:44,063 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 2, 'width': 64, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 16:00:44,081 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-04 16:01:28,245 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=1.8529E-05 | mean_test_loss=2.0491E-05
+2026-04-04 16:01:28,277 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_02
+2026-04-04 16:02:30,064 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=1.8034E-05 | mean_test_loss=1.8709E-05
+2026-04-04 16:02:30,096 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_02
+2026-04-04 16:03:48,087 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=1.8030E-05 | mean_test_loss=1.6339E-05
+2026-04-04 16:03:48,124 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_02
+2026-04-04 16:04:26,973 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=1.6905E-05 | mean_test_loss=1.7193E-05
+2026-04-04 16:04:27,003 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_02
+2026-04-04 16:05:04,775 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=1.6372E-05 | mean_test_loss=1.7164E-05
+2026-04-04 16:05:04,812 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_02
+2026-04-04 16:05:42,978 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=1.6648E-05 | mean_test_loss=1.5611E-05
+2026-04-04 16:05:43,014 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_02
+2026-04-04 16:06:23,972 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=1.6174E-05 | mean_test_loss=1.5811E-05
+2026-04-04 16:06:24,013 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_02
+2026-04-04 16:07:03,002 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=1.5867E-05 | mean_test_loss=1.5897E-05
+2026-04-04 16:07:03,033 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_02
+2026-04-04 16:07:41,132 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=1.5464E-05 | mean_test_loss=1.6056E-05
+2026-04-04 16:07:41,158 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_02
+2026-04-04 16:08:19,731 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=1.5853E-05 | mean_test_loss=1.4494E-05
+2026-04-04 16:08:19,765 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_02
+2026-04-04 16:08:20,017 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 2, 'width': 64, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 16:08:20,026 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 16:08:23,312 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-04 16:08:23,314 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_cnn\cnn_128to64_01\quad.gif'
+2026-04-04 16:08:26,225 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 16:08:26,227 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 16:08:26,257 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01, loading data from there.
+2026-04-04 16:08:26,391 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_03 found=False
+2026-04-04 16:08:26,393 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 3, 'width': 32, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 16:08:27,600 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-04 16:12:25,295 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=1.8173E-05 | mean_test_loss=2.0145E-05
+2026-04-04 16:12:25,317 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_03
+2026-04-04 16:14:29,259 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 16:14:29,260 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 16:14:29,264 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01, loading data from there.
+2026-04-04 16:14:29,282 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01 found=True
+2026-04-04 16:14:29,284 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01, attempting to load checkpoint.
+2026-04-04 16:14:29,435 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_01 already trained for 10 epochs; skipping training loop.
+2026-04-04 16:14:29,437 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 2, 'width': 32, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 16:14:29,445 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-04 16:14:29,461 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-04 16:14:29,598 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 2, 'width': 32, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 16:14:29,606 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 16:14:31,654 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-04 16:14:31,656 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_cnn\run_1\cnn_128to64_01\quad.gif'
+2026-04-04 16:14:56,621 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 16:14:56,624 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 16:14:56,632 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01, loading data from there.
+2026-04-04 16:14:56,670 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_02 found=True
+2026-04-04 16:14:56,671 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_02, attempting to load checkpoint.
+2026-04-04 16:14:56,681 INFO __main__: Model at c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_02 already trained for 10 epochs; skipping training loop.
+2026-04-04 16:14:56,683 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 2, 'width': 64, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 16:14:56,689 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-04 16:14:56,713 INFO __main__: Loaded existing loss history: 10 train entries, 10 test entries
+2026-04-04 16:14:56,823 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 2, 'width': 64, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 16:14:56,831 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 16:15:00,274 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-04 16:15:00,278 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_cnn\run_2\cnn_128to64_01\quad.gif'
+2026-04-04 16:15:26,215 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 16:15:26,217 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 16:15:26,224 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01, loading data from there.
+2026-04-04 16:15:26,298 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_03 found=True
+2026-04-04 16:15:26,300 INFO __main__: Found existing cnn closure with matching parameters at c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_03, attempting to load checkpoint.
+2026-04-04 16:15:26,451 INFO __main__: Resuming training from epoch 0 (saved) out of 10
+2026-04-04 16:15:26,454 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 3, 'width': 32, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 16:15:26,466 INFO __main__: Reconstructed optimiser state from checkpoint
+2026-04-04 16:15:26,489 INFO __main__: Loaded existing loss history: 1 train entries, 1 test entries
+2026-04-04 16:19:52,460 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=1.8580E-05 | mean_test_loss=1.9103E-05
+2026-04-04 16:19:52,487 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_03
+2026-04-04 16:20:49,569 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 16:20:49,570 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 16:20:49,601 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_01, loading data from there.
+2026-04-04 16:20:49,682 INFO __main__: find_existing_closure -> path=c:\Users\C5044892\Documents\Code\QG\saved_closures\zero_hr128_nx64_01 found=False
+2026-04-04 16:20:49,684 INFO model.ML.architectures.build_model: Building closure 'zero' with arch params: {'learning_rate': 0}
+2026-04-04 16:20:49,699 INFO __main__: Starting training for 10 epochs with batch size: 3, traj shape: (1000, 1, 64, 64) and learning rate: 0
+2026-04-04 16:21:34,781 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=1.8667E-05 | mean_test_loss=2.1158E-05
+2026-04-04 16:21:34,801 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\saved_closures\zero_hr128_nx64_01
+2026-04-04 16:21:57,204 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=1.9111E-05 | mean_test_loss=2.0128E-05
+2026-04-04 16:21:57,223 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\saved_closures\zero_hr128_nx64_01
+2026-04-04 16:22:18,416 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=1.9833E-05 | mean_test_loss=1.8406E-05
+2026-04-04 16:22:18,428 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\saved_closures\zero_hr128_nx64_01
+2026-04-04 16:22:40,057 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=1.9246E-05 | mean_test_loss=1.9764E-05
+2026-04-04 16:22:40,077 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\saved_closures\zero_hr128_nx64_01
+2026-04-04 16:23:01,724 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=1.9159E-05 | mean_test_loss=1.9997E-05
+2026-04-04 16:23:01,738 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\saved_closures\zero_hr128_nx64_01
+2026-04-04 16:23:22,899 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=1.9714E-05 | mean_test_loss=1.8769E-05
+2026-04-04 16:23:22,915 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\saved_closures\zero_hr128_nx64_01
+2026-04-04 16:23:45,149 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=1.9470E-05 | mean_test_loss=1.9238E-05
+2026-04-04 16:23:45,166 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\saved_closures\zero_hr128_nx64_01
+2026-04-04 16:24:07,029 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=1.9392E-05 | mean_test_loss=1.9516E-05
+2026-04-04 16:24:07,045 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\saved_closures\zero_hr128_nx64_01
+2026-04-04 16:24:27,120 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=1.9157E-05 | mean_test_loss=1.9978E-05
+2026-04-04 16:24:27,136 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\saved_closures\zero_hr128_nx64_01
+2026-04-04 16:24:48,323 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=1.9859E-05 | mean_test_loss=1.8398E-05
+2026-04-04 16:24:48,344 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\saved_closures\zero_hr128_nx64_01
+2026-04-04 16:24:48,612 INFO model.ML.architectures.build_model: Building closure 'zero' with arch params: {'learning_rate': 0}
+2026-04-04 16:24:48,615 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 16:24:49,643 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-04 16:24:49,645 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\zero_128to64_01\quad.gif'
+2026-04-04 16:31:04,897 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 16:31:04,898 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 16:31:04,902 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_02
+2026-04-04 16:31:04,904 INFO model.ML.generate_data: Generating 10 trajectories with 1000 steps.
+2026-04-04 16:31:05,003 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-04-04 16:31:05,004 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-04-04 16:31:05,970 INFO model.ML.generate_data: Generating current batch of 5 trajectories, shape: (5, 1000, 1, 64, 64)
+2026-04-04 16:31:33,430 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-04-04 16:31:33,590 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-04-04 16:31:33,752 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-04-04 16:31:33,869 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-04-04 16:31:33,993 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-04-04 16:31:34,112 INFO model.ML.generate_data: Generated 5/10 trajectories
+2026-04-04 16:31:34,134 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-04-04 16:31:34,136 INFO model.ML.generate_data: Running spinup of 10000 steps for the batch
+2026-04-04 16:31:34,141 INFO model.ML.generate_data: Generating current batch of 5 trajectories, shape: (5, 1000, 1, 64, 64)
+2026-04-04 16:32:01,443 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-04-04 16:32:01,636 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-04-04 16:32:01,769 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-04-04 16:32:01,928 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-04-04 16:32:02,046 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-04-04 16:32:02,169 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-04-04 16:32:02,170 INFO model.ML.generate_data: Finished generating all trajectories
+2026-04-04 16:32:02,171 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_02\trajectories.zarr
+2026-04-04 16:32:02,306 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 2, 'width': 32, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 16:32:02,324 INFO __main__: Starting training for 10 epochs with batch size: 100, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-04 16:32:25,893 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=9.8870E-03 | mean_test_loss=9.7284E-03
+2026-04-04 16:32:25,913 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_04
+2026-04-04 16:32:44,492 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=1.0147E-02 | mean_test_loss=9.2855E-03
+2026-04-04 16:32:44,524 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_04
+2026-04-04 16:33:01,973 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=9.6792E-03 | mean_test_loss=9.7496E-03
+2026-04-04 16:33:02,001 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_04
+2026-04-04 16:33:19,527 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=9.6809E-03 | mean_test_loss=9.4733E-03
+2026-04-04 16:33:19,555 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_04
+2026-04-04 16:33:37,739 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=9.8802E-03 | mean_test_loss=8.9431E-03
+2026-04-04 16:33:37,770 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_04
+2026-04-04 16:33:55,285 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=9.4317E-03 | mean_test_loss=9.6208E-03
+2026-04-04 16:33:55,319 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_04
+2026-04-04 16:34:13,055 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=9.5727E-03 | mean_test_loss=9.4931E-03
+2026-04-04 16:34:13,077 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_04
+2026-04-04 16:34:31,281 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=9.4642E-03 | mean_test_loss=9.1982E-03
+2026-04-04 16:34:31,313 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_04
+2026-04-04 16:34:49,243 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=9.3644E-03 | mean_test_loss=9.3431E-03
+2026-04-04 16:34:49,276 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_04
+2026-04-04 16:35:06,865 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=9.2385E-03 | mean_test_loss=9.3930E-03
+2026-04-04 16:35:06,894 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_04
+2026-04-04 16:35:07,196 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 2, 'width': 32, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 16:35:07,203 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 16:35:09,024 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-04 16:35:09,026 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_cnn\run_1\cnn_128to64_01\quad.gif'
+2026-04-04 16:35:34,166 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 16:35:34,166 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 16:35:34,222 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_02, loading data from there.
+2026-04-04 16:35:34,390 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 2, 'width': 64, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 16:35:34,419 INFO __main__: Starting training for 10 epochs with batch size: 100, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-04 16:36:08,612 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=9.1863E-03 | mean_test_loss=8.9786E-03
+2026-04-04 16:36:08,632 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_05
+2026-04-04 16:36:36,337 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=9.3288E-03 | mean_test_loss=8.5179E-03
+2026-04-04 16:36:36,356 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_05
+2026-04-04 16:37:09,004 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=8.8332E-03 | mean_test_loss=8.8571E-03
+2026-04-04 16:37:09,030 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_05
+2026-04-04 16:37:39,977 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=8.7694E-03 | mean_test_loss=8.5660E-03
+2026-04-04 16:37:40,010 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_05
+2026-04-04 16:38:09,430 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=8.8838E-03 | mean_test_loss=8.0450E-03
+2026-04-04 16:38:09,457 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_05
+2026-04-04 16:38:41,900 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=8.4507E-03 | mean_test_loss=8.5954E-03
+2026-04-04 16:38:41,927 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_05
+2026-04-04 16:39:15,664 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=8.5423E-03 | mean_test_loss=8.4371E-03
+2026-04-04 16:39:15,695 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_05
+2026-04-04 16:39:47,900 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=8.4027E-03 | mean_test_loss=8.1582E-03
+2026-04-04 16:39:47,918 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_05
+2026-04-04 16:40:19,930 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=8.2881E-03 | mean_test_loss=8.2385E-03
+2026-04-04 16:40:19,958 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_05
+2026-04-04 16:40:51,727 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=8.1425E-03 | mean_test_loss=8.2634E-03
+2026-04-04 16:40:51,751 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_05
+2026-04-04 16:40:52,009 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 2, 'width': 64, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 16:40:52,018 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 16:40:55,064 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-04 16:40:55,066 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_cnn\run_2\cnn_128to64_01\quad.gif'
+2026-04-04 16:41:18,426 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 16:41:18,427 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 16:41:18,432 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_02, loading data from there.
+2026-04-04 16:41:18,500 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 3, 'width': 32, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 16:41:18,523 INFO __main__: Starting training for 10 epochs with batch size: 100, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-04 16:45:02,560 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=9.5934E-03 | mean_test_loss=9.2149E-03
+2026-04-04 16:45:02,581 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_06
+2026-04-04 16:48:44,174 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=9.5961E-03 | mean_test_loss=8.7533E-03
+2026-04-04 16:48:44,209 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_06
+2026-04-04 16:52:46,538 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=8.9551E-03 | mean_test_loss=8.9667E-03
+2026-04-04 16:52:46,581 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_06
+2026-04-04 16:56:54,130 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=8.8160E-03 | mean_test_loss=8.5772E-03
+2026-04-04 16:56:54,169 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_06
+2026-04-04 17:01:03,599 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=8.8038E-03 | mean_test_loss=7.9540E-03
+2026-04-04 17:01:03,637 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_06
+2026-04-04 17:05:04,765 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=8.2948E-03 | mean_test_loss=8.4735E-03
+2026-04-04 17:05:04,784 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_06
+2026-04-04 17:09:13,808 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=8.3984E-03 | mean_test_loss=8.1501E-03
+2026-04-04 17:09:13,848 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_06
+2026-04-04 17:13:23,897 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=8.1354E-03 | mean_test_loss=7.9056E-03
+2026-04-04 17:13:23,926 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_06
+2026-04-04 17:17:48,732 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=7.9894E-03 | mean_test_loss=7.8764E-03
+2026-04-04 17:17:48,771 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_06
+2026-04-04 17:21:37,203 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=7.7559E-03 | mean_test_loss=7.9388E-03
+2026-04-04 17:21:37,243 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_06
+2026-04-04 17:21:37,538 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 3, 'width': 32, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 17:21:37,546 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 17:21:41,232 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-04 17:21:41,234 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_cnn\run_3\cnn_128to64_01\quad.gif'
+2026-04-04 17:22:06,286 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 17:22:06,287 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 17:22:06,346 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_02, loading data from there.
+2026-04-04 17:22:06,585 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 3, 'width': 64, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 17:22:06,619 INFO __main__: Starting training for 10 epochs with batch size: 100, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-04 17:40:46,740 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=7.9221E-03 | mean_test_loss=7.5997E-03
+2026-04-04 17:40:46,788 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_07
+2026-04-04 17:53:44,445 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=7.8384E-03 | mean_test_loss=7.0541E-03
+2026-04-04 17:53:44,494 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_07
+2026-04-04 18:12:40,936 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=7.2482E-03 | mean_test_loss=7.1587E-03
+2026-04-04 18:12:40,988 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_07
+2026-04-04 18:31:27,458 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=7.0438E-03 | mean_test_loss=6.8098E-03
+2026-04-04 18:31:27,489 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_07
+2026-04-04 18:47:39,983 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=6.9703E-03 | mean_test_loss=6.2720E-03
+2026-04-04 18:47:40,039 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_07
+2026-04-04 19:02:24,158 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=6.5156E-03 | mean_test_loss=6.5353E-03
+2026-04-04 19:02:24,202 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_07
+2026-04-04 19:15:40,441 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=6.4632E-03 | mean_test_loss=6.2611E-03
+2026-04-04 19:15:40,513 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_07
+2026-04-04 19:29:05,497 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=6.2234E-03 | mean_test_loss=5.9895E-03
+2026-04-04 19:29:05,538 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_07
+2026-04-04 19:47:51,082 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=6.0130E-03 | mean_test_loss=5.9135E-03
+2026-04-04 19:47:51,135 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_07
+2026-04-04 20:00:38,964 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=5.8126E-03 | mean_test_loss=5.7938E-03
+2026-04-04 20:00:39,022 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_07
+2026-04-04 20:00:39,383 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 3, 'width': 64, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 20:00:39,395 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 20:00:53,156 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-04 20:00:53,158 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_cnn\run_4\cnn_128to64_01\quad.gif'
+2026-04-04 20:01:19,100 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 20:01:19,103 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 20:01:19,168 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_02, loading data from there.
+2026-04-04 20:01:19,401 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 4, 'width': 32, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 20:01:19,630 INFO __main__: Starting training for 10 epochs with batch size: 100, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-04 20:08:37,955 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=9.3441E-03 | mean_test_loss=8.9744E-03
+2026-04-04 20:08:38,004 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_08
+2026-04-04 20:15:50,994 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=9.3005E-03 | mean_test_loss=8.4666E-03
+2026-04-04 20:15:51,028 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_08
+2026-04-04 20:22:54,677 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=8.6814E-03 | mean_test_loss=8.6613E-03
+2026-04-04 20:22:54,718 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_08
+2026-04-04 20:29:54,581 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=8.5280E-03 | mean_test_loss=8.2984E-03
+2026-04-04 20:29:54,649 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_08
+2026-04-04 20:37:02,936 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=8.5301E-03 | mean_test_loss=7.7121E-03
+2026-04-04 20:37:02,981 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_08
+2026-04-04 20:44:06,568 INFO __main__: Finished streaming epoch 6/10 | mean_train_loss=8.0538E-03 | mean_test_loss=8.1945E-03
+2026-04-04 20:44:06,609 INFO __main__: Saved checkpoint for epoch 6 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_08
+2026-04-04 20:51:03,713 INFO __main__: Finished streaming epoch 7/10 | mean_train_loss=8.1258E-03 | mean_test_loss=7.9386E-03
+2026-04-04 20:51:03,752 INFO __main__: Saved checkpoint for epoch 7 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_08
+2026-04-04 20:57:58,432 INFO __main__: Finished streaming epoch 8/10 | mean_train_loss=7.9093E-03 | mean_test_loss=7.6750E-03
+2026-04-04 20:57:58,475 INFO __main__: Saved checkpoint for epoch 8 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_08
+2026-04-04 21:04:54,935 INFO __main__: Finished streaming epoch 9/10 | mean_train_loss=7.7673E-03 | mean_test_loss=7.6755E-03
+2026-04-04 21:04:54,985 INFO __main__: Saved checkpoint for epoch 9 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_08
+2026-04-04 21:11:48,861 INFO __main__: Finished streaming epoch 10/10 | mean_train_loss=7.5667E-03 | mean_test_loss=7.6908E-03
+2026-04-04 21:11:48,906 INFO __main__: Saved checkpoint for epoch 10 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_08
+2026-04-04 21:11:49,170 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 4, 'width': 32, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 21:11:49,182 INFO model.ML.architectures.build_model: Reconstructed closure from loaded params
+2026-04-04 21:11:55,750 INFO matplotlib.animation: Animation.save using <class 'matplotlib.animation.FFMpegWriter'>
+2026-04-04 21:11:55,752 INFO matplotlib.animation: MovieWriter._run: running command: ffmpeg -f rawvideo -vcodec rawvideo -s 800x800 -pix_fmt rgba -framerate 10 -loglevel error -i pipe: -filter_complex 'split [a][b];[a] palettegen [p];[b][p] paletteuse' -y '../outputs\sweep_cnn\run_5\cnn_128to64_01\quad.gif'
+2026-04-04 21:12:21,434 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-04 21:12:21,435 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-04 21:12:21,495 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_02, loading data from there.
+2026-04-04 21:12:21,768 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 4, 'width': 64, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-04 21:12:21,797 INFO __main__: Starting training for 10 epochs with batch size: 100, traj shape: (1000, 1, 64, 64) and learning rate: 0.0001
+2026-04-04 21:36:51,782 INFO __main__: Finished streaming epoch 1/10 | mean_train_loss=8.2379E-03 | mean_test_loss=7.8579E-03
+2026-04-04 21:36:51,869 INFO __main__: Saved checkpoint for epoch 1 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_09
+2026-04-04 22:28:20,156 INFO __main__: Finished streaming epoch 2/10 | mean_train_loss=8.1221E-03 | mean_test_loss=7.2865E-03
+2026-04-04 22:28:20,291 INFO __main__: Saved checkpoint for epoch 2 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_09
+2026-04-05 12:17:10,835 INFO __main__: Finished streaming epoch 3/10 | mean_train_loss=7.4657E-03 | mean_test_loss=7.3645E-03
+2026-04-05 12:17:11,053 INFO __main__: Saved checkpoint for epoch 3 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_09
+2026-04-05 12:41:03,261 INFO __main__: Finished streaming epoch 4/10 | mean_train_loss=7.2312E-03 | mean_test_loss=6.9466E-03
+2026-04-05 12:41:03,394 INFO __main__: Saved checkpoint for epoch 4 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_09
+2026-04-05 13:13:45,618 INFO __main__: Finished streaming epoch 5/10 | mean_train_loss=7.1052E-03 | mean_test_loss=6.3488E-03
+2026-04-05 13:13:45,699 INFO __main__: Saved checkpoint for epoch 5 to c:\Users\C5044892\Documents\Code\QG\saved_closures\cnn_hr128_nx64_09
+2026-04-07 14:28:41,912 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-07 14:28:41,914 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-07 14:28:41,963 INFO __main__: No existing run found, generating new dataset at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03
+2026-04-07 14:28:41,965 INFO model.ML.generate_data: Generating 10 trajectories with 10000 steps.
+2026-04-07 14:28:47,062 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-04-07 14:28:47,063 INFO model.ML.generate_data: Running spinup of 100000 steps for the batch
+2026-04-07 14:28:48,479 INFO model.ML.generate_data: Generating current batch of 5 trajectories, shape: (5, 10000, 1, 64, 64)
+2026-04-07 14:34:31,567 INFO model.ML.generate_data: Processing trajectory 1/10
+2026-04-07 14:34:33,171 INFO model.ML.generate_data: Processing trajectory 2/10
+2026-04-07 14:34:34,693 INFO model.ML.generate_data: Processing trajectory 3/10
+2026-04-07 14:34:36,142 INFO model.ML.generate_data: Processing trajectory 4/10
+2026-04-07 14:34:37,470 INFO model.ML.generate_data: Processing trajectory 5/10
+2026-04-07 14:34:38,850 INFO model.ML.generate_data: Generated 5/10 trajectories
+2026-04-07 14:34:38,878 INFO model.ML.generate_data: Initialised batch of 5 trajectories
+2026-04-07 14:34:38,879 INFO model.ML.generate_data: Running spinup of 100000 steps for the batch
+2026-04-07 14:34:38,884 INFO model.ML.generate_data: Generating current batch of 5 trajectories, shape: (5, 10000, 1, 64, 64)
+2026-04-07 14:43:53,730 INFO model.ML.generate_data: Processing trajectory 6/10
+2026-04-07 14:43:56,462 INFO model.ML.generate_data: Processing trajectory 7/10
+2026-04-07 14:43:58,763 INFO model.ML.generate_data: Processing trajectory 8/10
+2026-04-07 14:44:01,079 INFO model.ML.generate_data: Processing trajectory 9/10
+2026-04-07 14:44:03,377 INFO model.ML.generate_data: Processing trajectory 10/10
+2026-04-07 14:44:05,745 INFO model.ML.generate_data: Generated 10/10 trajectories
+2026-04-07 14:44:05,748 INFO model.ML.generate_data: Finished generating all trajectories
+2026-04-07 14:44:05,750 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03\trajectories.zarr
+2026-04-07 14:44:06,221 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 3, 'width': 64, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-07 14:44:11,262 INFO __main__: Starting training for 10 epochs with batch size: 100, traj shape: (10000, 1, 64, 64) and learning rate: 0.0001

@@ -23,14 +23,14 @@ params:
   hr_nx: 128 # bit janky for the high res data
 
 plotting:
-  nsteps: 1000
+  nsteps: 10000
   dt: 0.01
   cadence: 100
   animate: ['PV']
   final: ['drift', ke_spectrum]
   auto_dt: false
   njets: 6
-  spinup: 10000
+  spinup: 100000
   cfl: 0.5
 
 
@@ -47,25 +47,31 @@ ml:
   n_train: 7
   n_test: 3
   optimiser: AdamW
-  batch_steps: 3
-  minibatch_size: 48  
+  batch_steps: 100 # temporal context - how far the trained model sees in advance
+  batch_size: 5 # this is the number of trajs generated in a batch before saving to disk
+  minibatch_size: 48 # number of samples in a training batch per update
   prefetch: 3       # prefetch a few batches to aid efficiency
 
 
 architectures:
   cnn:
     learning_rate: [0.0001, 0.0005, 0.001]
-    nlayers: [2, 3, 4]
-    width: [32, 64]
+    nlayers: 3
+    width: 64
     kernel_size: 3
     padding: 1
     activation: "relu"
   unet:
+    learning_rate: 0.0005
     base_channels: 32
     depth: 4
   fno:
+    learning_rate: 0.0005
     width: 64
     modes2: 16
     modes1: 16
     depth: 4
+  zero:
+    learning_rate: 0 # obviously not needed but coded in regardless
+
   

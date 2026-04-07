@@ -25,13 +25,33 @@ def _normalize(name):
 
 
 def _get_arch_params(cfg, arch_name):
-    arch_cfg = cfg.get("architectures", {})
+    # Support multiple cfg shapes: dict-like, attribute-style, or OmegaConf
+    arch_cfg = {}
+    # Prefer mapping-style access if available
+    if hasattr(cfg, "get"):
+        try:
+            arch_cfg = cfg.get("architectures", {})
+        except Exception:
+            arch_cfg = getattr(cfg, "architectures", {})
+    else:
+        arch_cfg = getattr(cfg, "architectures", {})
+
+    # If it's an OmegaConf node, convert to plain dict
+    try:
+        from omegaconf import OmegaConf
+        if OmegaConf.is_config(arch_cfg):
+            arch_cfg = OmegaConf.to_container(arch_cfg, resolve=True)
+    except Exception:
+        pass
+
     if not isinstance(arch_cfg, dict):
         return {}
 
+    # Find matching normalized arch name and return its params
     for key, value in arch_cfg.items():
         if _normalize(key) == _normalize(arch_name) and isinstance(value, dict):
             return dict(value)
+
     return {}
 
 
@@ -56,6 +76,7 @@ def build_closure(cfg, loaded_leaves=None):
         )
 
     arch_params = _get_arch_params(cfg, arch_name)
+    logger.info("Building closure '%s' with arch params: %s", arch_name, arch_params)
     closure_template = cls(**arch_params)
     if 'loaded_leaves' in locals() and loaded_leaves is not None:
         try:

@@ -74,16 +74,33 @@ def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save
             logger.exception("Failed to partition closure for saving")
             raise
 
-        # Save closure params and optimizer state (array pytrees)
+        # Save closure params and optimizer state (array pytrees).
+        # Write to temporary files and atomically replace so only the most
+        # recent complete checkpoint is present on disk.
         try:
-            _save_pytree(closure_params, closure_base)
+            # write to temp bases in same directory to allow atomic replace
+            tmp_closure_base = closure_base + ".tmp"
+            tmp_optim_base = optim_base + ".tmp"
+            _save_pytree(closure_params, tmp_closure_base)
+            # replace existing files atomically
+            for ext in (".npz", ".treedef"):
+                src = tmp_closure_base + ext
+                dst = closure_base + ext
+                try:
+                    os.replace(src, dst)
+                except Exception:
+                    # if replace fails, attempt move
+                    os.rename(src, dst)
+            _save_pytree(optim_state, tmp_optim_base)
+            for ext in (".npz", ".treedef"):
+                src = tmp_optim_base + ext
+                dst = optim_base + ext
+                try:
+                    os.replace(src, dst)
+                except Exception:
+                    os.rename(src, dst)
         except Exception:
-            logger.exception("Failed to save closure checkpoint")
-            raise
-        try:
-            _save_pytree(optim_state, optim_base)
-        except Exception:
-            logger.exception("Failed to save optimizer checkpoint")
+            logger.exception("Failed to save closure or optimizer checkpoint")
             raise
 
         # checkpoint metadata
@@ -93,16 +110,28 @@ def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save
         if n_epochs is not None:
             meta["n_epochs"] = int(n_epochs)
         try:
-            with open(os.path.join(model_dir, "checkpoint_meta.json"), "w") as f:
+            # write metadata atomically
+            meta_path = os.path.join(model_dir, "checkpoint_meta.json")
+            tmp_meta = meta_path + ".tmp"
+            with open(tmp_meta, "w") as f:
                 json.dump(meta, f, indent=4)
+            try:
+                os.replace(tmp_meta, meta_path)
+            except Exception:
+                os.rename(tmp_meta, meta_path)
         except Exception:
             logger.exception("Failed to write checkpoint meta file")
         # Optionally save loss history as JSON
         if losses is not None:
             try:
                 lh_path = os.path.join(model_dir, "loss_history.json")
-                with open(lh_path, "w") as f:
+                tmp_lh = lh_path + ".tmp"
+                with open(tmp_lh, "w") as f:
                     json.dump({"train": list(losses.get("train", [])), "test": list(losses.get("test", []))}, f, indent=4)
+                try:
+                    os.replace(tmp_lh, lh_path)
+                except Exception:
+                    os.rename(tmp_lh, lh_path)
             except Exception:
                 logger.exception("Failed to write loss history")
         return True
@@ -156,7 +185,7 @@ def canonicalize(params: dict) -> dict:
 
     return round_floats(params)
 
-def find_existing_closure(model_dir, params, timing_metadata, model_type):
+def find_existing_closure(model_dir, params, timing_metadata, model_type, extra_meta: dict = None):
     hr_nx = params['hr_nx']
     lr_nx = params['nx']
     candidates = []
@@ -189,7 +218,20 @@ def find_existing_closure(model_dir, params, timing_metadata, model_type):
                 candidates.append(idx)
                 continue
 
-            if (metadata_matches(params, stored_meta.get("parameters", {}))) and (metadata_matches(timing_metadata, stored_meta.get('timing', {}))) and (model_type == stored_meta.get('model_type')):
+            # Basic parameter+timing+model_type match
+            params_match = (metadata_matches(params, stored_meta.get("parameters", {}))) and (metadata_matches(timing_metadata, stored_meta.get('timing', {}))) and (model_type == stored_meta.get('model_type'))
+
+            # If extra_meta supplied (e.g. training / sweep info), require it to match as well
+            extra_match = True
+            if extra_meta is not None:
+                # expect extra_meta to be a dict mapping keys to compare, e.g. {'training': {...}}
+                for k, v in extra_meta.items():
+                    stored_section = stored_meta.get(k, {})
+                    if not metadata_matches(v, stored_section):
+                        extra_match = False
+                        break
+
+            if params_match and extra_match:
                 return run_dir, True
 
         # Keep the index as a candidate (even if metadata missing or mismatched)
