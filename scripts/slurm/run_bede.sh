@@ -8,13 +8,14 @@
 #SBATCH --time=24:00:00
 #SBATCH --mem=64G
 #SBATCH --output=logs/slurm-%j.out
+#SBATCH -e logs/slurm-%j.err
 
 # Load modules - adjust to your cluster's modules
 module purge
 module load Miniforge
 module load cuda
 
-conda activate qg-env
+conda activate QG
 
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_ENABLE_X64=0
