@@ -6200,3 +6200,8 @@ FileExistsError: [WinError 183] Cannot create a file when that file already exis
 2026-04-07 14:44:05,750 INFO model.ML.generate_data: Saved to c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03\trajectories.zarr
 2026-04-07 14:44:06,221 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 3, 'width': 64, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
 2026-04-07 14:44:11,262 INFO __main__: Starting training for 10 epochs with batch size: 100, traj shape: (10000, 1, 64, 64) and learning rate: 0.0001
+2026-04-07 17:35:58,877 INFO __main__: Requested device: gpu, using device: CPU
+2026-04-07 17:35:58,878 INFO __main__: Running on GPU with x64_enabled=False
+2026-04-07 17:35:58,976 INFO __main__: Found existing run with matching parameters at c:\Users\C5044892\Documents\Code\QG\data\data_hr128_nx64_03, loading data from there.
+2026-04-07 17:35:59,281 INFO model.ML.architectures.build_model: Building closure 'cnn' with arch params: {'learning_rate': 0.0001, 'nlayers': 3, 'width': 64, 'kernel_size': 3, 'padding': 1, 'activation': 'relu'}
+2026-04-07 17:36:04,910 INFO __main__: Starting training for 10 epochs with batch size: 100, traj shape: (10000, 1, 64, 64) and learning rate: 0.0001
