@@ -15,7 +15,7 @@ module purge
 module load Miniforge
 module load cuda
 
-conda activate QG
+conda activate base
 
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_ENABLE_X64=0
