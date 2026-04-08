@@ -6,7 +6,9 @@ import model.utils.pytree as Pytree
 )
 class Grid:
     """
-    I can't believe im back here after all this time - geometry only. No work with fft. Bare minimum
+    A class representing the grid on which the model is defined. 
+    It contains information about the grid dimensions, resolution, 
+    and other properties that are relevant for the model. 
 
     """
     def __init__(self, Lx, nx, Ly=None, ny=None, nz=1, Lz=None):
