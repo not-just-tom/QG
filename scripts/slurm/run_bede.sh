@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --account=bdncl19
 #SBATCH --job-name=cnn_sweep
-#SBATCH --partition=gpu
+#SBATCH --partition=gh
 #SBATCH --gres=gpu:1
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --time=24:00:00
+#SBATCH --time=8:00:00
 #SBATCH --mem=64G
 #SBATCH --output=logs/slurm-%j.out
 #SBATCH -e logs/slurm-%j.err
