@@ -26,9 +26,9 @@ plotting:
   nsteps: 10000
   dt: 0.01
   cadence: 100
-  animate: ['PV']
-  final: ['drift', ke_spectrum]
-  auto_dt: false
+  animate: []
+  final: []
+  auto_dt: true
   njets: 6
   spinup: 100000
   cfl: 0.5
@@ -45,7 +45,7 @@ ml:
   device: 'gpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   use_float64: false
   n_train: 7
-  n_test: 3
+  n_test: 2
   optimiser: AdamW
   batch_steps: 100 # temporal context - how far the trained model sees in advance
   batch_size: 5 # this is the number of trajs generated in a batch before saving to disk

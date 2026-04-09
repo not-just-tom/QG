@@ -1,10 +1,10 @@
 import os
 import sys
+# Base repo paths
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR,"config", "default.yaml")
-if BASE_DIR not in sys.path:
-    sys.path.insert(0, BASE_DIR)
-MODEL_DIR = os.path.join(BASE_DIR, 'results', 'closures')
+CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "config", "default.yaml")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+MODEL_DIR = os.path.join(BASE_DIR, 'saved_closures')
 import importlib 
 import model.core.model
 import model.ML.utils.coarsen
@@ -23,11 +23,10 @@ import equinox as eqx
 from model.utils.config import Config
 from model.utils.logging import configure_logging
 from model.core.steppers import SteppedModel, AB3Stepper
-from model.utils.plotting import make_triple_gif, gif_that
+from model.utils.plotting import make_quad_gif, gif_that
 from model.ML.utils.dataloading import find_existing_closure, find_existing_run, checkpointer, ZarrDataLoader
 from model.ML.architectures.build_model import build_closure
-from model.ML.utils.utils import parameterization
-from model.ML.train import roll_out_with_forced_model
+from model.ML.train import roll_out, load_forced_model
 from model.ML.forced_model import ForcedModel
 from model.core.model import QGM
 from model.ML.utils.coarsen import coarsen
@@ -52,6 +51,16 @@ def run():
     # load config values
     dt = cfg.plotting.dt
     nsteps = cfg.plotting.nsteps
+    key = jax.random.PRNGKey(cfg.params.seed)
+    njets = cfg.plotting.njets
+    ratio = params["hr_nx"]/params["nx"]
+    low_res_dt = dt/ratio
+
+    if cfg.plotting.auto_dt:
+        logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
+        raw_model = QGM({**params, "nx": params['hr_nx']})
+        init_state = raw_model.initialise(key, tune=True, n_jets=njets, verbose=True)
+        dt = raw_model.estimate_cfl_dt(init_state)
 
     # locate model checkpoint
     timing_metadata = {
@@ -60,6 +69,12 @@ def run():
         "dt": float(cfg.plotting.dt), 
         'batch_steps': int(cfg.ml.batch_steps),
     }
+    run_dir, found = find_existing_run(DATA_DIR, params, timing_metadata)
+    if found: 
+        logger.info(f"Found existing run with matching parameters at {run_dir}, loading data from there.")
+        data_loader = ZarrDataLoader(run_dir)
+    else:
+        logger.error('No data found!')
 
     model_dir, found = find_existing_closure(MODEL_DIR, params, timing_metadata, cfg.ml.model_type)
     loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = None, None, None, None
@@ -75,55 +90,59 @@ def run():
 
     # build HR model and coarsener
     dt = cfg.plotting.dt
-    hr_model = SteppedModel(model=QGM({**params, "nx": params['hr_nx']}), stepper=AB3Stepper(dt=dt))
-    coarse = coarsen(hr_model.model, params['nx'])
+    # instantiate the model
+    hr_model = SteppedModel(
+        model=QGM({**params, "nx": params['hr_nx']}),
+        stepper=AB3Stepper(dt=dt),
+    )
+    # build low-resolution physics model (coarsened from high-res physics)
+    lr_model = coarsen(hr_model.model, params['nx'])
 
-    # load a high-res trajectory (first available)
-    data_dir, found_run = find_existing_run(os.path.join(BASE_DIR, "data"), params, timing_metadata)
-    if not found_run:
-        raise FileNotFoundError("No matching high-resolution data run found for provided parameters.")
-    loader = ZarrDataLoader(data_dir)
-    truth_traj = loader.get_trajectory(0)  # shape (time, layers, ny, nx)
+    # === test the trained closure now === #
+    try:
+        loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = checkpointer(None, None, model_dir, save=False)
+        closure = build_closure(cfg, loaded_leaves)
+    except Exception:
+        logger.exception("Failed to load trained model for testing.")
 
+    forced_model, closure_params, closure_static = load_forced_model(lr_model, closure, low_res_dt)
+
+    truth_traj = data_loader.get_trajectory(0)  # shape (time, layers, ny, nx) 
     nsteps = truth_traj.shape[0]
 
-    closure_params, closure_static = eqx.partition(closure, eqx.is_array)
-    init_param_func = lambda state, model, params: params
-
-    def _param_adapter(state, param_aux, model, *args, **kwargs):
-        # param_aux holds closure params (arrays)
-        # reuse closure_combiner behaviour: combine params + static to evaluate closure
-        from model.ML.train import closure_combiner
-        return closure_combiner(state, param_aux, closure_static)
-
-    closure_func = parameterization(_param_adapter)
-    forced_hr_static = SteppedModel(
-        model=ForcedModel(model=coarse, closure=closure_func, init_param_aux_func=init_param_func),
-        stepper=hr_model.stepper,
-    )
-
     # template state for the forced model (low-res initialiser)
-    template_state = coarse.initialise(jax.random.PRNGKey(0))
+    template_state = lr_model.initialise(jax.random.PRNGKey(0))
 
-    # Use the first coarsened frame as init and roll out for full length
-    init_q = jnp.asarray(truth_traj[0])
-    pred_traj = roll_out_with_forced_model(init_q, forced_hr_static, template_state, nsteps, closure_params)
-    pred_traj = np.asarray(pred_traj)
+    pred_traj_full = roll_out(truth_traj[0], forced_model, nsteps, template_state, closure_params)
+    pred_traj = np.asarray(pred_traj_full)
+
+    # separate the sgs forcing from the baseline model
+    @jax.jit
+    def _ml_contrib(q):
+        # closure expects float32, returns dq in same spatial shape
+        return closure(q.astype(jnp.float32)).astype(q.dtype)
+
+    sgs_traj = jax.vmap(_ml_contrib)(jnp.asarray(pred_traj))
+    sgs_traj = np.asarray(sgs_traj)
 
     layer = 0
     hr_frames = np.asarray(truth_traj[:, layer])
     pred_frames = np.asarray(pred_traj[:, layer])
-    diff_frames = pred_frames - hr_frames
+    sgs_frames = np.asarray(sgs_traj[:, layer])
 
-    gif_out = os.path.join("..", "outputs", "PV.gif")
-    # make_triple_gif expects arrays with shape (nt, ny, nx)
-    gif_that(hr_frames, out_file=gif_out, cadence=100)
-    make_triple_gif(hr_frames, pred_frames, diff_frames, out_file='triple.gif', cadence=100)
-    logger.info(f"Saved comparison GIF to {gif_out}")
+    #pred_frames = pred_frames[:60]
+    #hr_frames = hr_frames[:60]
+
+    gif_out = os.path.join(out_dir, "PV.gif")
+    quad_out = os.path.join(out_dir, "quad.gif")
+    # make_quad_gif expects arrays with shape (nt, ny, nx)
+    #gif_that(pred_frames, out_file=gif_out, cadence=100)
+    make_quad_gif(hr_frames, pred_frames, sgs_q=sgs_frames, out_file=quad_out, cadence=10)
+    print(f"Saved comparison GIF to {quad_out}")
 
     try:
         mse_per_timestep = np.mean((pred_frames - hr_frames) ** 2, axis=(1, 2))
-        mse_out = os.path.join("..", "outputs", "mse_per_timestep.png")
+        mse_out = os.path.join(out_dir, "mse_per_timestep.png")
         plt.figure(figsize=(6, 3))
         plt.plot(np.arange(mse_per_timestep.size), mse_per_timestep, '-o')
         plt.xlabel('Timestep')
@@ -133,9 +152,12 @@ def run():
         plt.tight_layout()
         plt.savefig(mse_out, dpi=150, bbox_inches='tight')
         plt.close()
-        logger.info(f"Saved MSE plot to {mse_out}")
+        print(f"Saved MSE plot to {mse_out}")
     except Exception:
         logger.exception("Failed to compute or save MSE plot")
+
+    
+    # ============================
 
 
 if __name__ == "__main__":

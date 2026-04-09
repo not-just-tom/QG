@@ -19,6 +19,7 @@ def generate_train_data(cfg, params, dt, hr_model, lr_model, hr_dir):
     os.makedirs(hr_dir, exist_ok=True)
 
     # Timing parameters
+    n_total = cfg.ml.n_train + cfg.ml.n_test + 1
     try:
         nsteps = cfg.plotting.nsteps
         batch_size = cfg.ml.batch_size
@@ -28,7 +29,7 @@ def generate_train_data(cfg, params, dt, hr_model, lr_model, hr_dir):
         logger.error("Missing required configuration parameters: %s", e)
         raise ValueError("Configuration must include plotting.nsteps, ml.batch_size, ml.batch_steps, and plotting.spinup") from e
 
-    logger.info(f"Generating %d trajectories with %d steps.", cfg.ml.n_train + cfg.ml.n_test, nsteps)
+    logger.info(f"Generating %d trajectories with %d steps.", n_total, nsteps)
     
     # Prepare low-resolution template and ratio for coarsening
     dummy_key = jax.random.PRNGKey(0)
@@ -98,7 +99,7 @@ def generate_train_data(cfg, params, dt, hr_model, lr_model, hr_dir):
     
 
     rng = jax.random.PRNGKey(int(params.get("seed", 0)))
-    n_total = cfg.ml.n_train + cfg.ml.n_test
+
     n_generated = 0
 
     # If spinup>0, define a jitted routine to step the high-res model

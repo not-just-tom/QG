@@ -83,7 +83,6 @@ def run(cfg):
     n_epochs = n_train + n_test
     n_samples = nsteps//batch_steps
     spinup = cfg.plotting.spinup
-    # params come from cfg.params (OmegaConf) -> convert to plain dict
     params = dict(OmegaConf.to_container(cfg.params, resolve=True))
     seed = params.get("seed", 42)
     key = jax.random.PRNGKey(seed)
@@ -117,8 +116,7 @@ def run(cfg):
         chosen = "cpu"
 
     logger.info(f"Requested device: {device_type}, using device: {chosen.upper()}")
-    logger.info(f"Running on {device_type.upper()} with x64_enabled={use_float64}")    
-
+    
     if cfg.plotting.auto_dt:
         logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
         raw_model = QGM({**params, "nx": params['hr_nx']})
@@ -356,7 +354,7 @@ def run(cfg):
 
     forced_model, closure_params, closure_static = load_forced_model(lr_model, closure, low_res_dt)
 
-    truth_traj = data_loader.get_trajectory(0)  # shape (time, layers, ny, nx) 
+    truth_traj = data_loader.get_trajectory(n_epochs)  # shape (time, layers, ny, nx) 
     nsteps = truth_traj.shape[0]
 
     # template state for the forced model (low-res initialiser)
