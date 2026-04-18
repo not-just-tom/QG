@@ -4,6 +4,7 @@ import json
 import re
 import zarr
 import numpy as np
+import jax.numpy as jnp
 import equinox as eqx
 from typing import Optional, List
 import logging
@@ -91,14 +92,18 @@ def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save
                 except Exception:
                     # if replace fails, attempt move
                     os.rename(src, dst)
-            _save_pytree(optim_state, tmp_optim_base)
-            for ext in (".npz", ".treedef"):
-                src = tmp_optim_base + ext
-                dst = optim_base + ext
-                try:
-                    os.replace(src, dst)
-                except Exception:
-                    os.rename(src, dst)
+            # Save only the flat leaves for the optimizer — no pickle treedef,
+            # so this survives JAX/equinox version changes.  Reconstruction
+            # uses the template treedef built from a freshly-initialised optim.
+            optim_leaves, _ = jax.tree_util.tree_flatten(optim_state)
+            optim_leaves_np = [np.asarray(x) for x in optim_leaves]
+            np.savez_compressed(tmp_optim_base + ".npz", *optim_leaves_np)
+            src = tmp_optim_base + ".npz"
+            dst = optim_base + ".npz"
+            try:
+                os.replace(src, dst)
+            except Exception:
+                os.rename(src, dst)
         except Exception:
             logger.exception("Failed to save closure or optimizer checkpoint")
             raise
@@ -144,7 +149,8 @@ def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save
             logger.exception("Failed to load closure checkpoint leaves")
             loaded_params_leaves = None
         try:
-            loaded_optim = _load_pytree(optim_base)
+            # Load raw leaves only; caller reconstructs using template treedef.
+            loaded_optim = _load_leaves(optim_base)
         except Exception:
             logger.exception("Failed to load optimizer checkpoint")
             loaded_optim = None
@@ -441,6 +447,36 @@ class ZarrDataLoader:
         # yield remainder
         if batch:
             yield np.stack(batch, axis=0)
+
+    def iterate_minibatches_device(
+        self,
+        *,
+        traj_indices,
+        n_samples,
+        batch_steps,
+        key,
+        minibatch_size=1,
+        minibatch_prefetch: int = 2,
+        device=None,
+    ):
+        """Like `iterate_minibatches` but yields JAX device arrays (already
+        transferred to the specified device). This reduces host->device
+        round-trips in training loops.
+        """
+        gen = self.iterate_minibatches(
+            traj_indices=traj_indices,
+            n_samples=n_samples,
+            batch_steps=batch_steps,
+            key=key,
+            minibatch_size=minibatch_size,
+        )
+        if minibatch_prefetch and minibatch_prefetch > 0:
+            gen = prefetch_generator(gen, size=minibatch_prefetch)
+
+        for np_batch in gen:
+            # convert to JAX array and push to device once per minibatch
+            jax_batch = jax.device_put(jnp.asarray(np_batch), device)
+            yield jax_batch
 
 
 def prefetch_generator(generator, size: int = 2):

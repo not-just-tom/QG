@@ -117,6 +117,16 @@ def run(cfg):
 
     logger.info(f"Requested device: {device_type}, using device: {chosen.upper()}")
     
+    # === dataloading === #
+    # im doing this here so that the autodt doesnt change dt
+    timing_metadata = {
+        'spinup': int(spinup),
+        'nsteps': int(nsteps),
+        "dt (original)": float(dt),
+        'auto_dt': bool(cfg.plotting.auto_dt),
+        'batch_steps': int(batch_steps),
+    }
+
     if cfg.plotting.auto_dt:
         logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
         raw_model = QGM({**params, "nx": params['hr_nx']})
@@ -130,14 +140,6 @@ def run(cfg):
     )
     # build low-resolution physics model (coarsened from high-res physics)
     lr_model = coarsen(hr_model.model, params['nx'])
-
-    # === dataloading === #
-    timing_metadata = {
-        'spinup': int(spinup),
-        'nsteps': int(nsteps),
-        "dt": float(dt),
-        'batch_steps': int(batch_steps),
-    }
 
     run_dir, found = find_existing_run(DATA_DIR, params, timing_metadata)
     if found: 
@@ -197,7 +199,8 @@ def run(cfg):
     if 'loaded_optim' in locals() and loaded_optim is not None:
         try:
             tpl_leaves, tpl_treedef = jax.tree_util.tree_flatten(template_optim_state)
-            saved_leaves, _ = jax.tree_util.tree_flatten(loaded_optim)
+            # loaded_optim is already a flat list of numpy arrays
+            saved_leaves = loaded_optim
             if len(tpl_leaves) != len(saved_leaves):
                 raise ValueError("Saved optimiser state does not match template structure")
             # cast and place saved leaves into template treedef

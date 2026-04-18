@@ -54,6 +54,18 @@ class QGM(Kernel):
             kmax=kmax,
         )
 
+        # Precompute spectral grids and dealias filter to avoid recomputation
+        # during tight stepping loops.
+        grid = self.get_grid()
+        # spectral frequencies (note normalization matches previous properties)
+        self._kx = jnp.fft.rfftfreq(self.nx, d=(grid.dx / (2 * jnp.pi)))
+        self._ky = jnp.fft.fftfreq(self.ny, d=(grid.dy / (2 * jnp.pi)))
+        self._KX, self._KY = jnp.meshgrid(self._kx, self._ky)
+        self._Kmag = jnp.sqrt(self._KX ** 2 + self._KY ** 2)
+        self._K2 = self._Kmag ** 2
+        # Use the same default dealiasing form as before (alpha=36, p=8)
+        self._dealias_mask = jnp.exp(-36 * (self._Kmag / jnp.max(self._Kmag)) ** 8)
+
     def initialise(
         self,
         key,
@@ -114,6 +126,9 @@ class QGM(Kernel):
     def _get_dealias_filter(self, alpha=36, p=8):
         """Apply a precomputed dealias mask from the grid if available.
         """
+        # fall back to precomputed mask when using default params
+        if alpha == 36 and p == 8:
+            return self._dealias_mask
         return jnp.exp(-alpha * (self.Kmag / jnp.max(self.Kmag)) ** p)
     
     @property
@@ -149,19 +164,19 @@ class QGM(Kernel):
     
     @property
     def ky(self):
-        return jnp.fft.fftfreq(self.ny, d=(self.dy / (2 * jnp.pi)))
+        return self._ky
 
     @property
     def kx(self):
-        return jnp.fft.rfftfreq(self.nx, d=(self.dx / (2 * jnp.pi)))
+        return self._kx
 
     @property
     def KX(self):
-        return jnp.meshgrid(self.kx, self.ky)[0]
+        return self._KX
 
     @property
     def KY(self):
-        return jnp.meshgrid(self.kx, self.ky)[1]
+        return self._KY
 
     @property
     def ik(self):
@@ -174,11 +189,11 @@ class QGM(Kernel):
     @property
     def Kmag(self):
         """Total wavenumber magnitude."""
-        return jnp.sqrt(self.KX**2 + self.KY**2)
+        return self._Kmag
 
     @property
     def K2(self):
-        return self.Kmag**2
+        return self._K2
     
     @property
     def U(self):
@@ -240,10 +255,9 @@ class QGM(Kernel):
         return (self.delta + 1) ** -1
 
     def _apply_a_ph(self, state):
-        # Double precision inversion for better stability in the inversion step
-        qh = state.qh  # shape (..., nz, nl, nk) or (nz, nl, nk)
+        qh = state.qh
 
-        # find which axis corresponds to the layer dimension (nz)
+        # find layer axis (size == self.nz)
         qh_shape = qh.shape
         try:
             layer_axis = next(i for i, s in enumerate(qh_shape) if s == self.nz)
@@ -253,38 +267,35 @@ class QGM(Kernel):
         # move layer axis to the last position: (..., nl, nk, nz)
         qh_last = jnp.moveaxis(qh, layer_axis, -1)
 
-        # build the 2x2 coefficient matrix per (nl, nk)
-        #print('model, before: ', qh.shape)
-        qh = qh.reshape((-1, 2))
-        #print('model, after: ', qh.shape)
+        # Choose working dtypes to avoid unnecessary upcasts. Use complex64/float32
+        # when input is complex64, otherwise preserve complex128/float64.
+        if qh.dtype == jnp.complex128:
+            c_dtype = jnp.complex128
+            f_dtype = jnp.float64
+        else:
+            c_dtype = jnp.complex64
+            f_dtype = jnp.float32
 
-        K2 = self.K2.astype(jnp.float64)
-        F1 = jnp.array(self.F1, dtype=jnp.float64)
-        F2 = jnp.array(self.F2, dtype=jnp.float64)
+        K2 = self._K2.astype(f_dtype)
+        F1 = jnp.array(self.F1, dtype=f_dtype)
+        F2 = jnp.array(self.F2, dtype=f_dtype)
 
         a00 = -(K2 + F1)
         a01 = jnp.full_like(K2, F1)
         a10 = jnp.full_like(K2, F2)
         a11 = -(K2 + F2)
 
-        # inv_mat shape (nl, nk, 2, 2)
+        # inv_mat shape (..., nl, nk, 2, 2) as complex for solve
         inv_mat = jnp.stack(
             [jnp.stack([a00, a01], axis=-1), jnp.stack([a10, a11], axis=-1)],
             axis=-2,
-        )
+        ).astype(c_dtype)
 
-        # RHS for solve: shape (..., nl, nk, 2, 1)
-        rhs = jnp.expand_dims(qh_last.astype(jnp.complex128), axis=-1)
+        rhs = jnp.expand_dims(qh_last.astype(c_dtype), axis=-1)
 
-        # Solve per-wavenumber: inv_mat broadcasts over any leading dims
         sol = jnp.linalg.solve(inv_mat, rhs).astype(state.qh.dtype)
-
-        # sol shape (..., nl, nk, 2, 1) -> squeeze last dim -> (..., nl, nk, 2)
         sol = jnp.squeeze(sol, axis=-1)
-
-        # move layer dimension (size 2) back to its original position
         ph = jnp.moveaxis(sol, -1, layer_axis)
-
         return ph
 
     def rhines_length(self, state: states.State):
@@ -295,20 +306,21 @@ class QGM(Kernel):
         full = self.get_full_state(state)
         u = full.u
         v = full.v
-        U_rms = jnp.sqrt(jnp.mean(u ** 2 + v ** 2)).astype(jnp.float64)
+        U_rms = jnp.sqrt(jnp.mean(u ** 2 + v ** 2))
         beta = self.beta
         if beta == 0:
-            return float('inf'), U_rms
-        Lr = jnp.sqrt(U_rms / beta).astype(jnp.float64)
-        return Lr, U_rms
+            return float('inf'), float(U_rms)
+        Lr = jnp.sqrt(U_rms / beta)
+        return float(Lr), float(U_rms)
 
     def estimate_cfl_dt(self, state: states.State, cfl=0.1):
         """Estimate a stable `dt` based on CFL: dt = courant_no. * x_lengthscale/abs(U)
         """
         full = self.get_full_state(state)
-        U_rms = jnp.sqrt(jnp.mean(full.u ** 2 + full.v ** 2)).astype(jnp.float64)
-        
-        dt = float(cfl * self.dx / abs(U_rms + 1e-12))
+        U_rms = jnp.sqrt(jnp.mean(full.u ** 2 + full.v ** 2))
+        # convert to python float for use in dt selection
+        Ur = float(U_rms)
+        dt = float(cfl * self.dx / (abs(Ur) + 1e-12))
         return dt
 
     @classmethod
