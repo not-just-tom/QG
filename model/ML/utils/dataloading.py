@@ -180,11 +180,14 @@ def metadata_matches(requested: dict, stored: dict) -> bool:
     return canonicalize(requested) == canonicalize(stored)
 
 def canonicalize(params: dict) -> dict:
+    # Keys to ignore in metadata comparison
+    IGNORE_KEYS = {"auto_dt", "created_utc", "saved_utc", "dt (original)"}
+    
     def round_floats(x):
         if isinstance(x, float):
-            return round(x, 12)
+            return round(x, 10)
         if isinstance(x, dict):
-            return {k: round_floats(v) for k, v in sorted(x.items())}
+            return {k: round_floats(v) for k, v in sorted(x.items()) if k not in IGNORE_KEYS}
         if isinstance(x, list):
             return [round_floats(v) for v in x]
         return x

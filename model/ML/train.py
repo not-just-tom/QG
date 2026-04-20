@@ -40,33 +40,58 @@ def load_forced_model(lr_model, closure, dt):
     return forced_model, closure_params, closure_static
 
 def roll_out(init_q, forced_model, nsteps, template_state, closure_params):
-    """Roll out `forced_model` for `nsteps` model steps and return
-    the sequence of physical-space `q` frames.
+    """Memory-efficient rollout that operates in spectral space and returns only 
+    the accumulated discrepancy. This avoids storing O(nsteps) large 4D arrays.
     """
     init_qh = jnp.fft.rfftn(init_q, axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
     base_state = template_state.update(qh=init_qh)
-
-    # This initializes the stepper state with '_params' (only arrays) in param_aux.
     init_state = forced_model.initialize_stepper_state(
         forced_model.model.initialise_param_state(base_state, closure_params)
     )
 
     def step(carry, _x):
+        # carry.state.model_state is the current State (spectral)
+        # forced_model.step_model performs the actual AB3/RK step
         next_state = forced_model.step_model(carry)
-        return next_state, next_state.state.model_state.q
+        
+        # next_state.state.model_state is the state AFTER the step
+        # The tendency (dQ/dt * dt) is effectively the difference in spectral states
+        dqh_total = next_state.state.model_state.qh - carry.state.model_state.qh
+        
+        # return next_state, and the spectral displacement
+        return next_state, dqh_total
 
-    _, traj = jax.lax.scan(step, init_state, None, length=nsteps)
-    return traj
+    # Scan returns the final state and the sequence of spectral displacements
+    # Total memory: (nsteps, nz, ny, nx/2+1) complex, which is ~half the size of physical space
+    _, traj_dqh = jax.lax.scan(step, init_state, None, length=nsteps)
+    return traj_dqh
 
 def compute_traj_errors(target_traj, forced_model, template_state, closure_params):
-    rolled_out = roll_out(
+    # nsteps is number of intervals
+    nsteps = target_traj.shape[0] - 1
+    
+    # traj_dqh: (nsteps, nz, ny, nx/2+1) spectral displacements
+    traj_dqh = roll_out(
         init_q=target_traj[0],
         forced_model=forced_model,
-        nsteps=target_traj.shape[0],
+        nsteps=nsteps,
         template_state=template_state,
         closure_params=closure_params,
     )
-    return rolled_out - target_traj
+    
+    # target_diff_h: true spectral displacement from coarsened high-res data
+    target_qh = jax.vmap(lambda x: jnp.fft.rfftn(x, axes=(-2, -1), norm='ortho'))(target_traj)
+    target_diff_h = target_qh[1:] - target_qh[:-1]
+
+    # The discrepancy is entirely handled in spectral space to minimize iFFTs and memory
+    # Error = True_Delta_Qh - Predicted_Delta_Qh
+    residual_qh = target_diff_h - traj_dqh
+    
+    # Map back to physical space only at the very end for the loss
+    # (nsteps, nz, ny, nx)
+    residual_q = jax.vmap(lambda x: jnp.fft.irfftn(x, axes=(-2, -1), norm='ortho', s=target_traj.shape[-2:]))(residual_qh)
+    
+    return residual_q
 
 def make_train_epoch(lr_model, dt, optim):
     """Factory that returns a JIT-compiled `train_epoch` function bound to

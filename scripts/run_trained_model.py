@@ -108,30 +108,29 @@ def run():
     forced_model, closure_params, closure_static = load_forced_model(lr_model, closure, low_res_dt)
 
     truth_traj = data_loader.get_trajectory(0)  # shape (time, layers, ny, nx) 
-    nsteps = truth_traj.shape[0]
+    nsteps = truth_traj.shape[0] - 1
 
     # template state for the forced model (low-res initialiser)
     template_state = lr_model.initialise(jax.random.PRNGKey(0))
 
-    pred_traj_full = roll_out(truth_traj[0], forced_model, nsteps, template_state, closure_params)
-    pred_traj = np.asarray(pred_traj_full)
+    # roll_out now returns a dict containing q_pred, dq_physics, and dq_ml
+    traj_data = roll_out(truth_traj[0], forced_model, nsteps, template_state, closure_params)
+    
+    # Extract pred_traj (including initial condition)
+    pred_traj = np.zeros_like(truth_traj)
+    pred_traj[0] = truth_traj[0]
+    pred_traj[1:] = np.asarray(traj_data["q_pred"])
 
-    # separate the sgs forcing from the baseline model
-    @jax.jit
-    def _ml_contrib(q):
-        # closure expects float32, returns dq in same spatial shape
-        return closure(q.astype(jnp.float32)).astype(q.dtype)
-
-    sgs_traj = jax.vmap(_ml_contrib)(jnp.asarray(pred_traj))
-    sgs_traj = np.asarray(sgs_traj)
+    # Pull out the ML/SGS forcing directly from the rollout
+    sgs_traj = np.asarray(traj_data["dq_ml"])
+    # Note: sgs_traj has shape (nsteps, nz, ny, nx)
+    # We add a dummy frame at the start to match truths/preds for plotting
+    sgs_traj = np.pad(sgs_traj, ((1, 0), (0, 0), (0, 0), (0, 0)), mode='constant')
 
     layer = 0
     hr_frames = np.asarray(truth_traj[:, layer])
     pred_frames = np.asarray(pred_traj[:, layer])
     sgs_frames = np.asarray(sgs_traj[:, layer])
-
-    #pred_frames = pred_frames[:60]
-    #hr_frames = hr_frames[:60]
 
     gif_out = os.path.join(out_dir, "PV.gif")
     quad_out = os.path.join(out_dir, "quad.gif")

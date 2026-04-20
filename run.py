@@ -15,6 +15,9 @@ CONFIG_DEFAULT_PATH = os.path.join(BASE_DIR, "config", "default.yaml")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 MODEL_DIR = os.path.join(BASE_DIR, 'saved_closures')
 
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(MODEL_DIR, exist_ok=True)
+
 # Hydra will supply `cfg` into main(); set no global config here.
 OUTDIR_OVERRIDE = None
 import model.core.grid
@@ -143,15 +146,15 @@ def run(cfg):
 
     run_dir, found = find_existing_run(DATA_DIR, params, timing_metadata)
     if found: 
-        logger.info(f"Found existing run with matching parameters at {run_dir}, loading data from there.")
+        logger.info(f"Found existing data with matching parameters at {run_dir}, loading trajectories from there.")
         data_loader = ZarrDataLoader(run_dir)
     else:
-        logger.info(f"No existing run found, generating new dataset at {run_dir}")
+        logger.info(f"No existing data found, generating new dataset at {run_dir}")
         os.makedirs(run_dir, exist_ok=False)
-        generate_train_data(cfg, params, dt, hr_model, lr_model, run_dir)
+        generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, run_dir)
         data_loader = ZarrDataLoader(run_dir)
 
-    # === ML training === #
+    # === ML training === 
     # Build training/sweep metadata to avoid accidentally reusing closures from different sweeps
     training_meta = {
         "training": {

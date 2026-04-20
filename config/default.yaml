@@ -23,14 +23,14 @@ params:
   hr_nx: 128 # bit janky for the high res data
 
 plotting:
-  nsteps: 100
+  nsteps: 1000
   dt: 0.01
   cadence: 100
   animate: []
   final: []
   auto_dt: true
   njets: 6
-  spinup: 100
+  spinup: 100000
   cfl: 0.5
 
 
@@ -60,7 +60,7 @@ architectures:
     width: 64
     kernel_size: 3
     padding: 1
-    activation: "relu"
+    activation: "tanh"
   unet:
     learning_rate: 0.0005
     base_channels: 32

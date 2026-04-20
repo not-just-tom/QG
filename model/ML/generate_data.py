@@ -11,12 +11,11 @@ from zarr.codecs import BloscCodec
 
 logger = logging.getLogger(__name__)
 
-def generate_train_data(cfg, params, dt, hr_model, lr_model, hr_dir):
+def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir):
     '''Generate zarr training data from the high-res `hr_model` and coarsen
     on-the-fly using `lr_model` as the low-resolution physics template, and lower res dt.
     Saves metadata and trajectories into `hr_dir`.
     '''
-    os.makedirs(hr_dir, exist_ok=True)
 
     # Timing parameters
     n_total = cfg.ml.n_train + cfg.ml.n_test + 1
@@ -64,13 +63,6 @@ def generate_train_data(cfg, params, dt, hr_model, lr_model, hr_dir):
         jax.vmap(generate_trajectory, in_axes=(0, None)),
         static_argnums=(1,),
     )
-
-    timing_metadata = {
-        'spinup': int(cfg.plotting.spinup),
-        'nsteps': int(nsteps),
-        "dt": float(dt),
-        'batch_steps': int(cfg.ml.batch_steps),
-    }
 
     metadata = {
         'model_type': cfg.ml.model_type,
