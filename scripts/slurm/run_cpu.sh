@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=bdncl19
+#SBATCH --account=rockhpc_mcposd
 #SBATCH --job-name=qg_cpu_array
 #SBATCH --output=logs/slurm-%A_%a.out
 #SBATCH --error=logs/slurm-%A_%a.err
