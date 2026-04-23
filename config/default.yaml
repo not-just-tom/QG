@@ -41,8 +41,8 @@ forcing:
 
 ml:
   enabled: true
-  model_type: zero
-  device: 'gpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
+  model_type: cnn
+  device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   use_float64: false
   n_train: 7
   n_test: 2
@@ -55,22 +55,22 @@ ml:
 
 architectures:
   cnn:
-    learning_rate: 0.0001
-    nlayers: 3
-    width: 64
-    kernel_size: 3
-    padding: 1
-    activation: "tanh" # evidence points this far to the fact only tanh seems to actually work (maybe all dead activations for things like relu??)
+    learning_rate: [0.00005, 0.0001, 0.0005]
+    nlayers: [2, 3, 4]
+    width: [32, 64, 128]
+    kernel_size: [3, 5]
+    padding: [0, 1]
+    activation: ["tanh"]
   unet:
     learning_rate: 0.0005
     base_channels: 32
     depth: 4
   fno:
-    learning_rate: 0.0005
-    width: 64
-    modes2: 16
-    modes1: 16
-    depth: 4
+    learning_rate: [0.0001, 0.0005, 0.001]
+    width: [32, 64, 128]
+    modes2: [8, 16, 24]
+    modes1: [8, 16, 24]
+    depth: [2, 4, 6]
   zero:
     learning_rate: 0 # obviously not needed but coded in regardless
 
