@@ -1,11 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import jax.numpy as jnp
 import matplotlib.gridspec as gridspec
 import os
 import re
 import json
+from types import SimpleNamespace
+import importlib
+import model.utils.diagnostics
+importlib.reload(model.utils.diagnostics)
+from model.utils.diagnostics import build_diagnostic
+
 
 RUN_RE = re.compile(r"output_nx(?P<hr>\d+)_(?P<idx>\d{2})")
 
@@ -81,7 +86,39 @@ def find_output_dir(base_dir, params, model_type):
 
     return run_dir, False
 
+class Plotter:
+    def __init__(self, cfg, trajectories=None, out_dir=None):
+        self.cfg = cfg
+        self.trajs = dict(trajectories or {})
+        self.out_dir = out_dir or getattr(cfg.filepaths, "out_dir", ".")
 
+        self.plot_list = list(getattr(cfg.plotting, "plot", []) or ["mse", "quad"])
+
+        if "grid" not in self.trajs:
+            self.trajs["grid"] = self._make_grid()
+
+    def plot(self):
+        os.makedirs(self.out_dir, exist_ok=True)
+
+        for name in self.plot_list:
+            try:
+                diag = build_diagnostic(name)
+                out_path = os.path.join(self.out_dir, f"{name}.{diag.output}")
+                diag.run(self.trajs, out_path)
+                print(f"Saved {out_path}")
+            except Exception as e:
+                print(f"{name} failed: {e}")
+
+    def _make_grid(self):
+        Lx = float(getattr(self.cfg.params, "Lx", 1.0))
+        Ly = float(getattr(self.cfg.params, "Ly", Lx))
+        nx = int(getattr(self.cfg.params, "nx", 64))
+        ny = nx
+
+        dx = Lx / nx
+        dy = Ly / ny
+
+        return SimpleNamespace(Lx=Lx, Ly=Ly, dx=dx, dy=dy, nx=nx, ny=ny)
 
 
     

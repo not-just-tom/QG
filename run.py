@@ -50,16 +50,15 @@ importlib.reload(model.ML.utils.dataloading)
 importlib.reload(model.ML.train)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
-from model.ML.train import make_train_epoch, make_test_epoch
+from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import coarsen
 from model.ML.generate_data import generate_train_data
 from model.ML.utils.dataloading import find_existing_closure, find_existing_run, ZarrDataLoader, checkpointer, prefetch_generator
 from model.utils.logging import configure_logging
-from model.utils.plotting import find_output_dir, make_quad_gif, gif_that
+from model.utils.plotting import find_output_dir, make_quad_gif, gif_that, Plotter
 from model.core.steppers import SteppedModel, AB3Stepper
 from model.core.model import QGM
-from model.ML.train import roll_out, load_forced_model
 import logging
 import jax
 import os
@@ -68,8 +67,6 @@ import numpy as np
 import equinox as eqx
 import matplotlib.pyplot as plt
 import optax
-import jax.numpy as jnp
-from sklearn.model_selection import KFold
 
 
 # =========================================
@@ -121,16 +118,8 @@ def run(cfg):
     logger.info(f"Requested device: {device_type}, using device: {chosen.upper()}")
     
     # === dataloading === #
-    # im doing this here so that the autodt doesnt change dt
-    timing_metadata = {
-        'spinup': int(spinup),
-        'nsteps': int(nsteps),
-        "dt (original)": float(dt),
-        'auto_dt': bool(cfg.plotting.auto_dt),
-        'batch_steps': int(batch_steps),
-    }
-
     if cfg.plotting.auto_dt:
+        old_dt = dt
         logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
         raw_model = QGM({**params, "nx": params['hr_nx']})
         init_state = raw_model.initialise(key, tune=True, n_jets=njets, verbose=True)
@@ -143,6 +132,15 @@ def run(cfg):
     )
     # build low-resolution physics model (coarsened from high-res physics)
     lr_model = coarsen(hr_model.model, params['nx'])
+
+    timing_metadata = {
+        'spinup': int(spinup),
+        'nsteps': int(nsteps),
+        "dt (original)": float(old_dt),
+        'auto_dt': bool(cfg.plotting.auto_dt),
+        'final dt': float(dt),
+        'batch_steps': int(batch_steps),
+    }
 
     run_dir, found = find_existing_run(DATA_DIR, params, timing_metadata)
     if found: 
@@ -224,7 +222,7 @@ def run(cfg):
         optim_state = template_optim_state
 
     # Build training and test functions
-    low_res_dt = dt/ratio
+    low_res_dt = dt*ratio
     train_epoch = make_train_epoch(lr_model, low_res_dt, optim)
     test_epoch = make_test_epoch(lr_model, low_res_dt)
 
@@ -331,85 +329,32 @@ def run(cfg):
             logger.exception("Failed to save checkpoint after epoch %d", epoch + 1)
 
 
-    # === loss plot === #
-    fig, ax = plt.subplots()
-    ln1, = ax.plot([], [], label='train')
-    ln2, = ax.plot([], [], label='test')
-    ax.set_xlabel("Epoch")
-    ax.set_ylabel("Step Loss")
-    ax.grid(True)
-    ax.set_title("Train and Test Loss Over Steps")
-    ax.legend()
-    plt.ion()
-    ln1.set_data(np.arange(len(train_mean_losses)) + 1, train_mean_losses)
-    ln2.set_data(np.arange(len(test_mean_losses)) + 1, test_mean_losses)
-    ax.relim(); ax.autoscale_view()
-    fig.canvas.draw(); fig.canvas.flush_events()
-    plt.ioff()
-    loss_history = os.path.join(out_dir, "loss_history.png")
-    fig.savefig(loss_history)
-    print(f"Saved loss plot to {loss_history}")
-
-
-    # === test the trained closure now === #
+    # === validation & diagnostics ===
     try:
         loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = checkpointer(None, None, model_dir, save=False)
         closure = build_closure(cfg, loaded_leaves)
     except Exception:
         logger.exception("Failed to load trained model for testing.")
 
-    forced_model, closure_params, closure_static = load_forced_model(lr_model, closure, low_res_dt)
+    # Build validation function and run it on a held-out trajectory
+    validation_epoch = make_validation_epoch(lr_model, low_res_dt)
+    truth_traj = data_loader.get_trajectory(n_epochs)  # shape (time, layers, ny, nx)
+    cadence_used = int(getattr(cfg.plotting, 'cadence', 1))
+    val_traj = validation_epoch(truth_traj, closure, optim_state, cfg, out_dir, cadence=cadence_used)
 
-    truth_traj = data_loader.get_trajectory(n_epochs)  # shape (time, layers, ny, nx) 
-    nsteps = truth_traj.shape[0]
+    pred_frames = np.asarray(val_traj["pred_frames"])  # (nt, nz, ny, nx)
+    sgs_traj = np.asarray(val_traj["sgs"])
+    hr_frames = np.asarray(truth_traj)
 
-    # template state for the forced model (low-res initialiser)
-    template_state = lr_model.initialise(jax.random.PRNGKey(0))
+    trajectories = {
+        "pred": pred_frames,
+        "truth": hr_frames,
+        "sgs": sgs_traj,
+        "loss_history": {"train": train_mean_losses, "test": test_mean_losses},
+        "cadence": cadence_used,
+    }
+    Plotter(cfg, trajectories=trajectories, out_dir=out_dir).plot()
 
-    pred_traj_full = roll_out(truth_traj[0], forced_model, nsteps, template_state, closure_params)
-    pred_traj = np.asarray(pred_traj_full)
-
-    # separate the sgs forcing from the baseline model
-    @jax.jit
-    def _ml_contrib(q):
-        # closure expects float32, returns dq in same spatial shape
-        return closure(q.astype(jnp.float32)).astype(q.dtype)
-
-    sgs_traj = jax.vmap(_ml_contrib)(jnp.asarray(pred_traj))
-    sgs_traj = np.asarray(sgs_traj)
-
-    layer = 0
-    hr_frames = np.asarray(truth_traj[:, layer])
-    pred_frames = np.asarray(pred_traj[:, layer])
-    sgs_frames = np.asarray(sgs_traj[:, layer])
-
-    #pred_frames = pred_frames[:60]
-    #hr_frames = hr_frames[:60]
-
-    gif_out = os.path.join(out_dir, "PV.gif")
-    quad_out = os.path.join(out_dir, "quad.gif")
-    # make_quad_gif expects arrays with shape (nt, ny, nx)
-    #gif_that(pred_frames, out_file=gif_out, cadence=100)
-    make_quad_gif(hr_frames, pred_frames, sgs_q=sgs_frames, out_file=quad_out, cadence=10)
-    print(f"Saved comparison GIF to {gif_out}")
-
-    try:
-        mse_per_timestep = np.mean((pred_frames - hr_frames) ** 2, axis=(1, 2))
-        mse_out = os.path.join(out_dir, "mse_per_timestep.png")
-        plt.figure(figsize=(6, 3))
-        plt.plot(np.arange(mse_per_timestep.size), mse_per_timestep, '-o')
-        plt.xlabel('Timestep')
-        plt.ylabel('MSE')
-        plt.title('MSE per timestep: prediction vs truth')
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig(mse_out, dpi=150, bbox_inches='tight')
-        plt.close()
-        print(f"Saved MSE plot to {mse_out}")
-    except Exception:
-        logger.exception("Failed to compute or save MSE plot")
-
-    
     # ============================
 
 

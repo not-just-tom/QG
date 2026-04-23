@@ -20,14 +20,14 @@ params:
   delta: 0.25
   U1: 0.0
   U2: 0.0
-  hr_nx: 128 # bit janky for the high res data
+  hr_nx: 128
 
 plotting:
   nsteps: 1000
   dt: 0.01
   cadence: 100
-  animate: []
-  final: []
+  plot: ['loss', 'mse', 'quad', 'ke_spectrum_movie']
+  group_animated: true
   auto_dt: true
   njets: 6
   spinup: 100000
@@ -41,7 +41,7 @@ forcing:
 
 ml:
   enabled: true
-  model_type: cnn
+  model_type: zero
   device: 'gpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   use_float64: false
   n_train: 7
@@ -60,7 +60,7 @@ architectures:
     width: 64
     kernel_size: 3
     padding: 1
-    activation: "tanh"
+    activation: "tanh" # evidence points this far to the fact only tanh seems to actually work (maybe all dead activations for things like relu??)
   unet:
     learning_rate: 0.0005
     base_channels: 32

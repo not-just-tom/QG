@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 #  - data_hr128_nx32_01
 #  - cnn_hr128_nx32_01
 RUN_RE = re.compile(r".*_hr(?P<hr>\d+)_nx(?P<lr>\d+)_(?P<idx>\d{2})")
-MODELTYPE_RE = re.compile(r"^(?P<type>.+)_(?P<idx>\d{2})$")
+CLOSURE_RE = re.compile(r"^(?P<type>.+)_hr(?P<hr>\d+)_nx(?P<lr>\d+)_(?P<idx>\d{2})")
 
 def _save_pytree(obj, basepath: str):
     import pickle
@@ -197,26 +197,17 @@ def canonicalize(params: dict) -> dict:
 def find_existing_closure(model_dir, params, timing_metadata, model_type, extra_meta: dict = None):
     hr_nx = params['hr_nx']
     lr_nx = params['nx']
+    prefix = f"{model_type}_hr{hr_nx}_nx{lr_nx}_"
     candidates = []
 
-    # Regex to capture trailing two-digit index
-    IDX_RE = re.compile(r".*_(?P<idx>\d{2})$")
-
     for name in os.listdir(model_dir):
-        # Only consider directories that start with the model_type prefix
-        if not name.startswith(f"{model_type}_"):
+        m = CLOSURE_RE.fullmatch(name)
+        if m is None:
+            continue
+        if int(m["hr"]) != hr_nx or int(m["lr"]) != lr_nx or m['type'] != model_type:
             continue
         run_dir = os.path.join(model_dir, name)
         meta_path = os.path.join(run_dir, "metadata.json")
-
-        # Try to parse trailing index
-        m_idx = IDX_RE.match(name)
-        if m_idx is None:
-            continue
-        try:
-            idx = int(m_idx.group('idx'))
-        except Exception:
-            continue
 
         # If metadata exists, check for exact parameter+timing match
         if os.path.exists(meta_path):
@@ -224,7 +215,6 @@ def find_existing_closure(model_dir, params, timing_metadata, model_type, extra_
                 with open(meta_path) as f:
                     stored_meta = json.load(f)
             except Exception:
-                candidates.append(idx)
                 continue
 
             # Basic parameter+timing+model_type match
@@ -244,11 +234,11 @@ def find_existing_closure(model_dir, params, timing_metadata, model_type, extra_
                 return run_dir, True
 
         # Keep the index as a candidate (even if metadata missing or mismatched)
-        candidates.append(idx)
+        candidates.append(int(m['idx']))
 
     # No exact match found; select next index within model_type namespace
     next_idx = max(candidates, default=0) + 1
-    run_name = f"{model_type}_hr{hr_nx}_nx{lr_nx}_{next_idx:02d}"
+    run_name = f"{prefix}{next_idx:02d}"
     run_dir = os.path.join(model_dir, run_name)
     return run_dir, False
 

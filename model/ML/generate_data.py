@@ -65,7 +65,6 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     )
 
     metadata = {
-        'model_type': cfg.ml.model_type,
         "parameters": params,
         'timing': timing_metadata,
         "created_utc": datetime.datetime.utcnow().isoformat() + "Z",

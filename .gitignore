@@ -16,7 +16,6 @@ logs/
 
 # Data and large binary artifacts (do not commit heavy data)
 data/
-outputs/
 **/trajectories.zarr/
 **/trajectories.zarr/**
 
