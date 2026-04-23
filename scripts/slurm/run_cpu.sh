@@ -3,7 +3,7 @@
 #SBATCH --job-name=qg_cpu_array
 #SBATCH --output=logs/slurm-%A_%a.out
 #SBATCH --error=logs/slurm-%A_%a.err
-#SBATCH --partition=standard
+#SBATCH --partition=default_free
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
