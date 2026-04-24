@@ -11,7 +11,7 @@
 #SBATCH --time=24:00:00
 #SBATCH --array=0-107%10
 
-module load Miniforge
+source /mnt/nfs/home/c5044892/repos/qg_project/miniconda/etc/profile.d/conda.sh
 conda activate QG
 
 CONFIG="config/default.yaml"
