@@ -11,6 +11,9 @@
 #SBATCH --time=24:00:00
 #SBATCH --array=0-107%10
 
+module load Miniforge
+conda activate QG
+
 CONFIG="config/default.yaml"
 
 # SLURM_ARRAY_TASK_ID provides the index of this task
