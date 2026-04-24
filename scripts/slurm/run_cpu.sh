@@ -12,8 +12,6 @@
 #SBATCH --array=0-107%10
 
 module purge
-module load anaconda/3
-source activate base
 
 CONFIG="config/default.yaml"
 
