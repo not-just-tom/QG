@@ -182,7 +182,7 @@ def run(cfg):
         if saved_epoch >= saved_n_epochs:
             logger.info(f"Model at {model_dir} already trained for {saved_n_epochs} epochs; skipping training loop.")
         else:
-            logger.info(f"Resuming training from epoch {start_epoch} (saved) out of {saved_n_epochs}")
+            logger.info(f"Resuming training from epoch {saved_epoch} (saved) out of {saved_n_epochs}")
         start_epoch = saved_epoch
 
     closure = build_closure(cfg)

@@ -21,8 +21,8 @@ class CNN(eqx.Module):
     ):
         if nlayers < 2:
             raise ValueError("nlayers must be >= 2")
-        if padding is None:
-            padding = kernel_size // 2
+        # force same-padding so the network preserves spatial dimensions
+        padding = kernel_size // 2
 
         keys = jax.random.split(key, nlayers)
         layers = []

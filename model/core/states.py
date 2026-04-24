@@ -1,12 +1,3 @@
-try:
-    import h5py
-except ModuleNotFoundError:
-    h5py = None
-try:
-    import zarr
-except ModuleNotFoundError:
-    zarr = None
-import jax
 import jax.numpy as jnp
 import dataclasses
 import model.utils.pytree as Pytree
@@ -16,8 +7,6 @@ def _generic_rfftn(a):
     return jnp.fft.rfftn(a, axes=(-2, -1), norm='ortho')
 
 def _generic_irfftn(a, shape):
-    # Match pyqg-jax's approach: pass shape directly
-    # JAX FFT parameters should be static, not traced
     if shape is not None:
         return jnp.fft.irfftn(a, axes=(-2, -1), norm='ortho', s=shape[-2:])
     else:

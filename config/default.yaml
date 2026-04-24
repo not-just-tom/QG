@@ -59,7 +59,6 @@ architectures:
     nlayers: [2, 3, 4]
     width: [32, 64, 128]
     kernel_size: [3, 5]
-    padding: [0, 1]
     activation: "tanh"
   unet:
     learning_rate: 0.0005
@@ -70,7 +69,6 @@ architectures:
     width: [32, 64, 128]
     modes2: [8, 16, 24]
     modes1: [8, 16, 24]
-    depth: [2, 4, 6]
   zero:
     learning_rate: 0 # obviously not needed but coded in regardless
 

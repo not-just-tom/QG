@@ -234,7 +234,7 @@ def make_validation_epoch(lr_model, dt):
             def _ml_contrib(q):
                 return closure(q.astype(jnp.float32)).astype(q.dtype)
 
-            sgs_traj = jax.vmap(_ml_contrib)(pred_frames)
+            sgs_traj = jax.vmap(_ml_contrib)(pred_frames) * dt
 
             # No diagnostics/animations here; validation returns predictions and SGS only.
 
