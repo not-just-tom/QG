@@ -11,8 +11,6 @@
 #SBATCH --time=24:00:00
 #SBATCH --array=0-107%10
 
-module purge
-
 CONFIG="config/default.yaml"
 
 # SLURM_ARRAY_TASK_ID provides the index of this task
@@ -25,4 +23,4 @@ OUTDIR="outputs/cpu_array_job_${SLURM_JOB_ID}_task_${TASK_ID}"
 mkdir -p logs
 
 # Run the helper which will pick the right combo and call run.py
-srun python run_cpu.py --config ${CONFIG} --task-index ${TASK_ID} --outdir-override ${OUTDIR}
+srun python scripts/run_cpu.py --config ${CONFIG} --task-index ${TASK_ID} --outdir-override ${OUTDIR}
