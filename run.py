@@ -316,10 +316,12 @@ def run(cfg):
         # Save checkpoint after streaming epoch
         try:
             checkpointer(closure, optim_state, model_dir, save=True, epoch=epoch+1, n_epochs=n_epochs, losses={"train": train_mean_losses, "test": test_mean_losses})
+            model_arch_resolved = OmegaConf.to_container(cfg['architectures'][model_type], resolve=True)
             meta = {
                 "parameters": params,
                 "timing": timing_metadata,
                 "model_type": model_type,
+                "model_arch": model_arch_resolved,
                 "training": training_meta.get("training", {}),
             }
             with open(os.path.join(model_dir, "metadata.json"), "w") as f:
