@@ -9,6 +9,8 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
 #SBATCH --time=24:00:00
+# Total combinations for the suggested CNN sweep in config/default.yaml: 3*3*3*2 = 54
+# Adjust the array range to match number of combinations (0..53). Throttle 10 concurrent jobs.
 #SBATCH --array=0-53%10
 
 source /mnt/nfs/home/c5044892/repos/qg_project/miniconda/etc/profile.d/conda.sh

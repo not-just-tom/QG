@@ -370,6 +370,20 @@ def run(cfg):
         "loss_history": {"train": train_mean_losses, "test": test_mean_losses},
         "cadence": cadence_used,
     }
+    # Compute zero-model baseline (low-res physics with no ML dynamics)
+    try:
+        from model.ML.architectures.zero import ZeroModel
+        zero_closure = ZeroModel()
+        zero_val = validation_epoch(truth_traj, cfg, zero_closure)
+        zero_pred = np.asarray(zero_val["pred_frames"])  # (nt, nz, ny, nx)
+        # Compute per-timestep MSE consistent with MSEDiagnostic's averaging
+        zero_mse = np.mean((zero_pred - hr_frames) ** 2, axis=(-2, -1))  # (nt, nz)
+        zero_mse = np.mean(zero_mse, axis=1)  # (nt,)
+        trajectories["zero_loss"] = zero_mse
+    except Exception:
+        # If baseline computation fails for any reason, continue without it
+        pass
+
     Plotter(cfg, trajectories=trajectories, out_dir=out_dir).plot()
 
     # ============================

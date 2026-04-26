@@ -7,7 +7,7 @@ filepaths:
 
 params: 
   seed: 42
-  nx: 32
+  nx: 64
   Lx: 6.283185307179586  # 2π
   beta: 10
   kmin: 4.0 
@@ -20,7 +20,7 @@ params:
   delta: 0.25
   U1: 0.0
   U2: 0.0
-  hr_nx: 64
+  hr_nx: 128
 
 plotting:
   nsteps: 1000
@@ -41,6 +41,7 @@ forcing:
 
 ml:
   enabled: true
+  # Choose a model type to sweep. Set to 'cnn' to run the CNN parameter sweep below.
   model_type: cnn
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   use_float64: false
@@ -55,16 +56,19 @@ ml:
 
 architectures:
   cnn:
-    learning_rate: 0.0001
-    nlayers: 3
-    width: 64
-    kernel_size: 3
+    # Sweep ranges for CNN (suggested for HPC):
+    # combinations = 3 (lr) * 3 (nlayers) * 3 (width) * 2 (kernel) = 54
+    learning_rate: [0.0001, 0.0005, 0.001]
+    nlayers: [2, 3, 4]
+    width: [32, 64, 128]
+    kernel_size: [3, 5]
     activation: "tanh"
   unet:
     learning_rate: 0.0005
     base_channels: 32
     depth: 4
   fno:
+    # Sweep ranges suggested for HPC runs (total combinations = 3*3*3*3 = 81)
     learning_rate: [0.0001, 0.0005, 0.001]
     width: [32, 64, 128]
     modes2: [8, 16, 24]

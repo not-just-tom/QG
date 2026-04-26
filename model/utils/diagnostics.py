@@ -190,6 +190,44 @@ class MSEDiagnostic(Diagnostic):
         ax.set_ylabel("MSE")
         ax.grid(True)
 
+        # Plot zero-model baseline if provided. Accept scalar or per-timestep array.
+        zero_loss = trajs.get("zero_loss")
+        if zero_loss is not None:
+            zl = np.asarray(zero_loss)
+            # Scalar baseline: draw horizontal dashed line
+            if zl.ndim == 0 or zl.size == 1:
+                val = float(zl.reshape(()))
+                if mse.size > 0:
+                    ax.hlines(val, 0, mse.size - 1, colors="C2", linestyles="--", label="zero model")
+                else:
+                    ax.axhline(val, color="C2", linestyle="--", label="zero model")
+            else:
+                # Per-timestep baseline: ensure length matches mse, truncate/pad with NaN if needed
+                if zl.shape[0] != mse.shape[0]:
+                    if zl.shape[0] > mse.shape[0]:
+                        zl = zl[: mse.shape[0]]
+                    else:
+                        zl = np.pad(zl, (0, mse.shape[0] - zl.shape[0]), constant_values=np.nan)
+                ax.plot(zl, "--", color="C2", label="zero model")
+            ax.legend()
+
+        # Save numeric MSE data alongside the figure for aggregations
+        try:
+            base, ext = os.path.splitext(out_path)
+            npz_path = base + ".npz"
+            json_path = base + ".json"
+            # Save numpy archive with arrays
+            try:
+                np.savez_compressed(npz_path, mse=mse)
+            except Exception:
+                np.savez(npz_path, mse=mse)
+            # Save a lightweight JSON summary and the full mse as list
+            summary = {"mse": mse.tolist(), "mean_mse": float(np.nanmean(mse)) if mse.size else None}
+            with open(json_path, "w") as f:
+                json.dump(summary, f, indent=2)
+        except Exception:
+            pass
+
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
 
