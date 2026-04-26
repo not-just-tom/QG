@@ -342,7 +342,7 @@ def run(cfg):
     validation_epoch = make_validation_epoch(lr_model, low_res_dt)
     truth_traj = data_loader.get_trajectory(n_epochs)  # shape (time, layers, ny, nx)
     cadence_used = int(getattr(cfg.plotting, 'cadence', 1))
-    val_traj = validation_epoch(truth_traj, closure, optim_state, cfg, out_dir, cadence=cadence_used)
+    val_traj = validation_epoch(truth_traj, closure, optim_state, cfg, out_dir, cadence=1)
 
     pred_frames = np.asarray(val_traj["pred_frames"])  # (nt, nz, ny, nx)
     sgs_traj = np.asarray(val_traj["sgs"])

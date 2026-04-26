@@ -176,7 +176,7 @@ def make_validation_epoch(lr_model, dt):
 
     from model.core.steppers import SteppedModel, AB3Stepper
 
-    def _validation_epoch(val_trajs, closure, optim_state, cfg, out_dir, cadence=1):
+    def _validation_epoch(val_trajs, closure, optim_state, cfg, out_dir, cadence=100):
         """
         val_trajs: array-like with shape (batch, nt, nz, ny, nx) or (nt, nz, ny, nx)
         closure: closure model (equinox module)
@@ -234,7 +234,7 @@ def make_validation_epoch(lr_model, dt):
             def _ml_contrib(q):
                 return closure(q.astype(jnp.float32)).astype(q.dtype)
 
-            sgs_traj = jax.vmap(_ml_contrib)(pred_frames) * dt
+            sgs_traj = jax.vmap(_ml_contrib)(pred_frames)
 
             # No diagnostics/animations here; validation returns predictions and SGS only.
 

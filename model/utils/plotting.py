@@ -152,7 +152,7 @@ def gif_that(q_state, out_file='plotting.gif', cadence=100):
 
 
 
-def make_quad_gif(truth_q, ml_q, sgs_q, out_file="q_quad.gif", cadence=100):
+def make_quad_gif(truth_q, ml_q, sgs_q, out_file="q_quad.gif", cadence=10):
     """
     Create a GIF with 3 panels side by side:
     - truth_q: hr field coarsened to lr grid

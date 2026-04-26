@@ -54,7 +54,7 @@ def run():
     key = jax.random.PRNGKey(cfg.params.seed)
     njets = cfg.plotting.njets
     ratio = params["hr_nx"]/params["nx"]
-    low_res_dt = dt/ratio
+    low_res_dt = dt * ratio
 
     if cfg.plotting.auto_dt:
         logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")

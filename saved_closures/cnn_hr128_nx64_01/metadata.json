@@ -37,7 +37,6 @@
             "nlayers": 3,
             "width": 64,
             "kernel_size": 3,
-            "padding": 1,
             "activation": "tanh"
         }
     }

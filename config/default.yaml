@@ -7,7 +7,7 @@ filepaths:
 
 params: 
   seed: 42
-  nx: 64
+  nx: 32
   Lx: 6.283185307179586  # 2π
   beta: 10
   kmin: 4.0 
@@ -20,7 +20,7 @@ params:
   delta: 0.25
   U1: 0.0
   U2: 0.0
-  hr_nx: 128
+  hr_nx: 64
 
 plotting:
   nsteps: 1000
@@ -55,10 +55,10 @@ ml:
 
 architectures:
   cnn:
-    learning_rate: [0.00005, 0.0001, 0.0005]
-    nlayers: [2, 3, 4]
-    width: [32, 64, 128]
-    kernel_size: [3, 5]
+    learning_rate: 0.0001
+    nlayers: 3
+    width: 64
+    kernel_size: 3
     activation: "tanh"
   unet:
     learning_rate: 0.0005

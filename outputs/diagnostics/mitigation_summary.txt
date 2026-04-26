@@ -1,0 +1,5 @@
+baseline: E0=4.572792e+00 Eend=1.574355e+01 ratio=3.443
+scale_0.5: E0=4.572792e+00 Eend=9.224329e+00 ratio=2.017
+clip_p999: E0=4.572792e+00 Eend=1.574353e+01 ratio=3.443
+lowpass_k8: E0=4.572792e+00 Eend=1.584659e+01 ratio=3.465
+project: E0=4.572792e+00 Eend=4.170159e+00 ratio=0.912
