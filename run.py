@@ -56,7 +56,7 @@ from model.ML.utils.coarsen import coarsen
 from model.ML.generate_data import generate_train_data
 from model.ML.utils.dataloading import find_existing_closure, find_existing_run, ZarrDataLoader, checkpointer, prefetch_generator
 from model.utils.logging import configure_logging
-from model.utils.plotting import find_output_dir, make_quad_gif, gif_that, Plotter
+from model.utils.plotting import find_output_dir, gif_that, Plotter
 from model.core.steppers import SteppedModel, AB3Stepper
 from model.core.model import QGM
 import logging
