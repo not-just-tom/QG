@@ -151,65 +151,6 @@ def gif_that(q_state, out_file='plotting.gif', cadence=100):
     ani.save(out_file, fps=10)
 
 
-
-def make_quad_gif(truth_q, ml_q, sgs_q, out_file="q_quad.gif", cadence=10):
-    """
-    Create a GIF with 3 panels side by side:
-    - truth_q: hr field coarsened to lr grid
-    - ml_q: low-res field predicted by model 
-    """
-    # Subsample by cadence first, then determine number of frames
-    truth_q = truth_q[::cadence]
-    ml_q = ml_q[::cadence]
-    diff = ml_q - truth_q
-
-    # Ensure all inputs have the same number of frames to avoid index errors
-    nt = min(truth_q.shape[0], ml_q.shape[0])
-    truth_q = truth_q[:nt]
-    ml_q = ml_q[:nt]
-
-    fig = plt.figure(figsize=(8, 8), constrained_layout=True)
-    gs = gridspec.GridSpec(2, 2, figure=fig)
-    ax_hr = fig.add_subplot(gs[0])
-    ax_lr = fig.add_subplot(gs[1])
-    ax_diff = fig.add_subplot(gs[2])
-    ax_sgs = fig.add_subplot(gs[3])
-
-    im_hr = ax_hr.imshow(truth_q[0])#, cmap=cmo.balance)#, vmin=-hr_vmax, vmax=hr_vmax)
-    ax_hr.set_title("High-Res n=256, coarsened to n=32")
-    ax_hr.axis("off")
-
-    im_lr = ax_lr.imshow(ml_q[0])#, cmap=cmo.balance, vmin=-lr_vmax, vmax=lr_vmax)
-    ax_lr.set_title("Low-Res n=32")
-    ax_lr.axis("off")
-
-    im_sgs = ax_sgs.imshow(sgs_q[0])#, cmap=cmo.curl, vmin=-sgs_vmax, vmax=sgs_vmax)
-    ax_sgs.set_title("ML contribution")
-    ax_sgs.axis("off")
-
-    im_diff = ax_diff.imshow(diff[0])#, cmap=cmo.curl, vmin=-sgs_vmax, vmax=sgs_vmax)
-    ax_diff.set_title("Difference between truth traj and ml prediction (error)")
-    ax_diff.axis("off")
-
-    def update(frame):
-        im_hr.set_array(truth_q[frame])
-        im_lr.set_array(ml_q[frame])
-        im_sgs.set_array(sgs_q[frame])
-        im_diff.set_array(diff[frame])
-        ax_hr.set_title(f"Ground truth coarsened to n=32 step={frame*cadence}")
-        ax_lr.set_title(f"ML adjusted, step={frame*cadence}")
-        ax_sgs.set_title(f"SGS step={frame*cadence}")
-        ax_diff.set_title(f"Error step={frame*cadence}")
-        return [im_hr, im_lr, im_sgs, im_diff]
-
-    ani = animation.FuncAnimation(
-        fig, update, frames=nt, blit=False
-    )
-    ani.save(out_file, fps=10)
-    plt.close(fig)
-    print(f"Saved GIF to {out_file}")
-
-
 def step_model_n_steps(n, stepped_model, initial_state):
     """
     Step the model n times from an initial state.

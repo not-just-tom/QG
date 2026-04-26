@@ -10,6 +10,7 @@ importlib.reload(model.ML.forced_model)
 from model.ML.utils.utils import parameterization
 from model.ML.forced_model import ForcedModel
 from model.core.steppers import SteppedModel, AB3Stepper
+import numpy as np
 
 
 def closure_combiner(state, closure_params, static_closure_obj=None):
@@ -164,88 +165,65 @@ def make_test_epoch(lr_model, dt):
 
 
 def make_validation_epoch(lr_model, dt):
-    """Factory that returns a `validation_epoch` function.
-
-    The returned function computes spectral rollouts for provided
-    trajectories, reconstructs physical frames, computes the closure's
-    SGS contribution in physical space, and (optionally) runs
-    diagnostics/animations using the project's Animator utilities.
+    """Factory that returns a `validation_epoch` function
     """
-    # template for initialisation
-    template_state = lr_model.initialise(jax.random.PRNGKey(0))
 
-    from model.core.steppers import SteppedModel, AB3Stepper
-
-    def _validation_epoch(val_trajs, closure, optim_state, cfg, out_dir, cadence=100):
+    def _validation_epoch(traj, cfg, closure):
         """
-        val_trajs: array-like with shape (batch, nt, nz, ny, nx) or (nt, nz, ny, nx)
-        closure: closure model (equinox module)
-        optim_state: unused but kept for API parity
-        cfg: configuration object used by Animator for diagnostics
-        out_dir: base directory where diagnostics/plots will be written
-        cadence: frame sampling cadence for animations
-        animate: whether to generate animations / final plots via Animator
-
-        Returns: dict with keys `pred_frames` and `sgs` for the first sample (NumPy arrays)
         """
-        # Ensure input has batch dim
-        val = jnp.asarray(val_trajs)
-        if val.ndim == 4:
-            val = val[None, ...]
+
+        # ensure traj is an array and has time dim
+        traj = jnp.asarray(traj)
+        if traj.ndim == 4:
+            # (nt, nz, ny, nx) -> ok
+            pass
+        elif traj.ndim == 5:
+            # batch provided; take first sample for validation convenience
+            traj = traj[0]
+        else:
+            raise ValueError("Validation trajectory must have shape (nt, nz, ny, nx) or (batch, nt, nz, ny, nx)")
+
+        # read parameters from cfg
+        nsteps_cfg = int(getattr(cfg.plotting, "nsteps", traj.shape[0] - 1))
+        cadence = int(getattr(cfg.plotting, "cadence", 1))
+        seed = int(getattr(cfg.params, "seed", 0))
 
         # Prepare forced model and closure params
-        forced_model, closure_params, static_closure_obj = load_forced_model(lr_model, closure, dt)
+        forced_model, closure_params, _ = load_forced_model(lr_model, closure, dt)
 
-        results = []
+        # limit nsteps to available trajectory length
+        n_intervals = min(nsteps_cfg, int(traj.shape[0]) - 1)
 
-        # Stepped model wrapper for diagnostics reconstruction
-        diag_sm = SteppedModel(model=lr_model, stepper=AB3Stepper(dt))
+        traj_dqh = roll_out(
+            init_q=traj[0],
+            forced_model=forced_model,
+            nsteps=n_intervals,
+            template_state=lr_model.initialise(jax.random.PRNGKey(seed)),
+            closure_params=closure_params,
+        )
 
-        # Loop over batch samples (usually small)
-        for i in range(val.shape[0]):
-            traj = val[i]  # (nt, nz, ny, nx)
-            nt = traj.shape[0]
-            if nt < 2:
-                raise ValueError("Validation trajectory must contain at least 2 frames")
+        # reconstruct predicted spectral trajectory and (cadence) physical frames
+        init_qh = jnp.fft.rfftn(traj[0], axes=(-2, -1), norm='ortho')
+        qh_traj = jnp.concatenate([init_qh[None, ...], init_qh[None, ...] + jnp.cumsum(traj_dqh, axis=0)], axis=0)
 
-            n_intervals = nt - 1
+        real_shape = traj.shape[-2:]
+        pred_frames = jax.vmap(lambda x: jnp.fft.irfftn(x, axes=(-2, -1), norm='ortho', s=real_shape))(qh_traj)
 
-            # Spectral roll-out: returns (n_intervals, nz, ny, nx//2+1) displacements
-            traj_dqh = roll_out(init_q=traj[0], forced_model=forced_model, nsteps=n_intervals, template_state=template_state, closure_params=closure_params)
+        # compute sgs by applying closure to predicted frames (except final if desired)
+        @jax.jit
+        def _apply_closure(q):
+            return closure(q.astype(jnp.float32)).astype(q.dtype)
 
-            # initial spectral state
-            init_qh = jnp.fft.rfftn(traj[0], axes=(-2, -1), norm='ortho').astype(traj_dqh.dtype)
+        # we compute sgs for all pred frames except possibly the final step
+        sgs_traj = jax.vmap(_apply_closure)(pred_frames)
 
-            # accumulate spectral trajectory: include initial frame
-            qh_traj = jnp.concatenate([init_qh[None, ...], init_qh[None, ...] + jnp.cumsum(traj_dqh, axis=0)], axis=0)
+        result = {
+            "pred_frames": jax.device_get(pred_frames),
+            "sgs": jax.device_get(sgs_traj),
+            "qh": jax.device_get(qh_traj),
+        }
 
-            # apply cadence sampling
-            if cadence > 1:
-                qh_traj_cad = qh_traj[::cadence]
-            else:
-                qh_traj_cad = qh_traj
-
-            # convert spectral -> physical frames for closure diagnostics
-            real_shape = traj.shape[-2:]
-            pred_frames = jax.vmap(lambda x: jnp.fft.irfftn(x, axes=(-2, -1), norm='ortho', s=real_shape))(qh_traj)
-
-            # compute SGS contribution in physical space
-            @jax.jit
-            def _ml_contrib(q):
-                return closure(q.astype(jnp.float32)).astype(q.dtype)
-
-            sgs_traj = jax.vmap(_ml_contrib)(pred_frames)
-
-            # No diagnostics/animations here; validation returns predictions and SGS only.
-
-            results.append({
-                "pred_frames": jax.device_get(pred_frames),
-                "sgs": jax.device_get(sgs_traj),
-                "qh": jax.device_get(qh_traj),
-            })
-
-        # Return first sample's results for convenience
-        return results[0]
+        return result
 
     return _validation_epoch
 

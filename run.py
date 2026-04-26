@@ -61,6 +61,7 @@ from model.core.steppers import SteppedModel, AB3Stepper
 from model.core.model import QGM
 import logging
 import jax
+import jax.numpy as jnp
 import os
 import json
 import numpy as np
@@ -335,14 +336,28 @@ def run(cfg):
     try:
         loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = checkpointer(None, None, model_dir, save=False)
         closure = build_closure(cfg, loaded_leaves)
+        eps = 1e-8
+
+        _orig_closure = closure
+
+        def projected_closure(q):
+            out = _orig_closure(q)
+            qh = jnp.fft.rfftn(q, axes=(-2,-1), norm='ortho')
+            out_qh = jnp.fft.rfftn(out, axes=(-2,-1), norm='ortho')
+            num = jnp.real(jnp.conj(qh) * out_qh)
+            den = jnp.abs(qh)**2 + eps
+            alpha = num / den
+            out_qh_proj = out_qh - alpha * qh
+            return jnp.fft.irfftn(out_qh_proj, axes=(-2,-1), norm='ortho', s=out.shape[-2:])
+        closure = projected_closure
     except Exception:
         logger.exception("Failed to load trained model for testing.")
 
     # Build validation function and run it on a held-out trajectory
     validation_epoch = make_validation_epoch(lr_model, low_res_dt)
     truth_traj = data_loader.get_trajectory(n_epochs)  # shape (time, layers, ny, nx)
-    cadence_used = int(getattr(cfg.plotting, 'cadence', 1))
-    val_traj = validation_epoch(truth_traj, closure, optim_state, cfg, out_dir, cadence=1)
+    cadence_used = int(getattr(cfg.plotting, 'cadence', 100))
+    val_traj = validation_epoch(truth_traj, cfg, closure)
 
     pred_frames = np.asarray(val_traj["pred_frames"])  # (nt, nz, ny, nx)
     sgs_traj = np.asarray(val_traj["sgs"])

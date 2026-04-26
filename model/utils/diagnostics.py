@@ -2,6 +2,7 @@ from __future__ import annotations
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
+import os
 import importlib
 import model.utils.physics_ops
 importlib.reload(model.utils.physics_ops)
@@ -167,8 +168,12 @@ class MSEDiagnostic(Diagnostic):
     name = "mse"
 
     def run(self, trajs, out_path):
-        pred = np.asarray(trajs["pred"])
-        truth = np.asarray(trajs["truth"])
+        # Prefer full-resolution data if available
+        pred = trajs.get("pred_full", trajs.get("pred"))
+        truth = trajs.get("truth_full", trajs.get("truth"))
+
+        pred = np.asarray(pred)
+        truth = np.asarray(truth)
 
         # ensure (nt, nz, ny, nx)
         if pred.ndim == 3:
@@ -200,8 +205,10 @@ class KESpectrumDiagnostic(Diagnostic):
         grid = trajs["grid"]
 
         # --- get PV fields ---
-        q_truth = np.asarray(trajs["truth"])
-        q_pred  = trajs.get("pred")
+        # Prefer full-resolution inputs when available for spectral diagnostics
+        q_truth = trajs.get("truth_full", trajs.get("truth"))
+        q_pred  = trajs.get("pred_full", trajs.get("pred"))
+        q_truth = np.asarray(q_truth)
         q_pred  = None if q_pred is None else np.asarray(q_pred)
 
         # --- helper: compute spectrum from PV ---
@@ -308,22 +315,64 @@ class QuadGifDiagnostic(Diagnostic):
     output = "gif"
 
     def run(self, trajs, out_path):
-        from model.utils.plotting import make_quad_gif
+        pred = trajs.get("pred")
+        truth = trajs.get("truth")
+        sgs_pred = trajs.get("sgs")
+        pred_np = np.asarray(pred)
+        truth_np = np.asarray(truth)
+        err = pred_np - truth_np
 
-        hr = np.asarray(trajs["truth"])
-        pred = np.asarray(trajs["pred"])
-        sgs = trajs.get("sgs")
-        sgs = None if sgs is None else np.asarray(sgs)
+        indices = np.arange(0, pred_np.shape[0], 10)
+        # determine color limits per panel
+        vmin_truth = np.percentile(truth_np, 1)
+        vmax_truth = np.percentile(truth_np, 99)
+        vmin_err = np.percentile(err, 1)
+        vmax_err = np.percentile(err, 99)
+        vmin_sgs = np.percentile(sgs_pred, 1)
+        vmax_sgs = np.percentile(sgs_pred, 99)
 
-        # use first layer if needed
-        if hr.ndim == 4:
-            hr = hr[:, 0]
-        if pred.ndim == 4:
-            pred = pred[:, 0]
-        if sgs is not None and sgs.ndim == 4:
-            sgs = sgs[:, 0]
+        fig, axes = plt.subplots(2,2,figsize=(8,8))
+        ax_truth = axes[0,0]
+        ax_ml = axes[0,1]
+        ax_err = axes[1,0]
+        ax_sgs = axes[1,1]
 
-        make_quad_gif(hr, pred, sgs_q=sgs, out_file=out_path)
+        im_truth = ax_truth.imshow(truth_np[0,0], origin='lower', cmap='RdBu_r', vmin=vmin_truth, vmax=vmax_truth)
+        ax_truth.set_title('Truth')
+        im_ml = ax_ml.imshow(pred_np[0,0], origin='lower', cmap='RdBu_r', vmin=vmin_truth, vmax=vmax_truth)
+        ax_ml.set_title('ML adjusted')
+        im_err = ax_err.imshow(err[0,0], origin='lower', cmap='RdBu_r', vmin=vmin_err, vmax=vmax_err)
+        ax_err.set_title('Error')
+        im_sgs = ax_sgs.imshow(sgs_pred[0,0], origin='lower', cmap='RdBu_r', vmin=vmin_sgs, vmax=vmax_sgs)
+        ax_sgs.set_title('SGS')
+
+        for ax in axes.ravel():
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+        fig.colorbar(im_truth, ax=[ax_truth, ax_ml], shrink=0.6)
+        fig.colorbar(im_err, ax=ax_err, shrink=0.6)
+        fig.colorbar(im_sgs, ax=ax_sgs, shrink=0.6)
+
+        def update(i):
+            idx = indices[i]
+            im_truth.set_data(truth_np[idx,0])
+            im_ml.set_data(pred_np[idx,0])
+            im_err.set_data(err[idx,0])
+            if idx < sgs_pred.shape[0]:
+                im_sgs.set_data(sgs_pred[idx,0])
+            fig.suptitle(f'timestep {idx}')
+            return im_truth, im_ml, im_err, im_sgs
+
+        anim = FuncAnimation(fig, update, frames=len(indices), interval=100, blit=False)
+
+        try:
+            from matplotlib.animation import PillowWriter
+            writer = PillowWriter(fps=10)
+            anim.save(out_path, writer=writer)
+            print('Saved gif to', out_path)
+        except Exception as e:
+            print('Pillow save failed:', e)
 
 
 # ============================================================
