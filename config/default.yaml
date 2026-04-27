@@ -7,7 +7,7 @@ filepaths:
 
 params: 
   seed: 42
-  nx: 16
+  nx: 32
   Lx: 6.283185307179586  # 2π
   beta: 10
   kmin: 4.0 
@@ -20,10 +20,10 @@ params:
   delta: 0.25
   U1: 0.0
   U2: 0.0
-  hr_nx: 32
+  hr_nx: 64
 
 plotting:
-  nsteps: 1000
+  nsteps: 10000
   dt: 0.01
   cadence: 100
   plot: ['loss', 'mse', 'quad', 'ke_spectrum_movie']
@@ -45,8 +45,8 @@ ml:
   model_type: cnn
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   use_float64: false
-  n_train: 7
-  n_test: 2
+  n_train: 21
+  n_test: 6
   optimiser: AdamW
   batch_steps: 100 # temporal context - how far the trained model sees in advance
   batch_size: 5 # this is the number of trajs generated in a batch before saving to disk
