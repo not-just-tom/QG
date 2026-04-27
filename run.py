@@ -56,7 +56,7 @@ from model.ML.utils.coarsen import coarsen
 from model.ML.generate_data import generate_train_data
 from model.ML.utils.dataloading import find_existing_closure, find_existing_run, ZarrDataLoader, checkpointer, prefetch_generator
 from model.utils.logging import configure_logging
-from model.utils.plotting import find_output_dir, make_quad_gif, gif_that, Plotter
+from model.utils.plotting import find_output_dir, gif_that, Plotter
 from model.core.steppers import SteppedModel, AB3Stepper
 from model.core.model import QGM
 import logging
@@ -152,14 +152,17 @@ def run(cfg):
         os.makedirs(run_dir, exist_ok=False)
         generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, run_dir)
         data_loader = ZarrDataLoader(run_dir)
+    # If caller requested generate-only mode, stop after data creation to avoid
+    # concurrently running heavy training workloads from multiple tasks.
+    if os.environ.get('GENERATE_ONLY') == '1':
+        logger.info("Generate-only flag set; exiting after data generation")
+        return
 
     # === ML training === 
     # Build training/sweep metadata to avoid accidentally reusing closures from different sweeps
     training_meta = {
         "training": {
             "optimiser": cfg.ml.optimiser,
-            "learning_rate": float(learning_rate) if learning_rate is not None else None,
-            "minibatch_size": int(minibatch_size),
             "prefetch": int(prefetch),
             "batch_steps": int(batch_steps),
             "n_train": int(n_train),
@@ -396,7 +399,12 @@ def main():
     p.add_argument('--config', default=CONFIG_DEFAULT_PATH, help='Path to YAML config file')
     p.add_argument('--outdir', default=None, help='Optional output directory override')
     p.add_argument('--dry-run', action='store_true', help='Print sweep jobs but do not execute')
+    p.add_argument('--generate-only', action='store_true', help='Only generate dataset then exit')
     args = p.parse_args()
+
+    # If requested, set an env var so `run()` can detect generate-only behavior.
+    if args.generate_only:
+        os.environ['GENERATE_ONLY'] = '1'
 
     base_cfg = OmegaConf.load(args.config)
     # apply optional outdir override

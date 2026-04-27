@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
 import os
+import json
 import importlib
 import model.utils.physics_ops
 importlib.reload(model.utils.physics_ops)
@@ -409,6 +410,7 @@ class QuadGifDiagnostic(Diagnostic):
             writer = PillowWriter(fps=10)
             anim.save(out_path, writer=writer)
             print('Saved gif to', out_path)
+            plt.close(fig)
         except Exception as e:
             print('Pillow save failed:', e)
 
