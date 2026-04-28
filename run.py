@@ -453,35 +453,6 @@ def main():
 
     idx = 0
     results = []
-    # Prepare sweep directory and metadata to avoid overwriting previous sweep runs
-    sweep_base = os.path.join(out_base, f'sweep_{model_type}')
-    os.makedirs(sweep_base, exist_ok=True)
-    sweep_meta_path = os.path.join(sweep_base, 'sweep_metadata.json')
-    # Current sweep specification: keys and the lists of values
-    sweep_spec = {k: arch_cfg[k] for k in sweep_keys}
-    reuse_offset = 0
-    try:
-        if os.path.exists(sweep_meta_path):
-            with open(sweep_meta_path) as f:
-                existing = json.load(f)
-            # If the stored sweep spec matches exactly, continue numbering in this folder
-            if existing.get('model_type') == model_type and existing.get('sweep_spec') == sweep_spec:
-                # compute next available run index inside this sweep folder
-                existing_runs = []
-                for name in os.listdir(sweep_base):
-                    if name.startswith('run_'):
-                        try:
-                            existing_runs.append(int(name.split('_', 1)[1]))
-                        except Exception:
-                            continue
-                reuse_offset = max(existing_runs, default=0)
-        else:
-            # write sweep metadata for new sweep
-            with open(sweep_meta_path, 'w') as f:
-                json.dump({'created_utc': __import__('datetime').datetime.utcnow().isoformat() + 'Z', 'model_type': model_type, 'sweep_spec': sweep_spec}, f, indent=4)
-    except Exception:
-        # If anything goes wrong, fallback to default behaviour (no offset)
-        reuse_offset = 0
     for combo in product(*lists):
         # deep-copy base config to plain dict then modify
         cfg_copy = OmegaConf.to_container(base_cfg, resolve=True)
@@ -494,9 +465,7 @@ def main():
 
         # set per-run outdir
         out_base = cfg_copy.get('filepaths', {}).get('out_dir', 'outputs')
-        # If reusing an existing sweep, offset run numbering so we don't overwrite
-        run_number = reuse_offset + idx + 1
-        run_out = os.path.join(out_base, f'sweep_{model_type}', f'run_{run_number}')
+        run_out = os.path.join(out_base, f'sweep_{model_type}', f'run_{idx+1}')
         if 'filepaths' not in cfg_copy:
             cfg_copy['filepaths'] = {}
         cfg_copy['filepaths']['out_dir'] = run_out
