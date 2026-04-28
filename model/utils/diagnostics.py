@@ -21,14 +21,14 @@ class Diagnostic:
     name: str
     output: str = "png"
 
-    def run(self, trajs: dict, out_path: str):
+    def run(self, trajs: dict, out_path: str, cadence: int = 10):
         raise NotImplementedError
     
 
 class LossDiagnostic(Diagnostic):
     name = "loss"
 
-    def run(self, trajs, out_path):
+    def run(self, trajs, out_path, cadence):
         losses = trajs.get("loss_history", {})
 
         train = np.asarray(losses.get("train", []))
@@ -60,7 +60,7 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
     name = "ke_spectrum_movie"
     output = "gif"
 
-    def run(self, trajs, out_path):
+    def run(self, trajs, out_path, cadence):
         from matplotlib.animation import FuncAnimation, PillowWriter
 
         # Read inputs: truth and optional prediction
@@ -75,9 +75,6 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
         grid = trajs.get("grid")
         if grid is None:
             raise KeyError("ke_spectrum_movie requires 'grid' in trajectories")
-
-        # cadence for subsampling frames
-        cadence = 10
 
         # Ensure we have time axis and layer axis (nt, nz, ny, nx)
         if q_truth.ndim == 3:
@@ -168,7 +165,7 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
 class MSEDiagnostic(Diagnostic):
     name = "mse"
 
-    def run(self, trajs, out_path):
+    def run(self, trajs, out_path, cadence):
         # Prefer full-resolution data if available
         pred = trajs.get("pred_full", trajs.get("pred"))
         truth = trajs.get("truth_full", trajs.get("truth"))
@@ -240,7 +237,7 @@ class MSEDiagnostic(Diagnostic):
 class KESpectrumDiagnostic(Diagnostic):
     name = "ke_spectrum"
 
-    def run(self, trajs, out_path):
+    def run(self, trajs, out_path, cadence):
         grid = trajs["grid"]
 
         # --- get PV fields ---
@@ -288,11 +285,11 @@ class KESpectrumDiagnostic(Diagnostic):
 # PV Animation
 # ============================================================
 
-class VorticityDiagnostic(Diagnostic):
+class VorticityDiagnostic(Diagnostic): # this might need cadence adding to it tbh
     name = "PV"
     output = "gif"
 
-    def run(self, trajs, out_path):
+    def run(self, trajs, out_path, cadence):
         if "q" in trajs and trajs["q"] is not None:
             truth = np.asarray(trajs["q"])
         elif "truth" in trajs and trajs["truth"] is not None:
@@ -353,7 +350,7 @@ class QuadGifDiagnostic(Diagnostic):
     name = "quad"
     output = "gif"
 
-    def run(self, trajs, out_path):
+    def run(self, trajs, out_path, cadence): #whats going on with cadence here?
         pred = trajs.get("pred")
         truth = trajs.get("truth")
         sgs_pred = trajs.get("sgs")

@@ -359,7 +359,7 @@ def run(cfg):
     # Build validation function and run it on a held-out trajectory
     validation_epoch = make_validation_epoch(lr_model, low_res_dt)
     truth_traj = data_loader.get_trajectory(n_epochs)  # shape (time, layers, ny, nx)
-    cadence_used = int(getattr(cfg.plotting, 'cadence', 100))
+    cadence = int(getattr(cfg.plotting, 'cadence', 100))
     val_traj = validation_epoch(truth_traj, cfg, closure)
 
     pred_frames = np.asarray(val_traj["pred_frames"])  # (nt, nz, ny, nx)
@@ -371,7 +371,7 @@ def run(cfg):
         "truth": hr_frames,
         "sgs": sgs_traj,
         "loss_history": {"train": train_mean_losses, "test": test_mean_losses},
-        "cadence": cadence_used,
+        "cadence": cadence,
     }
     # Compute zero-model baseline (low-res physics with no ML dynamics)
     try:
@@ -387,7 +387,18 @@ def run(cfg):
         # If baseline computation fails for any reason, continue without it
         pass
 
-    Plotter(cfg, trajectories=trajectories, out_dir=out_dir).plot()
+    # If running in HPC mode, skip all plotting and return a single scalar
+    # metric: summed validation MSE across all timesteps (mean over layers)
+    hpc_mode = os.environ.get('HPC_RUN', '0') == '1'
+    if hpc_mode:
+        # pred_frames, hr_frames shapes: (nt, nz, ny, nx)
+        mse_per_t = np.mean((pred_frames - hr_frames) ** 2, axis=(-2, -1))  # (nt, nz)
+        mse_per_t_mean = np.mean(mse_per_t, axis=1)  # (nt,)
+        total_mse = float(np.sum(mse_per_t_mean))
+        logging.getLogger(__name__).info(f"HPC mode: total validation MSE (summed over timesteps) = {total_mse:.6E}")
+        return total_mse
+
+    Plotter(cfg, trajectories=trajectories, out_dir=out_dir, cadence=cadence).plot()
 
     # ============================
 
@@ -400,11 +411,16 @@ def main():
     p.add_argument('--outdir', default=None, help='Optional output directory override')
     p.add_argument('--dry-run', action='store_true', help='Print sweep jobs but do not execute')
     p.add_argument('--generate-only', action='store_true', help='Only generate dataset then exit')
+    p.add_argument('--hpc-run', action='store_true', help='HPC mode: no plotting; collect final validation MSE for sweep ranking')
     args = p.parse_args()
 
     # If requested, set an env var so `run()` can detect generate-only behavior.
     if args.generate_only:
         os.environ['GENERATE_ONLY'] = '1'
+
+    # If requested, set an env var so `run()` can detect HPC mode and skip plotting.
+    if getattr(args, 'hpc_run', False):
+        os.environ['HPC_RUN'] = '1'
 
     base_cfg = OmegaConf.load(args.config)
     # apply optional outdir override
@@ -436,6 +452,36 @@ def main():
     print(f"Found sweep axes for {model_type}: {sweep_keys} -> {total} combinations")
 
     idx = 0
+    results = []
+    # Prepare sweep directory and metadata to avoid overwriting previous sweep runs
+    sweep_base = os.path.join(out_base, f'sweep_{model_type}')
+    os.makedirs(sweep_base, exist_ok=True)
+    sweep_meta_path = os.path.join(sweep_base, 'sweep_metadata.json')
+    # Current sweep specification: keys and the lists of values
+    sweep_spec = {k: arch_cfg[k] for k in sweep_keys}
+    reuse_offset = 0
+    try:
+        if os.path.exists(sweep_meta_path):
+            with open(sweep_meta_path) as f:
+                existing = json.load(f)
+            # If the stored sweep spec matches exactly, continue numbering in this folder
+            if existing.get('model_type') == model_type and existing.get('sweep_spec') == sweep_spec:
+                # compute next available run index inside this sweep folder
+                existing_runs = []
+                for name in os.listdir(sweep_base):
+                    if name.startswith('run_'):
+                        try:
+                            existing_runs.append(int(name.split('_', 1)[1]))
+                        except Exception:
+                            continue
+                reuse_offset = max(existing_runs, default=0)
+        else:
+            # write sweep metadata for new sweep
+            with open(sweep_meta_path, 'w') as f:
+                json.dump({'created_utc': __import__('datetime').datetime.utcnow().isoformat() + 'Z', 'model_type': model_type, 'sweep_spec': sweep_spec}, f, indent=4)
+    except Exception:
+        # If anything goes wrong, fallback to default behaviour (no offset)
+        reuse_offset = 0
     for combo in product(*lists):
         # deep-copy base config to plain dict then modify
         cfg_copy = OmegaConf.to_container(base_cfg, resolve=True)
@@ -448,7 +494,9 @@ def main():
 
         # set per-run outdir
         out_base = cfg_copy.get('filepaths', {}).get('out_dir', 'outputs')
-        run_out = os.path.join(out_base, f'sweep_{model_type}', f'run_{idx+1}')
+        # If reusing an existing sweep, offset run numbering so we don't overwrite
+        run_number = reuse_offset + idx + 1
+        run_out = os.path.join(out_base, f'sweep_{model_type}', f'run_{run_number}')
         if 'filepaths' not in cfg_copy:
             cfg_copy['filepaths'] = {}
         cfg_copy['filepaths']['out_dir'] = run_out
@@ -460,8 +508,31 @@ def main():
             idx += 1
             continue
 
-        run(cfg_run)
+        # run() will return a scalar metric when in HPC mode; otherwise None
+        try:
+            metric = run(cfg_run)
+        except Exception:
+            # If a single sweep job fails, log and continue to next combo
+            logging.getLogger(__name__).exception("Sweep run failed for combo %s", dict(zip(sweep_keys, combo)))
+            metric = None
+
+        if os.environ.get('HPC_RUN', '0') == '1':
+            results.append({
+                'idx': idx + 1,
+                'combo': dict(zip(sweep_keys, combo)),
+                'out_dir': run_out,
+                'mse': metric,
+            })
         idx += 1
+
+    # If HPC mode was requested, print top-5 runs by lowest validation MSE
+    if os.environ.get('HPC_RUN', '0') == '1':
+        # filter out failed runs (None mse)
+        filtered = [r for r in results if r['mse'] is not None]
+        filtered.sort(key=lambda r: r['mse'])
+        print('\nTop 5 runs by validation MSE:')
+        for i, r in enumerate(filtered[:5], 1):
+            print(f"{i}. mse={r['mse']:.6E} -> {r['combo']} -> outdir={r['out_dir']}")
 
 
 

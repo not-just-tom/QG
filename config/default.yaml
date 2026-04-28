@@ -7,7 +7,7 @@ filepaths:
 
 params: 
   seed: 42
-  nx: 32
+  nx: 64
   Lx: 6.283185307179586  # 2π
   beta: 10
   kmin: 4.0 
@@ -20,12 +20,12 @@ params:
   delta: 0.25
   U1: 0.0
   U2: 0.0
-  hr_nx: 64
+  hr_nx: 128
 
 plotting:
-  nsteps: 10000
+  nsteps: 1000
   dt: 0.01
-  cadence: 100
+  cadence: 10
   plot: ['loss', 'mse', 'quad', 'ke_spectrum_movie']
   group_animated: true
   auto_dt: true
@@ -45,8 +45,8 @@ ml:
   model_type: cnn
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   use_float64: false
-  n_train: 21
-  n_test: 6
+  n_train: 7
+  n_test: 2
   optimiser: AdamW
   batch_steps: 100 # temporal context - how far the trained model sees in advance
   batch_size: 5 # this is the number of trajs generated in a batch before saving to disk
@@ -69,10 +69,10 @@ architectures:
     depth: 4
   fno:
     # Sweep ranges suggested for HPC runs (total combinations = 3*3*3*3 = 81)
-    learning_rate: [0.0001, 0.0005, 0.001]
-    width: [32, 64, 128]
-    modes2: [8, 16, 24]
-    modes1: [8, 16, 24]
+    learning_rate: 0.0001 #[0.0001, 0.0005, 0.001]
+    width: 32 #[32, 64, 128]
+    modes2: 8 #[8, 16, 24]
+    modes1: 8 #[8, 16, 24]
   zero:
     learning_rate: 0 # obviously not needed but coded in regardless
 

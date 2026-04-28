@@ -185,7 +185,6 @@ def make_validation_epoch(lr_model, dt):
 
         # read parameters from cfg
         nsteps_cfg = int(getattr(cfg.plotting, "nsteps", traj.shape[0] - 1))
-        cadence = int(getattr(cfg.plotting, "cadence", 1))
         seed = int(getattr(cfg.params, "seed", 0))
 
         # Prepare forced model and closure params
@@ -202,7 +201,6 @@ def make_validation_epoch(lr_model, dt):
             closure_params=closure_params,
         )
 
-        # reconstruct predicted spectral trajectory and (cadence) physical frames
         init_qh = jnp.fft.rfftn(traj[0], axes=(-2, -1), norm='ortho')
         qh_traj = jnp.concatenate([init_qh[None, ...], init_qh[None, ...] + jnp.cumsum(traj_dqh, axis=0)], axis=0)
 

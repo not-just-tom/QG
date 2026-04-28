@@ -27,14 +27,12 @@
     "model_arch": {
         "learning_rate": 0.0001,
         "nlayers": 3,
-        "width": 32,
-        "kernel_size": 5,
+        "width": 64,
+        "kernel_size": 3,
         "activation": "tanh"
     },
     "training": {
         "optimiser": "AdamW",
-        "learning_rate": 0.0001,
-        "minibatch_size": 48,
         "prefetch": 3,
         "batch_steps": 100,
         "n_train": 7,
@@ -42,8 +40,8 @@
         "model_arch": {
             "learning_rate": 0.0001,
             "nlayers": 3,
-            "width": 32,
-            "kernel_size": 5,
+            "width": 64,
+            "kernel_size": 3,
             "activation": "tanh"
         }
     }

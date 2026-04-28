@@ -26,23 +26,21 @@
     "model_type": "cnn",
     "model_arch": {
         "learning_rate": 0.0001,
-        "nlayers": 3,
-        "width": 64,
+        "nlayers": 2,
+        "width": 32,
         "kernel_size": 3,
         "activation": "tanh"
     },
     "training": {
         "optimiser": "AdamW",
-        "learning_rate": 0.0001,
-        "minibatch_size": 48,
         "prefetch": 3,
         "batch_steps": 100,
         "n_train": 7,
         "n_test": 2,
         "model_arch": {
             "learning_rate": 0.0001,
-            "nlayers": 3,
-            "width": 64,
+            "nlayers": 2,
+            "width": 32,
             "kernel_size": 3,
             "activation": "tanh"
         }

@@ -84,6 +84,7 @@ class FNO(eqx.Module):
         modes2 = 16,
         depth = 4,
         key= jax.random.PRNGKey(0),
+        **kwargs,
     ):
         keys = jax.random.split(key, 2 * depth + 2)
         k0 = keys[0]

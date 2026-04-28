@@ -87,10 +87,11 @@ def find_output_dir(base_dir, params, model_type):
     return run_dir, False
 
 class Plotter:
-    def __init__(self, cfg, trajectories=None, out_dir=None):
+    def __init__(self, cfg, trajectories=None, out_dir=None, cadence=None):
         self.cfg = cfg
         self.trajs = dict(trajectories or {})
         self.out_dir = out_dir or getattr(cfg.filepaths, "out_dir", ".")
+        self.cadence = cadence or getattr(cfg.plotting, "cadence", 10)
 
         self.plot_list = list(getattr(cfg.plotting, "plot", []) or ["mse", "quad"])
 
@@ -104,7 +105,7 @@ class Plotter:
             try:
                 diag = build_diagnostic(name)
                 out_path = os.path.join(self.out_dir, f"{name}.{diag.output}")
-                diag.run(self.trajs, out_path)
+                diag.run(self.trajs, out_path, self.cadence)
                 print(f"Saved {out_path}")
             except Exception as e:
                 print(f"{name} failed: {e}")

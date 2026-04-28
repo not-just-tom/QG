@@ -28,13 +28,11 @@
         "learning_rate": 0.0001,
         "nlayers": 2,
         "width": 64,
-        "kernel_size": 3,
+        "kernel_size": 5,
         "activation": "tanh"
     },
     "training": {
         "optimiser": "AdamW",
-        "learning_rate": 0.0001,
-        "minibatch_size": 48,
         "prefetch": 3,
         "batch_steps": 100,
         "n_train": 7,
@@ -43,7 +41,7 @@
             "learning_rate": 0.0001,
             "nlayers": 2,
             "width": 64,
-            "kernel_size": 3,
+            "kernel_size": 5,
             "activation": "tanh"
         }
     }
