@@ -3,8 +3,8 @@ import jax.numpy as jnp
 import equinox as eqx
 
 
-class CNN(eqx.Module):
-    """Configurable CNN closure."""
+class MLP(eqx.Module):
+    """Simple MLP closure."""
     layers: list
 
     def __init__(
