@@ -4,27 +4,10 @@ import equinox as eqx
 from typing import Optional
 
 
-class SpectralDenoiser(eqx.Module):
-    """Per-mode MLP denoiser applied to spectral coefficients.
-    Operates on vectors of length 2*C (real+imag per channel) and is
-    broadcasted across modes (H,W) and batch dims.
-    """
-    linear1: eqx.nn.Linear
-    linear2: eqx.nn.Linear
-    act = staticmethod(jax.nn.gelu)
-
-    def __init__(self, channels, hidden=128, key=jax.random.PRNGKey(0)):
-        k1, k2 = jax.random.split(key, 2)
-        self.linear1 = eqx.nn.Linear(2 * channels, hidden, key=k1)
-        self.linear2 = eqx.nn.Linear(hidden, 2 * channels, key=k2)
-
-    def __call__(self, x):
-        # x shape: (..., 2*C)
-        h = self.act(self.linear1(x))
-        return self.linear2(h)
+# Note: learned denoiser removed — use simple spectral damping instead.
 
 
-class DiffusionGenerator(eqx.Module):
+class Diffusion(eqx.Module):
     """Spectral iterative refinement generator (prototype).
     - Projects input to Fourier space.
     - Iteratively refines high-k modes via a learned per-mode denoiser.
@@ -35,18 +18,17 @@ class DiffusionGenerator(eqx.Module):
       n_steps: number of iterative refinement steps (3 recommended)
       alpha: step size multiplier for updates
     """
-    denoiser: SpectralDenoiser
     channels: int
     cutoff: float
     n_steps: int
     alpha: float
 
-    def __init__(self, channels=1, cutoff=8.0, n_steps=3, alpha=0.2, hidden=128, key=jax.random.PRNGKey(0)):
+    def __init__(self, channels=1, cutoff=8.0, n_steps=3, alpha=0.2, **kwargs):
         self.channels = int(channels)
         self.cutoff = float(cutoff)
         self.n_steps = int(n_steps)
         self.alpha = float(alpha)
-        self.denoiser = SpectralDenoiser(self.channels, hidden=hidden, key=key)
+        # No learned denoiser: iterative updates use a simple spectral damping step.
 
     def _make_mask(self, H, W):
         # radial wavenumber mask in index-space (uses fftfreq scaled by grid size)
@@ -83,23 +65,13 @@ class DiffusionGenerator(eqx.Module):
 
         def step_fn(high, _i):
             # shape high: (B, C, H, W) complex64
-            # prepare real representation (..., 2*C)
-            real = jnp.real(high)
-            imag = jnp.imag(high)
-            # transpose to (..., H, W, C)
-            t = jnp.transpose(jnp.concatenate([real, imag], axis=1), (0, 2, 3, 1))  # (B,H,W,2C)
-            # apply denoiser (broadcast over leading dims)
-            delta = self.denoiser(t)  # (B,H,W,2C)
-            # reshape back to (B,2C,H,W) -> split
-            delta_t = jnp.transpose(delta, (0, 3, 1, 2))  # (B,2C,H,W)
-            delta_real, delta_imag = jnp.split(delta_t, 2, axis=1)
-            delta_c = delta_real + 1j * delta_imag
-            # apply mask and step-size, clamp magnitude to avoid blow-ups
-            update = self.alpha * delta_c
-            # optional clipping by magnitude
+            # Simple spectral damping update in place of learned denoiser:
+            # update = -alpha * high  -> new_high = (1 - alpha) * high
+            update = -self.alpha * high
+            # clamp magnitude of update to avoid blow-ups
             mag = jnp.abs(update)
             update = jnp.where(mag > 1e2, update * (1e2 / (mag + 1e-12)), update)
-            new_high = high + update * mask
+            new_high = high + update
             return new_high, None
 
         # iterate n_steps

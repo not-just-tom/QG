@@ -3,14 +3,17 @@ import model.ML.architectures.zero
 import model.ML.architectures.cnn
 import model.ML.architectures.unet
 import model.ML.architectures.fno
+import model.ML.architectures.diffusion
 importlib.reload(model.ML.architectures.zero)
 importlib.reload(model.ML.architectures.cnn)
 importlib.reload(model.ML.architectures.unet)
 importlib.reload(model.ML.architectures.fno)
+importlib.reload(model.ML.architectures.diffusion)
 from model.ML.architectures.cnn import CNN
 from model.ML.architectures.zero import ZeroModel
 from model.ML.architectures.unet import UNet
 from model.ML.architectures.fno import FNO
+from model.ML.architectures.diffusion import Diffusion
 import equinox as eqx
 import numpy as np
 import jax
@@ -66,6 +69,7 @@ def build_closure(cfg, loaded_leaves=None):
         "cnn": CNN,
         'unet': UNet,
         'fno': FNO,
+        'diffusion': Diffusion
     }
 
     arch_name = _resolve_arch_name(cfg)

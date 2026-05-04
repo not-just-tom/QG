@@ -12,7 +12,7 @@ importlib.reload(model.utils.diagnostics)
 from model.utils.diagnostics import build_diagnostic
 
 
-RUN_RE = re.compile(r"output_nx(?P<hr>\d+)_(?P<idx>\d{2})")
+RUN_RE = re.compile(r"(?P<prefix>.+)_(?P<hr>\d+)to(?P<lr>\d+)")
 
 def metadata_matches(requested: dict, stored: dict) -> bool:
     return canonicalize(requested) == canonicalize(stored)
@@ -31,48 +31,57 @@ def canonicalize(params: dict) -> dict:
 
 def find_output_dir(base_dir, params, model_type):
     """
-    Function for finding the output dir so I can keep 
-    some seblance of organisation in the outputs
+    Find or create an output directory with structure:
+      base_dir/{model_type}_model/{model_type}_{hr}to{lr}/{idx:02d}
+
+    Matches existing runs by exact `parameters` metadata stored in
+    the run's `metadata.json`.
     """
     lr_nx = params["nx"]
     hr_nx = params['hr_nx']
-    prefix = f"{model_type}_{hr_nx}to{lr_nx}_"
+    model_base = os.path.join(base_dir, f"{model_type}_model")
+    os.makedirs(model_base, exist_ok=True)
+
+    folder = f"{model_type}_{hr_nx}to{lr_nx}"
+    folder_path = os.path.join(model_base, folder)
     candidates = []
 
-    # just in case lmao 
-    os.makedirs(base_dir, exist_ok=True)
+    if os.path.exists(folder_path):
+        for name in os.listdir(folder_path):
+            # name should be the two-digit index (e.g., '01')
+            if not re.fullmatch(r"\d{2}", name):
+                continue
+            run_dir = os.path.join(folder_path, name)
+            meta_path = os.path.join(run_dir, "metadata.json")
+            if not os.path.exists(meta_path):
+                try:
+                    candidates.append(int(name))
+                except Exception:
+                    continue
+                continue
 
-    for name in os.listdir(base_dir):
-        m = RUN_RE.fullmatch(name)
-        if m is None:
-            continue
-        if int(m["hr"]) != lr_nx:
-            continue
+            try:
+                with open(meta_path) as f:
+                    stored_meta = json.load(f)
+            except Exception:
+                try:
+                    candidates.append(int(name))
+                except Exception:
+                    pass
+                continue
 
-        run_dir = os.path.join(base_dir, name)
-        meta_path = os.path.join(run_dir, "metadata.json")
-        if not os.path.exists(meta_path):
-            continue
+            # Exact metadata match
+            if metadata_matches(params, stored_meta.get("parameters", {})):
+                return run_dir, True
 
-        try:
-            with open(meta_path) as f:
-                stored_meta = json.load(f)
-        except Exception:
-            continue
+            try:
+                candidates.append(int(name))
+            except Exception:
+                continue
 
-        # Exact metadata match
-        if metadata_matches(params, stored_meta.get("parameters", {})):
-            return run_dir, True
-
-        try:
-            candidates.append(int(m["idx"]))
-        except Exception:
-            continue
-
-    # No match found
+    # No exact match found; create next index under folder_path
     next_idx = max(candidates, default=0) + 1
-    run_name = f"{prefix}{next_idx:02d}"
-    run_dir = os.path.join(base_dir, run_name)
+    run_dir = os.path.join(folder_path, f"{next_idx:02d}")
     os.makedirs(run_dir, exist_ok=True)
 
     meta_path = os.path.join(run_dir, "metadata.json")

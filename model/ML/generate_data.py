@@ -21,7 +21,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     n_total = cfg.ml.n_train + cfg.ml.n_test + 1
     try:
         nsteps = cfg.plotting.nsteps
-        batch_size = cfg.ml.batch_size
+        batch_size = 5 # hardcoded bc it was confusing me. It's just the trajs generated in batches of 5 rn
         batch_steps = cfg.ml.batch_steps
         spinup = int(cfg.plotting.spinup)
     except AttributeError as e:

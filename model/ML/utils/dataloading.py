@@ -194,10 +194,11 @@ def canonicalize(params: dict) -> dict:
 
     return round_floats(params)
 
-def find_existing_closure(model_dir, params, timing_metadata, model_type, extra_meta: dict = None):
+def find_existing_closure(model_dir, params, timing_metadata, model_type, training_metadata):
     hr_nx = params['hr_nx']
     lr_nx = params['nx']
     prefix = f"{model_type}_hr{hr_nx}_nx{lr_nx}_"
+    folder = f"{model_type}_hr{hr_nx}_nx{lr_nx}"
     candidates = []
 
     for name in os.listdir(model_dir):
@@ -220,17 +221,15 @@ def find_existing_closure(model_dir, params, timing_metadata, model_type, extra_
             # Basic parameter+timing+model_type match
             params_match = (metadata_matches(params, stored_meta.get("parameters", {}))) and (metadata_matches(timing_metadata, stored_meta.get('timing', {}))) and (model_type == stored_meta.get('model_type'))
 
-            # If extra_meta supplied (e.g. training / sweep info), require it to match as well
-            extra_match = True
-            if extra_meta is not None:
-                # expect extra_meta to be a dict mapping keys to compare, e.g. {'training': {...}}
-                for k, v in extra_meta.items():
-                    stored_section = stored_meta.get(k, {})
-                    if not metadata_matches(v, stored_section):
-                        extra_match = False
-                        break
+            # If training_metadata supplied (e.g. training / sweep info), require it to match as well
+            training_match = True
+            for k, v in training_metadata.items():
+                stored_section = stored_meta.get(k, {})
+                if not metadata_matches(v, stored_section):
+                    training_match = False
+                    break
 
-            if params_match and extra_match:
+            if params_match and training_match:
                 return run_dir, True
 
         # Keep the index as a candidate (even if metadata missing or mismatched)
@@ -239,11 +238,11 @@ def find_existing_closure(model_dir, params, timing_metadata, model_type, extra_
     # No exact match found; select next index within model_type namespace
     next_idx = max(candidates, default=0) + 1
     run_name = f"{prefix}{next_idx:02d}"
-    run_dir = os.path.join(model_dir, run_name)
+    run_dir = os.path.join(model_dir, folder, run_name)
     return run_dir, False
 
 
-def find_existing_run(base_dir, params, timing_metadata):
+def find_existing_data(base_dir, params, timing_metadata):
     hr_nx = params['hr_nx']
     lr_nx = params['nx']
     prefix = f"data_hr{hr_nx}_nx{lr_nx}_"
@@ -405,10 +404,10 @@ class ZarrDataLoader:
         windows = np.stack(windows, axis=0)
         return windows
 
-    def iterate_minibatches(self, *, traj_indices, n_samples, batch_steps, key, minibatch_size=1):
-        """Stream minibatches of windows without materialising entire epoch.
+    def iterate_batches(self, *, traj_indices, n_samples, batch_steps, key, batch_size=1):
+        """Stream batches of windows without materialising entire epoch.
 
-        Yields numpy arrays shaped `(minibatch_size, batch_steps, layers, ny, nx)`.
+        Yields numpy arrays shaped `(batch_size, batch_steps, layers, ny, nx)`.
 
         Parameters
         ----------
@@ -420,8 +419,8 @@ class ZarrDataLoader:
             Number of timesteps in each window.
         key : jax.random.PRNGKey
             PRNG key used to generate permutation of start times.
-        minibatch_size : int
-            Number of windows per yielded minibatch.
+        batch_size : int
+            Number of windows per yielded batch.
         """
         # Build start times (device permutation -> host ints)
         perm = jax.random.permutation(key, n_samples)
@@ -433,7 +432,7 @@ class ZarrDataLoader:
             for start_time in start_times:
                 window = self.get_trajectory_window(int(traj_idx), int(start_time), batch_steps)
                 batch.append(window)
-                if len(batch) == minibatch_size:
+                if len(batch) == batch_size:
                     yield np.stack(batch, axis=0)
                     batch = []
 
@@ -441,33 +440,33 @@ class ZarrDataLoader:
         if batch:
             yield np.stack(batch, axis=0)
 
-    def iterate_minibatches_device(
+    def iterate_batches_device(
         self,
         *,
         traj_indices,
         n_samples,
         batch_steps,
         key,
-        minibatch_size=1,
-        minibatch_prefetch: int = 2,
+        batch_size=1,
+        batch_prefetch: int = 2,
         device=None,
     ):
-        """Like `iterate_minibatches` but yields JAX device arrays (already
+        """Like `iterate_batches` but yields JAX device arrays (already
         transferred to the specified device). This reduces host->device
         round-trips in training loops.
         """
-        gen = self.iterate_minibatches(
+        gen = self.iterate_batches(
             traj_indices=traj_indices,
             n_samples=n_samples,
             batch_steps=batch_steps,
             key=key,
-            minibatch_size=minibatch_size,
+            batch_size=batch_size,
         )
-        if minibatch_prefetch and minibatch_prefetch > 0:
-            gen = prefetch_generator(gen, size=minibatch_prefetch)
+        if batch_prefetch and batch_prefetch > 0:
+            gen = prefetch_generator(gen, size=batch_prefetch)
 
         for np_batch in gen:
-            # convert to JAX array and push to device once per minibatch
+            # convert to JAX array and push to device once per batch
             jax_batch = jax.device_put(jnp.asarray(np_batch), device)
             yield jax_batch
 
@@ -477,8 +476,8 @@ def prefetch_generator(generator, size: int = 2):
 
     Usage:
       prefetch_gen = prefetch_generator(my_generator(), size=4)
-      for minibatch in prefetch_gen:
-          process(minibatch)
+      for batch in prefetch_gen:
+          process(batch)
 
     This is thread-safe for zarr/numpy reads and reduces I/O stalls.
     """
