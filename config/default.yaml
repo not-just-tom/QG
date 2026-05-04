@@ -26,7 +26,7 @@ plotting:
   nsteps: 1000
   dt: 0.01
   cadence: 1
-  plot: ['loss', 'mse', 'quad', 'ke_spectrum_movie']
+  plot: ['loss', 'mse', 'quad']
   group_animated: true
   auto_dt: true
   njets: 6
@@ -42,7 +42,7 @@ forcing:
 ml:
   enabled: true
   # Choose a model type to sweep. Set to 'cnn' to run the CNN parameter sweep below.
-  model_type: zero
+  model_type: resnet
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   use_float64: false
   n_train: 7
@@ -59,7 +59,7 @@ architectures:
     nlayers: 4
     width: 32
     kernel_size: 5
-    activation: "tanh"
+    activation: "tanh" 
     projection: CNN
   unet:
     learning_rate: 0.0005
@@ -84,6 +84,21 @@ architectures:
       beta: 0.2
       alpha_clip: 1.0
       min_q_mag: 1e-6
+  mlp:
+    learning_rate: 0
+    nlayers: 3
+    in_channels: 1
+    out_channels: 1
+    kernel_size: 3
+    width: 64
+    activation: "tanh"
+  resnet:
+    learning_rate: 0.0001
+    nlayers: 7
+    width: 32
+    kernel_size: 5
+    activation: "elu" 
+    projection: none
   zero:
     learning_rate: 0 # obviously not needed but coded in regardless
 

@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 #  - data_hr128_nx32_01
 #  - cnn_hr128_nx32_01
 RUN_RE = re.compile(r".*_hr(?P<hr>\d+)_nx(?P<lr>\d+)_(?P<idx>\d{2})")
-CLOSURE_RE = re.compile(r"^(?P<type>.+)_hr(?P<hr>\d+)_nx(?P<lr>\d+)_(?P<idx>\d{2})")
+CLOSURE_RE = re.compile(r"(?P<hr>\d+)_to_(?P<lr>\d+)")
 
 def _save_pytree(obj, basepath: str):
     import pickle
@@ -28,17 +28,6 @@ def _save_pytree(obj, basepath: str):
     # save treedef separately
     with open(basepath + ".treedef", "wb") as f:
         pickle.dump(treedef, f)
-
-
-def _load_pytree(basepath: str):
-    import pickle
-    if not os.path.exists(basepath + ".npz") or not os.path.exists(basepath + ".treedef"):
-        raise FileNotFoundError(f"Checkpoint files not found for {basepath}")
-    arrs = np.load(basepath + ".npz")
-    leaves = [arrs[f"arr_{i}"] for i in range(len(arrs.files))]
-    with open(basepath + ".treedef", "rb") as f:
-        treedef = pickle.load(f)
-    return jax.tree_util.tree_unflatten(treedef, leaves)
 
 
 def _load_leaves(basepath: str):
@@ -197,17 +186,15 @@ def canonicalize(params: dict) -> dict:
 def find_existing_closure(model_dir, params, timing_metadata, model_type, training_metadata):
     hr_nx = params['hr_nx']
     lr_nx = params['nx']
-    prefix = f"{model_type}_hr{hr_nx}_nx{lr_nx}_"
-    folder = f"{model_type}_hr{hr_nx}_nx{lr_nx}"
+    folder = f"{hr_nx}_to_{lr_nx}"
+    model_base = os.path.join(model_dir, model_type, folder)
+    os.makedirs(model_base, exist_ok=True)
+
+
     candidates = []
 
-    for name in os.listdir(model_dir):
-        m = CLOSURE_RE.fullmatch(name)
-        if m is None:
-            continue
-        if int(m["hr"]) != hr_nx or int(m["lr"]) != lr_nx or m['type'] != model_type:
-            continue
-        run_dir = os.path.join(model_dir, name)
+    for name in os.listdir(model_base):        
+        run_dir = os.path.join(model_base,  name)
         meta_path = os.path.join(run_dir, "metadata.json")
 
         # If metadata exists, check for exact parameter+timing match
@@ -233,12 +220,12 @@ def find_existing_closure(model_dir, params, timing_metadata, model_type, traini
                 return run_dir, True
 
         # Keep the index as a candidate (even if metadata missing or mismatched)
-        candidates.append(int(m['idx']))
+        candidates.append(int(name))
 
     # No exact match found; select next index within model_type namespace
     next_idx = max(candidates, default=0) + 1
-    run_name = f"{prefix}{next_idx:02d}"
-    run_dir = os.path.join(model_dir, folder, run_name)
+    run_name = f"{next_idx:02d}"
+    run_dir = os.path.join(model_base, run_name)
     return run_dir, False
 
 

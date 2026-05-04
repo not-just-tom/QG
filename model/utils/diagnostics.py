@@ -209,23 +209,6 @@ class MSEDiagnostic(Diagnostic):
                 ax.plot(zl, "--", color="C2", label="zero model")
             ax.legend()
 
-        # Save numeric MSE data alongside the figure for aggregations
-        try:
-            base, ext = os.path.splitext(out_path)
-            npz_path = base + ".npz"
-            json_path = base + ".json"
-            # Save numpy archive with arrays
-            try:
-                np.savez_compressed(npz_path, mse=mse)
-            except Exception:
-                np.savez(npz_path, mse=mse)
-            # Save a lightweight JSON summary and the full mse as list
-            summary = {"mse": mse.tolist(), "mean_mse": float(np.nanmean(mse)) if mse.size else None}
-            with open(json_path, "w") as f:
-                json.dump(summary, f, indent=2)
-        except Exception:
-            pass
-
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
 
@@ -406,7 +389,6 @@ class QuadGifDiagnostic(Diagnostic):
             from matplotlib.animation import PillowWriter
             writer = PillowWriter(fps=10)
             anim.save(out_path, writer=writer)
-            print('Saved gif to', out_path)
             plt.close(fig)
         except Exception as e:
             print('Pillow save failed:', e)

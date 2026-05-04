@@ -54,7 +54,7 @@ from model.ML.train import make_train_epoch, make_test_epoch, make_validation_ep
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import coarsen
 from model.ML.generate_data import generate_train_data
-from model.ML.utils.dataloading import find_existing_closure, find_existing_run, ZarrDataLoader, checkpointer, prefetch_generator
+from model.ML.utils.dataloading import find_existing_closure, find_existing_data, ZarrDataLoader, checkpointer, prefetch_generator
 from model.utils.logging import configure_logging
 from model.utils.plotting import find_output_dir, gif_that, Plotter
 from model.core.steppers import SteppedModel, AB3Stepper
@@ -79,6 +79,7 @@ def run(cfg):
     njets= cfg.plotting.njets
     nsteps = cfg.plotting.nsteps
     batch_steps = cfg.ml.batch_steps
+    batch_size = cfg.ml.batch_size
     n_train = cfg.ml.n_train
     n_test = cfg.ml.n_test
     n_epochs = n_train + n_test
@@ -89,21 +90,12 @@ def run(cfg):
     key = jax.random.PRNGKey(seed)
     ratio = params["hr_nx"]/params["nx"]
     use_float64 = cfg.ml.use_float64
-    minibatch_size = cfg.ml.minibatch_size
     prefetch = cfg.ml.prefetch
     model_type = cfg.ml.model_type
     learning_rate = learning_rate = cfg['architectures'][model_type].get('learning_rate')
 
     logger = configure_logging(level=cfg.filepaths.log_level, out_file="../logs/run.log")
     logger = logging.getLogger(__name__)
-    
-    # output dir 
-    outbase = os.path.join(cfg.filepaths.out_dir)
-    out_dir, found = find_output_dir(outbase, params, model_type)
-    if found:
-        logger.info(f"Found existing output directory with matching parameters")
-    else:
-        os.makedirs(out_dir, exist_ok=True)
     
     # GPU or CPU setup 
     device_type = (cfg.ml.device).lower()
@@ -143,7 +135,26 @@ def run(cfg):
         'batch_steps': int(batch_steps),
     }
 
-    run_dir, found = find_existing_run(DATA_DIR, params, timing_metadata)
+    training_metadata = {
+        "training": {
+            "optimiser": cfg.ml.optimiser,
+            "prefetch": int(prefetch),
+            "batch_steps": int(batch_steps),
+            "n_train": int(n_train),
+            "n_test": int(n_test),
+            "model_arch": OmegaConf.to_container(cfg['architectures'][model_type], resolve=True),
+        }
+    }
+
+    # output dir 
+    outbase = os.path.join(cfg.filepaths.out_dir)
+    out_dir, found = find_output_dir(outbase, params, timing_metadata, model_type, training_metadata)
+    if found:
+        logger.info(f"Found existing output directory with matching parameters")
+    else:
+        os.makedirs(out_dir, exist_ok=True)
+
+    run_dir, found = find_existing_data(DATA_DIR, params, timing_metadata)
     if found: 
         logger.info(f"Found existing data with matching parameters at {run_dir}, loading trajectories from there.")
         data_loader = ZarrDataLoader(run_dir)
@@ -160,18 +171,8 @@ def run(cfg):
 
     # === ML training === 
     # Build training/sweep metadata to avoid accidentally reusing closures from different sweeps
-    training_meta = {
-        "training": {
-            "optimiser": cfg.ml.optimiser,
-            "prefetch": int(prefetch),
-            "batch_steps": int(batch_steps),
-            "n_train": int(n_train),
-            "n_test": int(n_test),
-            "model_arch": OmegaConf.to_container(cfg['architectures'][model_type], resolve=True),
-        }
-    }
 
-    model_dir, found = find_existing_closure(MODEL_DIR, params, timing_metadata, model_type, extra_meta=training_meta)
+    model_dir, found = find_existing_closure(MODEL_DIR, params, timing_metadata, model_type, training_metadata)
     start_epoch = 0
     if found:
         logger.info(f"Found existing {model_type} closure with matching parameters at {model_dir}, attempting to load checkpoint.")
@@ -275,18 +276,18 @@ def run(cfg):
         # Map local shuffled positions into real trajectory IDs using all_traj_indices
         train_pos = list(np.asarray(jax.device_get(train_indices)).tolist())
         train_indices_host = [all_traj_indices[i] for i in train_pos]
-        # Use the data loader's minibatch iterator and prefetch to overlap I/O
-        train_gen = data_loader.iterate_minibatches(
+        # Use the data loader's batch iterator and prefetch to overlap I/O
+        train_gen = data_loader.iterate_batches(
             traj_indices=train_indices_host,
             n_samples=n_samples,
             batch_steps=batch_steps,
             key=more_keys[epoch],
-            minibatch_size=minibatch_size,
+            batch_size=batch_size,
         )
         train_prefetch = prefetch_generator(train_gen, size=prefetch)
         for windows in train_prefetch:
             windows = windows.astype(np.float32)
-            # reshape to (n_batches=1, n_samples=minibatch_size, batch_steps, ...)
+            # reshape to (n_batches=1, n_samples=batch_size, batch_steps, ...)
             chunk = windows.reshape((1, windows.shape[0], batch_steps) + windows.shape[2:])
             chunk = jax.device_put(chunk)
             closure, optim_state, losses = train_epoch(chunk, closure, optim_state)
@@ -296,12 +297,12 @@ def run(cfg):
         test_losses_accum = []
         test_pos = list(np.asarray(jax.device_get(test_indices)).tolist())
         test_indices_host = [all_traj_indices[i] for i in test_pos]
-        test_gen = data_loader.iterate_minibatches(
+        test_gen = data_loader.iterate_batches(
             traj_indices=test_indices_host,
             n_samples=n_samples,
             batch_steps=batch_steps,
             key=more_keys[epoch],
-            minibatch_size=minibatch_size,
+            batch_size=batch_size,
         )
         test_prefetch = prefetch_generator(test_gen, size=prefetch)
         for windows in test_prefetch:
@@ -320,13 +321,11 @@ def run(cfg):
         # Save checkpoint after streaming epoch
         try:
             checkpointer(closure, optim_state, model_dir, save=True, epoch=epoch+1, n_epochs=n_epochs, losses={"train": train_mean_losses, "test": test_mean_losses})
-            model_arch_resolved = OmegaConf.to_container(cfg['architectures'][model_type], resolve=True)
             meta = {
                 "parameters": params,
                 "timing": timing_metadata,
                 "model_type": model_type,
-                "model_arch": model_arch_resolved,
-                "training": training_meta.get("training", {}),
+                "training": training_metadata.get("training", {}),
             }
             with open(os.path.join(model_dir, "metadata.json"), "w") as f:
                 json.dump(meta, f, indent=4)

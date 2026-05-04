@@ -12,8 +12,6 @@ importlib.reload(model.utils.diagnostics)
 from model.utils.diagnostics import build_diagnostic
 
 
-RUN_RE = re.compile(r"(?P<prefix>.+)_(?P<hr>\d+)to(?P<lr>\d+)")
-
 def metadata_matches(requested: dict, stored: dict) -> bool:
     return canonicalize(requested) == canonicalize(stored)
 
@@ -29,7 +27,7 @@ def canonicalize(params: dict) -> dict:
 
     return round_floats(params)
 
-def find_output_dir(base_dir, params, model_type):
+def find_output_dir(base_dir, params, timing_metadata, model_type, training_metadata):
     """
     Find or create an output directory with structure:
       base_dir/{model_type}_model/{model_type}_{hr}to{lr}/{idx:02d}
@@ -39,53 +37,59 @@ def find_output_dir(base_dir, params, model_type):
     """
     lr_nx = params["nx"]
     hr_nx = params['hr_nx']
-    model_base = os.path.join(base_dir, f"{model_type}_model")
+
+    folder = f"{hr_nx}_to_{lr_nx}"
+    model_base = os.path.join(base_dir, model_type, folder)
     os.makedirs(model_base, exist_ok=True)
 
-    folder = f"{model_type}_{hr_nx}to{lr_nx}"
-    folder_path = os.path.join(model_base, folder)
     candidates = []
 
-    if os.path.exists(folder_path):
-        for name in os.listdir(folder_path):
-            # name should be the two-digit index (e.g., '01')
-            if not re.fullmatch(r"\d{2}", name):
-                continue
-            run_dir = os.path.join(folder_path, name)
-            meta_path = os.path.join(run_dir, "metadata.json")
-            if not os.path.exists(meta_path):
-                try:
-                    candidates.append(int(name))
-                except Exception:
-                    continue
-                continue
+    for name in os.listdir(model_base):        
+        run_dir = os.path.join(model_base,  name)
+        meta_path = os.path.join(run_dir, "metadata.json")
 
+        # If metadata exists, check for exact match
+        if os.path.exists(meta_path):
             try:
                 with open(meta_path) as f:
                     stored_meta = json.load(f)
             except Exception:
-                try:
-                    candidates.append(int(name))
-                except Exception:
-                    pass
                 continue
 
-            # Exact metadata match
-            if metadata_matches(params, stored_meta.get("parameters", {})):
+            # Basic match
+            params_match = (
+                metadata_matches(params, stored_meta.get("parameters", {}))
+                and metadata_matches(timing_metadata, stored_meta.get('timing', {}))
+                and (model_type == stored_meta.get('model_type'))
+            )
+
+            # If training_metadata supplied (e.g. training / sweep info), require it to match as well
+            training_match = True
+            for k, v in training_metadata.items():
+                stored_section = stored_meta.get(k, {})
+                if not metadata_matches(v, stored_section):
+                    training_match = False
+                    break
+
+            if params_match and training_match:
                 return run_dir, True
 
-            try:
-                candidates.append(int(name))
-            except Exception:
-                continue
+        candidates.append(int(name))
 
-    # No exact match found; create next index under folder_path
+    # No exact match found; select next index within model_type namespace
     next_idx = max(candidates, default=0) + 1
-    run_dir = os.path.join(folder_path, f"{next_idx:02d}")
-    os.makedirs(run_dir, exist_ok=True)
+    run_name = f"{next_idx:02d}"
+    run_dir = os.path.join(model_base, run_name)
 
+    # Create the new run directory and write metadata there
+    os.makedirs(run_dir, exist_ok=True)
+    metadata = {
+        "parameters": params,
+        "timing": timing_metadata,
+        "model_type": model_type,
+        **training_metadata,
+    }
     meta_path = os.path.join(run_dir, "metadata.json")
-    metadata = {"parameters": params}
     try:
         with open(meta_path, "w") as f:
             json.dump(metadata, f, indent=4)
@@ -102,7 +106,7 @@ class Plotter:
         self.out_dir = out_dir or getattr(cfg.filepaths, "out_dir", ".")
         self.cadence = cadence or getattr(cfg.plotting, "cadence", 10)
 
-        self.plot_list = list(getattr(cfg.plotting, "plot", []) or ["mse", "quad"])
+        self.plot_list = list(getattr(cfg.plotting, "plot", []))
 
         if "grid" not in self.trajs:
             self.trajs["grid"] = self._make_grid()

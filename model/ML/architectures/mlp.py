@@ -31,8 +31,14 @@ class MLP(eqx.Module):
             act = eqx.nn.Lambda(jnp.tanh)
         elif isinstance(activation, str) and activation.lower() == "gelu":
             act = eqx.nn.Lambda(jax.nn.gelu)
-        else:
+        elif isinstance(activation, str) and activation.lower() == "relu":
             act = eqx.nn.Lambda(jax.nn.relu)
+        elif isinstance(activation, str) and activation.lower() == "elu":
+            act = eqx.nn.Lambda(jax.nn.elu)
+        elif isinstance(activation, str) and activation.lower() == "leaky_relu":
+            act = eqx.nn.Lambda(jax.nn.leaky_relu)
+        else:
+            raise ValueError(f"Unsupported activation: {activation}")
 
         for i in range(nlayers):
             in_ch = in_channels if i == 0 else width
