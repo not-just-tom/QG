@@ -1,26 +1,17 @@
 #!/bin/bash
-#SBATCH --account=bdncl19
-#SBATCH --job-name=cnn_sweep
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --account=rockhpc_mcposd
+#SBATCH --job-name=qg_cpu_array
+#SBATCH --output=logs/slurm-%A_%a.out
+#SBATCH --error=logs/slurm-%A_%a.err
+#SBATCH --partition=default_free
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --time=24:00:00
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
 #SBATCH --mem=64G
-#SBATCH --output=logs/slurm-%j.out
-#SBATCH -e logs/slurm-%j.err
+#SBATCH --time=24:00:00
 
-
-# Load modules - adjust to your cluster's modules
-module purge
-module load Miniforge
-module load cuda
-
-conda activate qg-env
-
-export XLA_PYTHON_CLIENT_PREALLOCATE=false
-export JAX_ENABLE_X64=0
-export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+source /mnt/nfs/home/c5044892/repos/qg_project/miniconda/etc/profile.d/conda.sh
+conda activate QG
 
 # Change to repository root
 cd $SLURM_SUBMIT_DIR
@@ -28,4 +19,4 @@ cd $SLURM_SUBMIT_DIR
 # Run 
 OUTDIR=/scratch/$USER/qg_out_${SLURM_JOB_ID}
 mkdir -p $OUTDIR
-python run.py --config config/default.yaml --outdir $OUTDIR
+python run.py --config config/default.yaml --outdir-override $OUTDIR
