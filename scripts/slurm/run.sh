@@ -19,4 +19,5 @@ cd $SLURM_SUBMIT_DIR
 # Run 
 OUTDIR=/scratch/$USER/qg_out_${SLURM_JOB_ID}
 mkdir -p $OUTDIR
-python run.py --config config/default.yaml --outdir-override $OUTDIR
+python run.py --config config/default.yaml --outdir $OUTDIR
+
