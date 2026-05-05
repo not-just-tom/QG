@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --account=rockhpc_mcposd
 #SBATCH --job-name=qg_cpu_array
-#SBATCH --output=logs/slurm-%A_%a.out
-#SBATCH --error=logs/slurm-%A_%a.err
+#SBATCH --output=logs/slurm-%A.out
+#SBATCH --error=logs/slurm-%A.err
 #SBATCH --partition=default_free
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
