@@ -23,7 +23,7 @@ params:
   hr_nx: 128
 
 plotting:
-  nsteps: 1000
+  nsteps: 10000
   dt: 0.01
   cadence: 1
   plot: ['loss', 'mse', 'quad']
