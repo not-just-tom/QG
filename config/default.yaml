@@ -23,7 +23,7 @@ params:
   hr_nx: 128
 
 plotting:
-  nsteps: 1000
+  nsteps: 2500
   dt: 0.01
   cadence: 1
   plot: ['loss', 'mse', 'quad']
@@ -53,9 +53,9 @@ ml:
   prefetch: 3       # prefetch a few batches to aid efficiency
   curriculum:
     enabled: true
-    steps_per_day: 100    # number of model timesteps that correspond to 1 "day"
+    steps_per_day: 48    # number of model timesteps that correspond to 1 "day"
     start_days: 1         # initial window length in days
-    max_days: 60          # maximum window length in days
+    max_days: 50          # maximum window length in days
     epochs_per_window: 5  # training epochs before advancing to the next window length
 
 

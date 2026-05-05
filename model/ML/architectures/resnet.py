@@ -14,6 +14,8 @@ class ResNet(eqx.Module):
     alphas: jnp.ndarray
     biases: jnp.ndarray
     activation: Any
+    alpha_input: jnp.ndarray
+    alpha_output: jnp.ndarray
 
     def __init__(
         self,
@@ -24,6 +26,13 @@ class ResNet(eqx.Module):
         kernel_size=5,
         width=64,
         activation="elu",
+        alpha_input=None,
+        alpha_output=None,
+        beta=None,
+        L=None,
+        tau0=None,
+        rho0=None,
+        D=None,
         **kwargs,
     ):
         if nlayers < 1:
@@ -89,13 +98,42 @@ class ResNet(eqx.Module):
         self.biases = biases
         self.activation = act
 
+        # Compute normalization factors per the paper: S_theta(zeta) = alpha_out * F(alpha_in * zeta)
+        # Priority: explicit alpha_input/alpha_output args, else compute from physical params, else 1.0
+        try:
+            if alpha_input is not None:
+                ai = float(alpha_input)
+            elif (beta is not None) and (L is not None):
+                ai = 1.0 / (abs(float(beta)) * float(L))
+            else:
+                ai = 1.0
+        except Exception:
+            ai = 1.0
+
+        try:
+            if alpha_output is not None:
+                ao = float(alpha_output)
+            elif (tau0 is not None) and (rho0 is not None) and (D is not None) and (L is not None):
+                ao = abs(float(tau0)) * float(jnp.pi) / (float(rho0) * float(D) * float(L))
+            else:
+                ao = 1.0
+        except Exception:
+            ao = 1.0
+
+        # store as jax arrays for safe broadcasting in jitted code
+        self.alpha_input = jnp.array(ai, dtype=jnp.float32)
+        self.alpha_output = jnp.array(ao, dtype=jnp.float32)
+
     def __call__(self, qh):
         # qh expected shape: (batch, channels, H, W) or (channels, H, W)
         x_in = qh
 
+        # Apply input normalization factor before feeding into the NN
+        x_in_scaled = self.alpha_input * x_in
+
         # collect outputs after each conv+activation
         outs = []
-        x = x_in
+        x = x_in_scaled
         for conv in self.convs:
             x = conv(x)
             x = self.activation(x)
@@ -103,9 +141,12 @@ class ResNet(eqx.Module):
 
 
         total = 0
-        for i, feature in enumerate([x_in] + outs):
+        # Use the scaled input for the input projection as well so that
+        # F_theta sees the normalized input consistently across all skips.
+        for i, feature in enumerate([x_in_scaled] + outs):
             proj = self.projs[i](feature)
             # broadcast scalar alpha and bias across channels/spatial dims
             total = total + self.alphas[i] * proj + self.biases[i]
 
-        return total
+        # Apply output normalization factor
+        return self.alpha_output * total

@@ -171,7 +171,6 @@ def run(cfg):
 
     # === ML training === 
     # Build training/sweep metadata to avoid accidentally reusing closures from different sweeps
-
     model_dir, found = find_existing_closure(MODEL_DIR, params, timing_metadata, model_type, training_metadata)
     start_epoch = 0
     if found:
