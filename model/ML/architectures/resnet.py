@@ -1,11 +1,19 @@
 import jax
 import jax.numpy as jnp
 import equinox as eqx
+from typing import List, Callable, Any
 
 
 class ResNet(eqx.Module):
     """Configurable ResNet closure. Defaults based on Maddison (2026).
     See https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2024MS004883 for details."""
+
+    # Equinox requires attributes to be declared as dataclass fields
+    convs: List[Any]
+    projs: List[Any]
+    alphas: jnp.ndarray
+    biases: jnp.ndarray
+    activation: Any
 
     def __init__(
         self,

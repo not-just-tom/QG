@@ -226,7 +226,7 @@ def run(cfg):
     else:
         optim_state = template_optim_state
 
-    # Build training and test functions
+    # Build training and test functions (JIT retraces automatically when batch_steps changes shape)
     low_res_dt = dt*ratio
     train_epoch = make_train_epoch(lr_model, low_res_dt, optim)
     test_epoch = make_test_epoch(lr_model, low_res_dt)
@@ -235,9 +235,6 @@ def run(cfg):
     all_traj_indices = list(range(len(data_loader)))
     if len(all_traj_indices) < n_epochs:
         raise ValueError(f"Not enough trajectories in dataset for requested train/test split.")
-
-    keys= jax.random.split(key, n_epochs + 2)
-    more_keys = jax.random.split(keys[n_epochs], n_epochs) # very janky way of doing this, but no key reuse. 
 
     # initialise loss history; if we loaded a saved history, continue it
     train_mean_losses = []
@@ -261,77 +258,205 @@ def run(cfg):
     except Exception:
         logger.exception("Failed to restore loss history; starting fresh")
 
-    for epoch in range(start_epoch, n_epochs):
-        if epoch == 0:
-            logger.info(f"Starting training for {n_epochs} epochs with batch size: {batch_steps}, traj shape: {data_loader.traj_shape} and learning rate: {learning_rate}")
-        # shuffle indices for train and test
-        shuffled_indices = jax.random.permutation(keys[epoch], n_epochs)
-        # this shuffle still doesnt guarantee a unique split every epoch
-        train_indices = shuffled_indices[:n_train]
-        test_indices = shuffled_indices[n_train:]
+    # ── Curriculum learning ──────────────────────────────────────────────────────
+    curriculum_cfg = getattr(cfg.ml, 'curriculum', None)
+    use_curriculum = curriculum_cfg is not None and getattr(curriculum_cfg, 'enabled', False)
 
-        # === train ===
-        train_losses_accum = []
-        # Convert JAX arrays to host-side python list of indices for zarr indexing
-        # Map local shuffled positions into real trajectory IDs using all_traj_indices
-        train_pos = list(np.asarray(jax.device_get(train_indices)).tolist())
-        train_indices_host = [all_traj_indices[i] for i in train_pos]
-        # Use the data loader's batch iterator and prefetch to overlap I/O
-        train_gen = data_loader.iterate_batches(
-            traj_indices=train_indices_host,
-            n_samples=n_samples,
-            batch_steps=batch_steps,
-            key=more_keys[epoch],
-            batch_size=batch_size,
+    if use_curriculum:
+        steps_per_day     = int(curriculum_cfg.steps_per_day)
+        start_days        = int(getattr(curriculum_cfg, 'start_days', 1))
+        max_days          = int(getattr(curriculum_cfg, 'max_days', 60))
+        epochs_per_window = int(getattr(curriculum_cfg, 'epochs_per_window', 5))
+        window_days       = list(range(start_days, max_days + 1))
+        total_curriculum_epochs = len(window_days) * epochs_per_window
+        logger.info(
+            "Curriculum learning enabled: window %d→%d days (%d stages × %d epochs/stage = %d total epochs, %d steps/day)",
+            start_days, max_days, len(window_days), epochs_per_window, total_curriculum_epochs, steps_per_day,
         )
-        train_prefetch = prefetch_generator(train_gen, size=prefetch)
-        for windows in train_prefetch:
-            windows = windows.astype(np.float32)
-            # reshape to (n_batches=1, n_samples=batch_size, batch_steps, ...)
-            chunk = windows.reshape((1, windows.shape[0], batch_steps) + windows.shape[2:])
-            chunk = jax.device_put(chunk)
-            closure, optim_state, losses = train_epoch(chunk, closure, optim_state)
-            train_losses_accum.extend(list(np.asarray(losses).reshape(-1).tolist()))
 
-        # === test ===
-        test_losses_accum = []
-        test_pos = list(np.asarray(jax.device_get(test_indices)).tolist())
-        test_indices_host = [all_traj_indices[i] for i in test_pos]
-        test_gen = data_loader.iterate_batches(
-            traj_indices=test_indices_host,
-            n_samples=n_samples,
-            batch_steps=batch_steps,
-            key=more_keys[epoch],
-            batch_size=batch_size,
-        )
-        test_prefetch = prefetch_generator(test_gen, size=prefetch)
-        for windows in test_prefetch:
-            windows = windows.astype(np.float32)
-            chunk = windows.reshape((1, windows.shape[0], batch_steps) + windows.shape[2:])
-            chunk = jax.device_put(chunk)
-            closure, optim_state, losses = test_epoch(chunk, closure, optim_state)
-            test_losses_accum.extend(list(np.asarray(losses).reshape(-1).tolist()))
+        epoch_counter = len(train_mean_losses)  # resume by counting existing loss entries
+        rng = jax.random.PRNGKey(seed + 1)
 
-        # compute means and continue to checkpoint/save
-        train_mean = float(np.mean(np.array(train_losses_accum))) if train_losses_accum else float('nan')
-        test_mean = float(np.mean(np.array(test_losses_accum))) if test_losses_accum else float('nan')
-        train_mean_losses.append(train_mean)
-        test_mean_losses.append(test_mean)
-        logger.info("Finished streaming epoch %d/%d | mean_train_loss=%.4E | mean_test_loss=%.4E", epoch + 1, n_epochs, train_mean, test_mean)
-        # Save checkpoint after streaming epoch
-        try:
-            checkpointer(closure, optim_state, model_dir, save=True, epoch=epoch+1, n_epochs=n_epochs, losses={"train": train_mean_losses, "test": test_mean_losses})
-            meta = {
-                "parameters": params,
-                "timing": timing_metadata,
-                "model_type": model_type,
-                "training": training_metadata.get("training", {}),
-            }
-            with open(os.path.join(model_dir, "metadata.json"), "w") as f:
-                json.dump(meta, f, indent=4)
-            logger.info(f"Saved checkpoint for epoch {epoch+1} to {model_dir}")
-        except Exception:
-            logger.exception("Failed to save checkpoint after epoch %d", epoch + 1)
+        for day_idx, current_days in enumerate(window_days):
+            current_batch_steps = current_days * steps_per_day
+            current_n_samples   = nsteps // current_batch_steps
+            if current_n_samples < 1:
+                logger.warning(
+                    "Window %d days (%d steps) >= nsteps=%d; stopping curriculum early.",
+                    current_days, current_batch_steps, nsteps,
+                )
+                break
+
+            # Reinitialise optimizer at the start of every new window length
+            optim_state = optim.init(eqx.filter(closure, eqx.is_array))
+
+            logger.info(
+                "Curriculum stage %d/%d | window = %d days (%d steps, %d samples/traj)",
+                day_idx + 1, len(window_days), current_days, current_batch_steps, current_n_samples,
+            )
+
+            for stage_epoch in range(epochs_per_window):
+                rng, epoch_rng, train_rng, test_rng = jax.random.split(rng, 4)
+
+                shuffled = np.asarray(jax.random.permutation(epoch_rng, len(all_traj_indices))).tolist()
+                train_idx_host = [all_traj_indices[i] for i in shuffled[:n_train]]
+                test_idx_host  = [all_traj_indices[i] for i in shuffled[n_train:n_train + n_test]]
+
+                # === train ===
+                train_losses_accum = []
+                train_gen = data_loader.iterate_batches(
+                    traj_indices=train_idx_host,
+                    n_samples=current_n_samples,
+                    batch_steps=current_batch_steps,
+                    key=train_rng,
+                    batch_size=batch_size,
+                )
+                for windows in prefetch_generator(train_gen, size=prefetch):
+                    windows = windows.astype(np.float32)
+                    chunk = windows.reshape((1, windows.shape[0], current_batch_steps) + windows.shape[2:])
+                    chunk = jax.device_put(chunk)
+                    closure, optim_state, losses = train_epoch(chunk, closure, optim_state)
+                    train_losses_accum.extend(list(np.asarray(losses).reshape(-1).tolist()))
+
+                # === test ===
+                test_losses_accum = []
+                test_gen = data_loader.iterate_batches(
+                    traj_indices=test_idx_host,
+                    n_samples=current_n_samples,
+                    batch_steps=current_batch_steps,
+                    key=test_rng,
+                    batch_size=batch_size,
+                )
+                for windows in prefetch_generator(test_gen, size=prefetch):
+                    windows = windows.astype(np.float32)
+                    chunk = windows.reshape((1, windows.shape[0], current_batch_steps) + windows.shape[2:])
+                    chunk = jax.device_put(chunk)
+                    closure, optim_state, losses = test_epoch(chunk, closure, optim_state)
+                    test_losses_accum.extend(list(np.asarray(losses).reshape(-1).tolist()))
+
+                train_mean = float(np.mean(train_losses_accum)) if train_losses_accum else float('nan')
+                test_mean  = float(np.mean(test_losses_accum))  if test_losses_accum  else float('nan')
+                train_mean_losses.append(train_mean)
+                test_mean_losses.append(test_mean)
+                epoch_counter += 1
+
+                logger.info(
+                    "Stage %d/%d (day=%d) | sub-epoch %d/%d | global epoch %d/%d | "
+                    "mean_train=%.4E | mean_test=%.4E",
+                    day_idx + 1, len(window_days), current_days,
+                    stage_epoch + 1, epochs_per_window,
+                    epoch_counter, total_curriculum_epochs,
+                    train_mean, test_mean,
+                )
+
+                try:
+                    checkpointer(
+                        closure, optim_state, model_dir, save=True,
+                        epoch=epoch_counter,
+                        n_epochs=total_curriculum_epochs,
+                        losses={"train": train_mean_losses, "test": test_mean_losses},
+                    )
+                    meta = {
+                        "parameters": params,
+                        "timing": timing_metadata,
+                        "model_type": model_type,
+                        "training": training_metadata.get("training", {}),
+                        "curriculum": {
+                            "steps_per_day": steps_per_day,
+                            "start_days": start_days,
+                            "max_days": max_days,
+                            "epochs_per_window": epochs_per_window,
+                            "current_day": current_days,
+                            "stage_epoch": stage_epoch + 1,
+                        },
+                    }
+                    with open(os.path.join(model_dir, "metadata.json"), "w") as f:
+                        json.dump(meta, f, indent=4)
+                    logger.info(
+                        "Saved curriculum checkpoint: stage %d/%d sub-epoch %d/%d",
+                        day_idx + 1, len(window_days), stage_epoch + 1, epochs_per_window,
+                    )
+                except Exception:
+                    logger.exception(
+                        "Failed to save checkpoint at stage %d sub-epoch %d", day_idx + 1, stage_epoch + 1
+                    )
+
+    else:
+        # ── Standard (non-curriculum) training ──────────────────────────────────
+        keys= jax.random.split(key, n_epochs + 2)
+        more_keys = jax.random.split(keys[n_epochs], n_epochs) # very janky way of doing this, but no key reuse. 
+
+        for epoch in range(start_epoch, n_epochs):
+            if epoch == 0:
+                logger.info(f"Starting training for {n_epochs} epochs with batch size: {batch_steps}, traj shape: {data_loader.traj_shape} and learning rate: {learning_rate}")
+            # shuffle indices for train and test
+            shuffled_indices = jax.random.permutation(keys[epoch], n_epochs)
+            # this shuffle still doesnt guarantee a unique split every epoch
+            train_indices = shuffled_indices[:n_train]
+            test_indices = shuffled_indices[n_train:]
+
+            # === train ===
+            train_losses_accum = []
+            # Convert JAX arrays to host-side python list of indices for zarr indexing
+            # Map local shuffled positions into real trajectory IDs using all_traj_indices
+            train_pos = list(np.asarray(jax.device_get(train_indices)).tolist())
+            train_indices_host = [all_traj_indices[i] for i in train_pos]
+            # Use the data loader's batch iterator and prefetch to overlap I/O
+            train_gen = data_loader.iterate_batches(
+                traj_indices=train_indices_host,
+                n_samples=n_samples,
+                batch_steps=batch_steps,
+                key=more_keys[epoch],
+                batch_size=batch_size,
+            )
+            train_prefetch = prefetch_generator(train_gen, size=prefetch)
+            for windows in train_prefetch:
+                windows = windows.astype(np.float32)
+                # reshape to (n_batches=1, n_samples=batch_size, batch_steps, ...)
+                chunk = windows.reshape((1, windows.shape[0], batch_steps) + windows.shape[2:])
+                chunk = jax.device_put(chunk)
+                closure, optim_state, losses = train_epoch(chunk, closure, optim_state)
+                train_losses_accum.extend(list(np.asarray(losses).reshape(-1).tolist()))
+
+            # === test ===
+            test_losses_accum = []
+            test_pos = list(np.asarray(jax.device_get(test_indices)).tolist())
+            test_indices_host = [all_traj_indices[i] for i in test_pos]
+            test_gen = data_loader.iterate_batches(
+                traj_indices=test_indices_host,
+                n_samples=n_samples,
+                batch_steps=batch_steps,
+                key=more_keys[epoch],
+                batch_size=batch_size,
+            )
+            test_prefetch = prefetch_generator(test_gen, size=prefetch)
+            for windows in test_prefetch:
+                windows = windows.astype(np.float32)
+                chunk = windows.reshape((1, windows.shape[0], batch_steps) + windows.shape[2:])
+                chunk = jax.device_put(chunk)
+                closure, optim_state, losses = test_epoch(chunk, closure, optim_state)
+                test_losses_accum.extend(list(np.asarray(losses).reshape(-1).tolist()))
+
+            # compute means and continue to checkpoint/save
+            train_mean = float(np.mean(np.array(train_losses_accum))) if train_losses_accum else float('nan')
+            test_mean = float(np.mean(np.array(test_losses_accum))) if test_losses_accum else float('nan')
+            train_mean_losses.append(train_mean)
+            test_mean_losses.append(test_mean)
+            logger.info("Finished streaming epoch %d/%d | mean_train_loss=%.4E | mean_test_loss=%.4E", epoch + 1, n_epochs, train_mean, test_mean)
+            # Save checkpoint after streaming epoch
+            try:
+                checkpointer(closure, optim_state, model_dir, save=True, epoch=epoch+1, n_epochs=n_epochs, losses={"train": train_mean_losses, "test": test_mean_losses})
+                meta = {
+                    "parameters": params,
+                    "timing": timing_metadata,
+                    "model_type": model_type,
+                    "training": training_metadata.get("training", {}),
+                }
+                with open(os.path.join(model_dir, "metadata.json"), "w") as f:
+                    json.dump(meta, f, indent=4)
+                logger.info(f"Saved checkpoint for epoch {epoch+1} to {model_dir}")
+            except Exception:
+                logger.exception("Failed to save checkpoint after epoch %d", epoch + 1)
 
 
     # === validation & diagnostics ===
