@@ -7,7 +7,7 @@ filepaths:
 
 params: 
   seed: 42
-  nx: 32
+  nx: 64
   Lx: 6.283185307179586  # 2π
   beta: 10
   kmin: 4.0 
@@ -20,7 +20,7 @@ params:
   delta: 0.25
   U1: 0.0
   U2: 0.0
-  hr_nx: 128
+  hr_nx: 1024
 
 plotting:
   nsteps: 2500
@@ -52,7 +52,7 @@ ml:
   batch_size: 10 # number of samples in a training batch per update
   prefetch: 3       # prefetch a few batches to aid efficiency
   curriculum:
-    enabled: false
+    enabled: true
     steps_per_day: 48    # number of model timesteps that correspond to 1 "day"
     start_days: 1         # initial window length in days
     max_days: 50          # maximum window length in days
