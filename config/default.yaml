@@ -26,7 +26,7 @@ plotting:
   nsteps: 2500
   dt: 0.01
   cadence: 1
-  plot: ['loss', 'mse', 'quad']
+  plot: ['loss', 'mse', 'quad', 'cfl']
   group_animated: true
   auto_dt: true
   njets: 6
@@ -42,7 +42,7 @@ forcing:
 ml:
   enabled: true
   # Choose a model type to sweep. Set to 'cnn' to run the CNN parameter sweep below.
-  model_type: mlp
+  model_type: resnet
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   use_float64: false
   n_train: 7
@@ -52,7 +52,7 @@ ml:
   batch_size: 10 # number of samples in a training batch per update
   prefetch: 3       # prefetch a few batches to aid efficiency
   curriculum:
-    enabled: true
+    enabled: false
     steps_per_day: 48    # number of model timesteps that correspond to 1 "day"
     start_days: 1         # initial window length in days
     max_days: 50          # maximum window length in days

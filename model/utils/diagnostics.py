@@ -426,6 +426,54 @@ class EnergyDiagnostic(Diagnostic):
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
 
+# ============================================================
+# CFL condition over time
+# ============================================================
+
+class CFLDiagnostic(Diagnostic):
+    name = "cfl"
+
+    def run(self, trajs, out_path, cadence):
+        grid = trajs.get("grid")
+        if grid is None:
+            raise KeyError("cfl diagnostic requires 'grid' in trajectories")
+
+        q_pred = trajs.get("pred", trajs.get("q"))
+        if q_pred is None:
+            raise KeyError("cfl diagnostic requires 'truth' or 'q' in trajectories")
+        q_pred = np.asarray(q_pred)
+        if q_pred.ndim == 3:
+            q_pred = q_pred[:, None, ...]
+
+        dt = float(trajs.get("dt", 1.0))
+        dx = float(grid.dx)
+        dy = float(grid.dy)
+
+        # Subsample with cadence to keep this fast
+        nt = q_pred.shape[0]
+        frame_indices = list(range(0, nt, max(1, cadence)))
+
+        cfl_vals = []
+        for t in frame_indices:
+            psi = invert_pv_to_psi(q_pred[t], grid)
+            u, v = velocity_from_psi(psi, grid)
+            cfl_x = float(np.max(np.abs(u))) * dt / dx
+            cfl_y = float(np.max(np.abs(v))) * dt / dy
+            cfl_vals.append(max(cfl_x, cfl_y))
+
+        cfl_vals = np.array(cfl_vals)
+
+        fig, ax = plt.subplots()
+        ax.plot(frame_indices, cfl_vals, label="CFL (max over domain)")
+        ax.axhline(1.0, color='r', linestyle='--', label='CFL = 1 (unstable above)')
+        ax.set_title("CFL condition over time")
+        ax.set_xlabel("Timestep")
+        ax.set_ylabel("CFL number")
+        ax.legend()
+        ax.grid(True)
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+
 _REGISTRY = {
     "loss": LossDiagnostic,
     "mse": MSEDiagnostic,
@@ -434,6 +482,7 @@ _REGISTRY = {
     "quad": QuadGifDiagnostic,
     "energy": EnergyDiagnostic,
     "ke_spectrum_movie": KESpectrumAnimationDiagnostic,
+    'cfl': CFLDiagnostic,
 }
 
 def build_diagnostic(name: str) -> Diagnostic:
