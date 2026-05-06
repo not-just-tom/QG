@@ -82,14 +82,14 @@ def build_closure(cfg, loaded_leaves=None):
 
     arch_name = _resolve_arch_name(cfg)
     cls = registry.get(_normalize(arch_name))
-    if cls is None:
+    if cls is None:\
         raise ValueError(
             f"Unknown ML closure '{arch_name}', available: {sorted(registry.keys())}"
         )
 
     arch_params = _get_arch_params(cfg, arch_name)
     logger.info("Building closure '%s' with arch params: %s", arch_name, arch_params)
-    closure_template = cls(**arch_params)
+    closure_template = cls(**arch_params, cfg=cfg)
     if 'loaded_leaves' in locals() and loaded_leaves is not None:
         try:
             template_params, template_static = eqx.partition(closure_template, eqx.is_array)

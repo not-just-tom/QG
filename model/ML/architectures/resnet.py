@@ -26,13 +26,7 @@ class ResNet(eqx.Module):
         kernel_size=5,
         width=64,
         activation="elu",
-        alpha_input=None,
-        alpha_output=None,
-        beta=None,
-        L=None,
-        tau0=None,
-        rho0=None,
-        D=None,
+        cfg=None,
         **kwargs,
     ):
         if nlayers < 1:
@@ -43,6 +37,16 @@ class ResNet(eqx.Module):
         keys = jax.random.split(key, nlayers + (nlayers + 1))
         conv_keys = keys[:nlayers]
         proj_keys = keys[nlayers:]
+        beta = cfg.params.beta
+        Lx = cfg.params.Lx
+        Ly = cfg.params.Lx
+        tau0=1 #this is wrong and is a test for the normalization factors to be computed correctly based on the parameters of the system. The value of tau0 should not affect the training dynamics as it is absorbed into the normalization factors, but it should be set to a physically meaningful value for interpretability. In the future, we may want to make this a configurable parameter as well.
+        rho0=1 #same comment as tau0
+
+        # Compute normalization factors: S_theta(q(h?)) = alpha_out * F(alpha_in * q(h?))
+        ai = 1.0 / (abs(float(beta)) * float(Lx))
+        ao = abs(float(tau0)) * float(jnp.pi) / (float(rho0) * float(Ly) * float(Lx))
+
 
         # activation function wrapper
         if isinstance(activation, str) and activation.lower() == "tanh":
@@ -69,7 +73,7 @@ class ResNet(eqx.Module):
                     kernel_size=kernel_size,
                     padding=padding,
                     key=conv_keys[i],
-                    padding_mode='zeros',
+                    padding_mode='CIRCULAR',
                 )
             )
 
@@ -89,7 +93,7 @@ class ResNet(eqx.Module):
             )
 
         # trainable scalar multipliers and scalar biases for each skip
-        alphas = jnp.ones((n_skips,))
+        alphas = 1e-2*jnp.ones((n_skips,))
         biases = jnp.zeros((n_skips,))
 
         self.convs = convs
@@ -97,28 +101,6 @@ class ResNet(eqx.Module):
         self.alphas = alphas
         self.biases = biases
         self.activation = act
-
-        # Compute normalization factors per the paper: S_theta(zeta) = alpha_out * F(alpha_in * zeta)
-        # Priority: explicit alpha_input/alpha_output args, else compute from physical params, else 1.0
-        try:
-            if alpha_input is not None:
-                ai = float(alpha_input)
-            elif (beta is not None) and (L is not None):
-                ai = 1.0 / (abs(float(beta)) * float(L))
-            else:
-                ai = 1.0
-        except Exception:
-            ai = 1.0
-
-        try:
-            if alpha_output is not None:
-                ao = float(alpha_output)
-            elif (tau0 is not None) and (rho0 is not None) and (D is not None) and (L is not None):
-                ao = abs(float(tau0)) * float(jnp.pi) / (float(rho0) * float(D) * float(L))
-            else:
-                ao = 1.0
-        except Exception:
-            ao = 1.0
 
         # store as jax arrays for safe broadcasting in jitted code
         self.alpha_input = jnp.array(ai, dtype=jnp.float32)

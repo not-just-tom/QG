@@ -193,9 +193,9 @@ def run(cfg):
 
     # Set up optimiser - might be needed to make more complex if we want to do things like learning rate scheduling
     if cfg.ml.optimiser=='Adam':
-        optim = optax.adam(learning_rate)
+        optim = optax.chain(optax.clip_by_global_norm(1.0), optax.adam(learning_rate))
     elif cfg.ml.optimiser=='AdamW':
-        optim = optax.adamw(learning_rate)
+        optim = optax.chain(optax.clip_by_global_norm(1.0), optax.adamw(learning_rate))
     else:
         raise ValueError(f"Unsupported optimiser: {cfg.ml.optimiser}. Supported options are 'Adam' and 'AdamW'.")
     

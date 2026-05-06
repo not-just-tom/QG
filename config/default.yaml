@@ -42,7 +42,7 @@ forcing:
 ml:
   enabled: true
   # Choose a model type to sweep. Set to 'cnn' to run the CNN parameter sweep below.
-  model_type: resnet
+  model_type: mlp
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   use_float64: false
   n_train: 7

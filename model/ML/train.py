@@ -94,6 +94,35 @@ def compute_traj_errors(target_traj, forced_model, template_state, closure_param
     
     return residual_q
 
+def maddison_loss(residual_q, lr_model, beta=10.0, scale_factor=1e4):
+    """Compute loss per Maddison (2026) eqn 7: spatial interior weighting, no boundary.
+    
+    residual_q: (nsteps, nz, ny, nx) error in physical space
+    lr_model: QGM instance (provides grid spacing)
+    beta: Rossby parameter
+    scale_factor: front multiplier (10^4 in paper, can tune)
+    """
+    # Spatial weighting: interior points only (exclude boundary)
+    # Create a mask: 1 for interior, 0 for boundary
+    ny, nx = residual_q.shape[-2:]
+    interior_mask = jnp.ones((ny, nx))
+    interior_mask = interior_mask.at[0, :].set(0.0)
+    interior_mask = interior_mask.at[-1, :].set(0.0)
+    interior_mask = interior_mask.at[:, 0].set(0.0)
+    interior_mask = interior_mask.at[:, -1].set(0.0)
+    
+    dx = lr_model.get_grid().dx
+    L = float(lr_model.Lx)
+    
+    # Normalization: 1 / (beta^2 * L^2) * 1/(4*L^2) * scale_factor
+    norm_factor = scale_factor / (beta**2 * L**2 * 4.0 * L**2)
+    
+    # Squared residual weighted by interior mask and grid spacing dx^2
+    weighted_residual_sq = (residual_q ** 2) * interior_mask[None, None, :, :] * (dx**2)
+    
+    loss = norm_factor * jnp.mean(weighted_residual_sq)
+    return loss
+
 def make_train_epoch(lr_model, dt, optim):
     """Factory that returns a JIT-compiled `train_epoch` function bound to
     the provided low-resolution physics model `lr_model`, a step `dt` (low_res?), and optimizer.
@@ -115,7 +144,11 @@ def make_train_epoch(lr_model, dt, optim):
                                       template_state=template_state,
                                       closure_params=params)
                 )(batch)
-                return jnp.mean(err**2)
+                try:
+                    return maddison_loss(err, lr_model, beta=float(lr_model.beta))
+                except Exception:
+                    # Fallback to simple MSE if Maddison loss fails
+                    return jnp.mean(err**2)
 
             loss, grads = eqx.filter_value_and_grad(loss_fn)(closure_params, batch)
             updates, new_optim_state = optim.update(grads, optim_state, closure_params)
@@ -150,7 +183,11 @@ def make_test_epoch(lr_model, dt):
                                       template_state=template_state,
                                       closure_params=params)
                 )(batch)
-                return jnp.mean(err ** 2)
+                try:
+                    return maddison_loss(err, lr_model, beta=float(lr_model.beta))
+                except Exception:
+                    # Fallback to simple MSE if Maddison loss fails
+                    return jnp.mean(err**2)
 
             loss = loss_fn(closure_params, batch)
             # Return unchanged carry and the computed loss
