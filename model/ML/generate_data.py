@@ -18,15 +18,10 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     '''
 
     # Timing parameters
-    n_total = cfg.ml.n_train + cfg.ml.n_test + 1
-    try:
-        nsteps = cfg.plotting.nsteps
-        batch_size = 5 # hardcoded bc it was confusing me. It's just the trajs generated in batches of 5 rn
-        batch_steps = cfg.ml.batch_steps
-        spinup = int(cfg.plotting.spinup)
-    except AttributeError as e:
-        logger.error("Missing required configuration parameters: %s", e)
-        raise ValueError("Configuration must include plotting.nsteps, ml.batch_size, ml.batch_steps, and plotting.spinup") from e
+    n_total = cfg.ml.n_train + cfg.ml.n_test + 1 # one for validation
+    nsteps = cfg.plotting.nsteps
+    batch_size = 5 # hardcoded bc it was confusing me. It's just the trajs generated in batches of 5 rn
+    spinup = int(cfg.plotting.spinup)
 
     logger.info(f"Generating %d trajectories with %d steps.", n_total, nsteps)
     
@@ -140,12 +135,10 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
                 logger.warning(f"NaN detected in trajectory {n_generated+i}")
                 continue
 
-            # Optimize chunking by aligning with training window size (batch_steps)
-            time_chunk = min(q_traj.shape[0], batch_steps)
             traj_group.create_array(
                 f"traj_{n_generated+i:05d}",
                 data=q_traj.astype(np.float32),
-                chunks=(time_chunk, q_traj.shape[1], q_traj.shape[2], q_traj.shape[3]),
+                chunks=(1000, q_traj.shape[1], q_traj.shape[2], q_traj.shape[3]),
                 compressors=[compressor],
             )
 

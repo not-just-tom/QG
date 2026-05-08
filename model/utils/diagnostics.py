@@ -341,7 +341,7 @@ class QuadGifDiagnostic(Diagnostic):
         truth_np = np.asarray(truth)
         err = pred_np - truth_np
 
-        indices = np.arange(0, pred_np.shape[0], 10)
+        indices = np.arange(0, pred_np.shape[0], cadence)
         # determine color limits per panel
         vmin_truth = np.percentile(truth_np, 1)
         vmax_truth = np.percentile(truth_np, 99)

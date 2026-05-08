@@ -12,7 +12,6 @@ class ResNet(eqx.Module):
     convs: List[Any]
     projs: List[Any]
     alphas: jnp.ndarray
-    biases: jnp.ndarray
     activation: Any
     alpha_input: jnp.ndarray
     alpha_output: jnp.ndarray
@@ -92,14 +91,14 @@ class ResNet(eqx.Module):
                 )
             )
 
-        # trainable scalar multipliers and scalar biases for each skip
+        # trainable scalar multipliers for each skip connection
+        # Biases are intentionally omitted: a constant additive term per step
+        # accumulates as a linear drift in q over the rollout and destabilises.
         alphas = 1e-2*jnp.ones((n_skips,))
-        biases = jnp.zeros((n_skips,))
 
         self.convs = convs
         self.projs = projs
         self.alphas = alphas
-        self.biases = biases
         self.activation = act
 
         # store as jax arrays for safe broadcasting in jitted code
@@ -127,8 +126,7 @@ class ResNet(eqx.Module):
         # F_theta sees the normalized input consistently across all skips.
         for i, feature in enumerate([x_in_scaled] + outs):
             proj = self.projs[i](feature)
-            # broadcast scalar alpha and bias across channels/spatial dims
-            total = total + self.alphas[i] * proj + self.biases[i]
+            total = total + self.alphas[i] * proj
 
         # Apply output normalization factor
         return self.alpha_output * total

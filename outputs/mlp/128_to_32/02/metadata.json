@@ -17,26 +17,25 @@
     },
     "timing": {
         "spinup": 100000,
-        "nsteps": 2500,
+        "nsteps": 1000,
         "dt (original)": 0.01,
         "auto_dt": true,
-        "final dt": 0.00441786493243194,
-        "batch_steps": 100
+        "final dt": 0.00441786493243194
     },
-    "model_type": "resnet",
+    "model_type": "mlp",
     "training": {
         "optimiser": "AdamW",
         "prefetch": 3,
-        "batch_steps": 100,
         "n_train": 7,
         "n_test": 2,
         "model_arch": {
             "learning_rate": 0.0001,
-            "nlayers": 7,
-            "width": 32,
-            "kernel_size": 5,
-            "activation": "elu",
-            "projection": "none"
+            "nlayers": 3,
+            "in_channels": 1,
+            "out_channels": 1,
+            "kernel_size": 3,
+            "width": 64,
+            "activation": "tanh"
         }
     }
 }
