@@ -50,7 +50,7 @@ importlib.reload(model.ML.utils.dataloading)
 importlib.reload(model.ML.train)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
-from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch, maddison_loss
+from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch, maddison_loss, compute_traj_errors_and_cfl
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import coarsen
 from model.ML.generate_data import generate_train_data
@@ -472,27 +472,23 @@ def run(cfg):
     sgs_traj = np.asarray(val_traj["sgs"])[:window]
     hr_frames = np.asarray(truth_traj)[:window]
 
-    trajectories = {
-        "pred": pred_frames,
-        "truth": hr_frames,
-        "sgs": sgs_traj,
-        "loss_history": {"train": train_mean_losses, "test": test_mean_losses},
-        "cadence": cadence,
-    }
-    # Compute zero-model baseline (low-res physics with no ML dynamics)
     try:
         from model.ML.architectures.zero import ZeroModel
         zero_closure = ZeroModel()
         zero_val = validation_epoch(truth_traj, cfg, zero_closure)
         zero_pred = np.asarray(zero_val["pred_frames"][:window])  # (nt, nz, ny, nx)
-        # Compute per-timestep MSE consistent with MSEDiagnostic's averaging
-        zero_mse = np.mean((zero_pred - hr_frames) ** 2, axis=(-2, -1))  # (nt, nz)
-        zero_mse = np.mean(zero_mse, axis=1)  # (nt,)
-        maddison = maddison_loss(zero_pred - hr_frames, lr_model, beta=float(lr_model.beta))
-        trajectories["zero_loss"] = maddison
+        maddison = maddison_loss(hr_frames - zero_pred, lr_model, beta=float(lr_model.beta))
     except Exception as e:
         logger.exception("Failed to compute zero-model baseline: %s", str(e))
-        
+
+    trajectories = {
+        "pred": pred_frames,
+        "truth": hr_frames,
+        "sgs": sgs_traj,
+        "loss_history": {"train": train_mean_losses, "test": test_mean_losses, 'zero': maddison},
+        "cadence": cadence,
+    }
+
 
     # If running in HPC mode, skip all plotting and return a single scalar
     # metric: summed validation MSE across all timesteps (mean over layers)

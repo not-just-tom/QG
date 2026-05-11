@@ -91,15 +91,15 @@ def compute_traj_errors_and_cfl(target_traj, forced_model, template_state, closu
 
     _, (traj_dqh, cfl_vals) = jax.lax.scan(step, init_state, None, length=nsteps)
     max_cfl = jnp.max(cfl_vals)
-    
-    # target_diff_h: true spectral displacement from coarsened high-res data
-    target_qh = jax.vmap(lambda x: jnp.fft.rfftn(x, axes=(-2, -1), norm='ortho'))(target_traj)
-    target_diff_h = target_qh[1:] - target_qh[:-1]
 
-    # The discrepancy is entirely handled in spectral space to minimize iFFTs and memory
-    # Error = True_Delta_Qh - Predicted_Delta_Qh
-    residual_qh = target_diff_h - traj_dqh
-    
+    target_qh = jax.vmap(lambda x: jnp.fft.rfftn(x, axes=(-2, -1), norm='ortho'))(target_traj)
+
+    # pred_qh[t] = q(t0) + sum_{s=0}^{t} dqh[s]  (shape: nsteps, nz, ny, nx//2+1)
+    pred_qh = init_qh[None] + jnp.cumsum(traj_dqh, axis=0)
+
+    # State-level residual: truth trajectory vs predicted trajectory
+    residual_qh = target_qh[1:] - pred_qh
+
     # Map back to physical space only at the very end for the loss
     # (nsteps, nz, ny, nx)
     residual_q = jax.vmap(lambda x: jnp.fft.irfftn(x, axes=(-2, -1), norm='ortho', s=target_traj.shape[-2:]))(residual_qh)

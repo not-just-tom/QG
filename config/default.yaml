@@ -42,7 +42,7 @@ forcing:
 
 ml:
   enabled: true
-  model_type: mlp
+  model_type: resnet
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 7

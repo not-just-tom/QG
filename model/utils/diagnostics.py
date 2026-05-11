@@ -33,6 +33,7 @@ class LossDiagnostic(Diagnostic):
 
         train = np.asarray(losses.get("train", []))
         test  = np.asarray(losses.get("test", []))
+        zero = np.asarray(losses.get("zero", []))
 
         fig, ax = plt.subplots()
 
@@ -40,6 +41,9 @@ class LossDiagnostic(Diagnostic):
             ax.plot(np.arange(1, len(train) + 1), train, label="train")
         if test.size:
             ax.plot(np.arange(1, len(test) + 1), test, label="test")
+        if zero.size:
+            # plot average zero loss
+            ax.hlines(zero.mean(), 1, len(test), colors="C2", linestyles="--", label="zero model")
 
         ax.set_title("Training / Validation Loss")
         ax.set_xlabel("Epoch")
@@ -341,6 +345,17 @@ class QuadGifDiagnostic(Diagnostic):
         truth_np = np.asarray(truth)
         err = pred_np - truth_np
 
+        # safe-guard: if no sgs provided, create zeros to avoid crashes
+        if sgs_pred is None:
+            sgs_pred = np.zeros_like(pred_np)
+        sgs_pred = np.asarray(sgs_pred)
+
+        # cumulative SGS across time (simple cumsum as requested)
+        try:
+            sgs_cum = np.cumsum(sgs_pred, axis=0)
+        except Exception:
+            sgs_cum = np.zeros_like(sgs_pred)
+
         indices = np.arange(0, pred_np.shape[0], cadence)
         # determine color limits per panel
         vmin_truth = np.percentile(truth_np, 1)
@@ -349,12 +364,17 @@ class QuadGifDiagnostic(Diagnostic):
         vmax_err = np.percentile(err, 99)
         vmin_sgs = np.percentile(sgs_pred, 1)
         vmax_sgs = np.percentile(sgs_pred, 99)
+        vmin_sgs_cum = np.percentile(sgs_cum, 1)
+        vmax_sgs_cum = np.percentile(sgs_cum, 99)
 
-        fig, axes = plt.subplots(2,2,figsize=(8,8))
+        # expand layout to include instantaneous SGS and cumulative SGS
+        fig, axes = plt.subplots(2,3,figsize=(12,8))
         ax_truth = axes[0,0]
         ax_ml = axes[0,1]
-        ax_err = axes[1,0]
-        ax_sgs = axes[1,1]
+        ax_err = axes[0,2]
+        ax_sgs_inst = axes[1,0]
+        ax_sgs_cum = axes[1,1]
+        ax_empty = axes[1,2]
 
         im_truth = ax_truth.imshow(truth_np[0,0], origin='lower', cmap='RdBu_r', vmin=vmin_truth, vmax=vmax_truth)
         ax_truth.set_title('Truth')
@@ -362,8 +382,15 @@ class QuadGifDiagnostic(Diagnostic):
         ax_ml.set_title('ML adjusted')
         im_err = ax_err.imshow(err[0,0], origin='lower', cmap='RdBu_r', vmin=vmin_err, vmax=vmax_err)
         ax_err.set_title('Error')
-        im_sgs = ax_sgs.imshow(sgs_pred[0,0], origin='lower', cmap='RdBu_r', vmin=vmin_sgs, vmax=vmax_sgs)
-        ax_sgs.set_title('SGS')
+
+        im_sgs_inst = ax_sgs_inst.imshow(sgs_pred[0,0], origin='lower', cmap='RdBu_r', vmin=vmin_sgs, vmax=vmax_sgs)
+        ax_sgs_inst.set_title('SGS (instant)')
+
+        im_sgs_cum = ax_sgs_cum.imshow(sgs_cum[0,0], origin='lower', cmap='RdBu_r', vmin=vmin_sgs_cum, vmax=vmax_sgs_cum)
+        ax_sgs_cum.set_title('SGS (cumulative)')
+
+        # clear the empty axis (use for annotations or leave blank)
+        ax_empty.axis('off')
 
         for ax in axes.ravel():
             ax.set_xticks([])
@@ -371,17 +398,22 @@ class QuadGifDiagnostic(Diagnostic):
 
         fig.colorbar(im_truth, ax=[ax_truth, ax_ml], shrink=0.6)
         fig.colorbar(im_err, ax=ax_err, shrink=0.6)
-        fig.colorbar(im_sgs, ax=ax_sgs, shrink=0.6)
+        fig.colorbar(im_sgs_inst, ax=ax_sgs_inst, shrink=0.6)
+        fig.colorbar(im_sgs_cum, ax=ax_sgs_cum, shrink=0.6)
 
         def update(i):
             idx = indices[i]
             im_truth.set_data(truth_np[idx,0])
             im_ml.set_data(pred_np[idx,0])
             im_err.set_data(err[idx,0])
+            # instantaneous SGS (true incremental term we are aspiring for)
             if idx < sgs_pred.shape[0]:
-                im_sgs.set_data(sgs_pred[idx,0])
+                im_sgs_inst.set_data(sgs_pred[idx,0])
+            # cumulative SGS up to this frame
+            if idx < sgs_cum.shape[0]:
+                im_sgs_cum.set_data(sgs_cum[idx,0])
             fig.suptitle(f'timestep {idx}')
-            return im_truth, im_ml, im_err, im_sgs
+            return im_truth, im_ml, im_err, im_sgs_inst, im_sgs_cum
 
         anim = FuncAnimation(fig, update, frames=len(indices), interval=100, blit=False)
 

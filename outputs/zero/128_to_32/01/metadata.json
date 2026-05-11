@@ -20,14 +20,12 @@
         "nsteps": 1000,
         "dt (original)": 0.01,
         "auto_dt": true,
-        "final dt": 0.00441786493243194,
-        "batch_steps": 100
+        "final dt": 0.00441786493243194
     },
     "model_type": "zero",
     "training": {
         "optimiser": "AdamW",
         "prefetch": 3,
-        "batch_steps": 100,
         "n_train": 7,
         "n_test": 2,
         "model_arch": {
