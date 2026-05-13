@@ -27,7 +27,7 @@ plotting:
   dt: 0.01
   plotting_window: 0
   cadence: 10
-  plot: ['loss', 'mse', 'quad', 'cfl']
+  plot: ['loss', 'mse', 'quad', 'ke_spectrum']
   group_animated: true
   auto_dt: true
   njets: 6
@@ -62,18 +62,15 @@ architectures:
     width: 64
     kernel_size: 5
     activation: "relu" 
-    projection: CNN
   unet:
     learning_rate: 0.0005
     base_channels: 32
     depth: 4
-    projection: CNN
   fno:
     learning_rate: 0.0001 #[0.0001, 0.0005, 0.001]
     width: 32 #[32, 64, 128]
     modes2: 8 #[8, 16, 24]
     modes1: 8 #[8, 16, 24]
-    projection: CNN
   diffusion:
     learning_rate: 0 # is this needed?
     channels: 1
@@ -100,7 +97,6 @@ architectures:
     width: 32
     kernel_size: 5
     activation: "elu" 
-    projection: none
   zero:
     learning_rate: 0 # obviously not needed but coded in regardless
 

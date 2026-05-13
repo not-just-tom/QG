@@ -13,8 +13,6 @@ class ResNet(eqx.Module):
     projs: List[Any]
     alphas: jnp.ndarray
     activation: Any
-    alpha_input: jnp.ndarray
-    alpha_output: jnp.ndarray
 
     def __init__(
         self,
@@ -36,16 +34,6 @@ class ResNet(eqx.Module):
         keys = jax.random.split(key, nlayers + (nlayers + 1))
         conv_keys = keys[:nlayers]
         proj_keys = keys[nlayers:]
-        beta = cfg.params.beta
-        Lx = cfg.params.Lx
-        Ly = cfg.params.Lx
-        tau0=1 #this is wrong and is a test for the normalization factors to be computed correctly based on the parameters of the system. The value of tau0 should not affect the training dynamics as it is absorbed into the normalization factors, but it should be set to a physically meaningful value for interpretability. In the future, we may want to make this a configurable parameter as well.
-        rho0=1 #same comment as tau0
-
-        # Compute normalization factors: S_theta(q(h?)) = alpha_out * F(alpha_in * q(h?))
-        ai = 1.0 / (abs(float(beta)) * float(Lx))
-        ao = abs(float(tau0)) * float(jnp.pi) / (float(rho0) * float(Ly) * float(Lx))
-
 
         # activation function wrapper
         if isinstance(activation, str) and activation.lower() == "tanh":
@@ -101,16 +89,17 @@ class ResNet(eqx.Module):
         self.alphas = alphas
         self.activation = act
 
-        # store as jax arrays for safe broadcasting in jitted code
-        self.alpha_input = jnp.array(ai, dtype=jnp.float32)
-        self.alpha_output = jnp.array(ao, dtype=jnp.float32)
+        # Note: input/output scaling is handled externally by a
+        # NormalizedClosure wrapper. The ResNet expects normalized
+        # inputs and returns outputs in the same normalized space.
 
     def __call__(self, qh):
         # qh expected shape: (batch, channels, H, W) or (channels, H, W)
         x_in = qh
 
-        # Apply input normalization factor before feeding into the NN
-        x_in_scaled = self.alpha_input * x_in
+        # Assume inputs are already normalized by an external wrapper
+        # (data-driven scaling). Do not apply internal trainable scalers.
+        x_in_scaled = x_in
 
         # collect outputs after each conv+activation
         outs = []
@@ -128,5 +117,5 @@ class ResNet(eqx.Module):
             proj = self.projs[i](feature)
             total = total + self.alphas[i] * proj
 
-        # Apply output normalization factor
-        return self.alpha_output * total
+        # Return network output in the same normalized space as input
+        return total

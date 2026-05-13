@@ -9,7 +9,7 @@ importlib.reload(model.core.steppers)
 importlib.reload(model.ML.forced_model)
 from model.ML.utils.utils import parameterization
 from model.ML.forced_model import ForcedModel
-from model.core.steppers import SteppedModel, AB3Stepper
+from model.core.steppers import SteppedModel, AB3Stepper, CNABStepper
 import numpy as np
 
 
@@ -33,7 +33,7 @@ def load_forced_model(lr_model, closure, dt):
 
     closure_func = parameterization(_param_adapter)
 
-    lr_stepper = AB3Stepper(dt=dt)
+    lr_stepper = CNABStepper(dt=dt)
     forced_model = SteppedModel(
         model=ForcedModel(model=lr_model, closure=closure_func, init_param_aux_func=init_param_func),
         stepper=lr_stepper,
@@ -244,69 +244,172 @@ def make_test_epoch(lr_model, dt, cfl_limit=1.0):
 
 
 def make_validation_epoch(lr_model, dt):
-    """Factory that returns a `validation_epoch` function
+    """Factory that returns a validation_epoch function with
+    SGS diagnostics and target SGS computation.
     """
 
-    def _validation_epoch(traj, cfg, closure):
-        """
-        """
+    def _validation_epoch(truth_traj, cfg, closure):
 
-        # ensure traj is an array and has time dim
-        traj = jnp.asarray(traj)
-        if traj.ndim == 4:
-            # (nt, nz, ny, nx) -> ok
+        truth_traj = jnp.asarray(truth_traj)
+
+        if truth_traj.ndim == 4:
             pass
-        elif traj.ndim == 5:
-            # batch provided; take first sample for validation convenience
-            traj = traj[0]
+        elif truth_traj.ndim == 5:
+            truth_traj = truth_traj[0]
         else:
-            raise ValueError("Validation trajectory must have shape (nt, nz, ny, nx) or (batch, nt, nz, ny, nx)")
+            raise ValueError(
+                "Validation trajectory must have shape "
+                "(nt, nz, ny, nx) or (batch, nt, nz, ny, nx)"
+            )
 
-        # read parameters from cfg
-        nsteps_cfg = int(getattr(cfg.plotting, "nsteps", traj.shape[0] - 1))
+        nsteps_cfg = int(getattr(cfg.plotting, "nsteps", truth_traj.shape[0] - 1))
         seed = int(getattr(cfg.params, "seed", 0))
 
-        # Prepare forced model and closure params; retain closure_static for SGS capture
-        forced_model, closure_params, closure_static = load_forced_model(lr_model, closure, dt)
-
-        # limit nsteps to available trajectory length
-        n_intervals = min(nsteps_cfg, int(traj.shape[0]) - 1)
-
-        # Inline rollout that captures the actual closure contribution at each step
-        # rather than recalculating it post-hoc from saved predicted states.
-        template_state = lr_model.initialise(jax.random.PRNGKey(seed))
-        init_qh = jnp.fft.rfftn(traj[0], axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
-        base_state = template_state.update(qh=init_qh)
-        init_stepper_state = forced_model.initialize_stepper_state(
-            forced_model.model.initialise_param_state(base_state, closure_params)
+        n_intervals = min(nsteps_cfg, int(truth_traj.shape[0]) - 1)
+        forced_model, closure_params, closure_static = load_forced_model(
+            lr_model, closure, dt
         )
 
-        real_shape = traj.shape[-2:]
+        # Zero model baseline
+        from model.ML.architectures.zero import ZeroModel
+        zero_closure = ZeroModel()
+        zero_model, zero_params, _ = load_forced_model(
+            lr_model, zero_closure, dt
+        )
 
+        template_state = lr_model.initialise(
+            jax.random.PRNGKey(seed)
+        )
+
+        init_qh = jnp.fft.rfftn(
+            truth_traj[0],
+            axes=(-2, -1),
+            norm='ortho'
+        ).astype(template_state.qh.dtype)
+
+        base_state = template_state.update(qh=init_qh)
+
+        init_stepper_state = forced_model.initialize_stepper_state(
+            forced_model.model.initialise_param_state(
+                base_state,
+                closure_params
+            )
+        )
+
+        init_zero_state = zero_model.initialize_stepper_state(
+            zero_model.model.initialise_param_state(
+                base_state,
+                zero_params
+            )
+        )
+
+        real_shape = truth_traj.shape[-2:]
+
+        # ML closure rollout
         def _step(carry, _x):
-            # Capture the closure output in the same call-path as the physics step
-            # by reading it from param_aux which holds closure_params; then step.
-            # We call closure_combiner once here and reuse its output rather than
-            # letting forced_model.step_model call it a second time independently.
-            dq_closure, _ = closure_combiner(carry.state.model_state, carry.state.param_aux.value, closure_static)
+
+            dq_closure, _ = closure_combiner(
+                carry.state.model_state,
+                carry.state.param_aux.value,
+                closure_static,
+            )
+
             next_state = forced_model.step_model(carry)
-            dqh_total = next_state.state.model_state.qh - carry.state.model_state.qh
+
+            dqh_total = (
+                next_state.state.model_state.qh
+                - carry.state.model_state.qh
+            )
+
             return next_state, (dqh_total, dq_closure)
 
-        _, (traj_dqh, sgs_dq) = jax.lax.scan(_step, init_stepper_state, None, length=n_intervals)
+        _, (traj_dqh, sgs_dq) = jax.lax.scan(
+            _step,
+            init_stepper_state,
+            None,
+            length=n_intervals,
+        )
 
-        qh0 = jnp.fft.rfftn(traj[0], axes=(-2, -1), norm='ortho')
-        qh_traj = jnp.concatenate([qh0[None, ...], qh0[None, ...] + jnp.cumsum(traj_dqh, axis=0)], axis=0)
+        def _zero_step(carry, _x):
 
-        pred_frames = jax.vmap(lambda x: jnp.fft.irfftn(x, axes=(-2, -1), norm='ortho', s=real_shape))(qh_traj)
+            next_state = zero_model.step_model(carry)
 
-        # sgs_dq: (n_intervals, nz, ny, nx) — actual closure output at each step
+            dqh_total = (
+                next_state.state.model_state.qh
+                - carry.state.model_state.qh
+            )
+
+            return next_state, dqh_total
+
+        _, zero_dqh = jax.lax.scan(
+            _zero_step,
+            init_zero_state,
+            None,
+            length=n_intervals,
+        )
+
+        # Reconstruct trajectories in physical space
+        qh0 = jnp.fft.rfftn(
+            truth_traj[0],
+            axes=(-2, -1),
+            norm='ortho'
+        )
+
+        qh_traj = jnp.concatenate(
+            [
+                qh0[None, ...],
+                qh0[None, ...] + jnp.cumsum(traj_dqh, axis=0),
+            ],
+            axis=0,
+        )
+
+        zero_qh_traj = jnp.concatenate(
+            [
+                qh0[None, ...],
+                qh0[None, ...] + jnp.cumsum(zero_dqh, axis=0),
+            ],
+            axis=0,
+        )
+
+        pred_frames = jax.vmap(
+            lambda x: jnp.fft.irfftn(
+                x,
+                axes=(-2, -1),
+                norm='ortho',
+                s=real_shape,
+            )
+        )(qh_traj)
+
+        zero_frames = jax.vmap(
+            lambda x: jnp.fft.irfftn(
+                x,
+                axes=(-2, -1),
+                norm='ortho',
+                s=real_shape,
+            )
+        )(zero_qh_traj)
+
+        # SGS diagnostics
+        sgs_increment = sgs_dq
+        sgs_forcing = sgs_increment / dt # timestep-independent forcing form
+        target_sgs = truth_traj[1:n_intervals + 1] - zero_frames[1:]
+        target_sgs_forcing = target_sgs / dt
+
         result = {
             "pred_frames": jax.device_get(pred_frames),
-            "sgs": jax.device_get(sgs_dq),
-            "qh": jax.device_get(qh_traj),
-        }
 
+            "zero_frames": jax.device_get(zero_frames),
+
+            "sgs": jax.device_get(sgs_increment),
+
+            "sgs_forcing": jax.device_get(sgs_forcing),
+
+            "target_sgs": jax.device_get(target_sgs),
+
+            "target_sgs_forcing": jax.device_get(target_sgs_forcing),
+
+            "truth": jax.device_get(truth_traj),
+        }
         return result
 
     return _validation_epoch

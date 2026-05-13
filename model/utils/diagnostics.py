@@ -67,96 +67,94 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
     def run(self, trajs, out_path, cadence):
         from matplotlib.animation import FuncAnimation, PillowWriter
 
-        # Read inputs: truth and optional prediction
-        if "truth" in trajs and trajs["truth"] is not None:
-            q_truth = np.asarray(trajs["truth"])
-        elif "q" in trajs and trajs["q"] is not None:
-            q_truth = np.asarray(trajs["q"])
-        else:
-            raise KeyError("ke_spectrum_movie requires 'truth' or 'q' in trajectories")
-        q_pred = trajs.get("pred")
-        q_pred = None if q_pred is None else np.asarray(q_pred)
         grid = trajs.get("grid")
         if grid is None:
             raise KeyError("ke_spectrum_movie requires 'grid' in trajectories")
 
-        # Ensure we have time axis and layer axis (nt, nz, ny, nx)
-        if q_truth.ndim == 3:
-            q_truth = q_truth[:, None, ...]
-        if q_pred is not None and q_pred.ndim == 3:
-            q_pred = q_pred[:, None, ...]
+        # prefer physical predicted frames produced by validation; fallback to 'pred'
+        q_truth = trajs.get("truth")
+        q_pred = trajs.get("pred_frames")
+        q_truth = np.asarray(q_truth[10:]) # im trying out skipping first few frames to avoid 0s ?
+        q_pred = np.asarray(q_pred[10:])
 
-        nt = q_truth.shape[0]
-        frames = list(range(0, nt, cadence))
-        if len(frames) == 0:
+        # compute per-frame spectra helper
+        def compute_frame_spectra(q):
+            try:
+                frames = []
+                nt = q.shape[0]
+                for t in range(nt):
+                    psi_t = invert_pv_to_psi(q[t], grid)
+                    u_t, v_t = velocity_from_psi(psi_t, grid)
+                    spec_t = isotropic_ke_spectrum(u_t, v_t, grid)
+                    Et = spec_t["E"]
+                    if Et.ndim > 1:
+                        Et = Et.mean(axis=0)
+                    frames.append(np.asarray(Et).ravel())
+                k = np.asarray(spec_t["k"]).ravel()
+                return np.stack(frames, axis=0), k
+            except Exception:
+                return None, None
+
+        E_truth_frames, k = compute_frame_spectra(q_truth)
+        E_pred_frames, _ = compute_frame_spectra(q_pred) if q_pred is not None else (None, None)
+
+        if E_truth_frames is None:
+            raise RuntimeError("Failed to compute truth spectra for KE animation")
+
+        # averages and stds
+        E_truth_avg = E_truth_frames.mean(axis=0)
+        E_truth_std = E_truth_frames.std(axis=0)
+        E_pred_avg = E_pred_frames.mean(axis=0) if E_pred_frames is not None else None
+        E_pred_std = E_pred_frames.std(axis=0) if E_pred_frames is not None else None
+
+        # select frames for animation using cadence
+        nt = E_truth_frames.shape[0]
+        frame_indices = list(range(0, nt, max(1, cadence)))
+        if len(frame_indices) == 0:
             raise ValueError("No frames selected for KE spectrum movie (check cadence)")
 
-        # Precompute first selected frame to build axes
-        psi0 = invert_pv_to_psi(q_truth[frames[0]], grid)
-        u0, v0 = velocity_from_psi(psi0, grid)
-        spec0 = isotropic_ke_spectrum(u0, v0, grid)
-        k = np.asarray(spec0["k"]).ravel()
-
-        # initial spectra
-        E_truth0 = spec0["E"]
-        if E_truth0.ndim > 1:
-            E_truth0 = E_truth0.mean(axis=0)
-        E_truth0 = np.asarray(E_truth0).ravel()
-
-        if q_pred is not None:
-            psi0p = invert_pv_to_psi(q_pred[frames[0]], grid)
-            up0, vp0 = velocity_from_psi(psi0p, grid)
-            spec0p = isotropic_ke_spectrum(up0, vp0, grid)
-            E_pred0 = spec0p["E"]
-            if E_pred0.ndim > 1:
-                E_pred0 = E_pred0.mean(axis=0)
-            E_pred0 = np.asarray(E_pred0).ravel()
-        else:
-            E_pred0 = None
-
+        # Build plot: avg lines + shading, instant lines animated on top
         fig, ax = plt.subplots()
-        ln_truth, = ax.loglog(k[1:], E_truth0[1:], label="Truth", color="k")
-        if E_pred0 is not None:
-            ln_pred, = ax.loglog(k[1:], E_pred0[1:], label="ML", linestyle="--", color="C1")
+        # plot avg
+        ax.loglog(k[1:], E_truth_avg[1:], label="Truth (avg)", color="k")
+        if E_pred_avg is not None:
+            ax.loglog(k[1:], E_pred_avg[1:], label="ML (avg)", linestyle="--", color="C1")
+        # shading ±1σ
+        try:
+            ax.fill_between(k[1:], (E_truth_avg - E_truth_std)[1:], (E_truth_avg + E_truth_std)[1:], color="k", alpha=0.12)
+            if E_pred_avg is not None:
+                ax.fill_between(k[1:], (E_pred_avg - E_pred_std)[1:], (E_pred_avg + E_pred_std)[1:], color="C1", alpha=0.08)
+        except Exception:
+            pass
+
+        # instantaneous lines (start with first selected frame)
+        E0 = E_truth_frames[frame_indices[0]]
+        ln_truth, = ax.loglog(k[1:], E0[1:], label="Truth (inst)", color="0.25")
+        if E_pred_frames is not None:
+            Ep0 = E_pred_frames[frame_indices[0]]
+            ln_pred, = ax.loglog(k[1:], Ep0[1:], label="ML (inst)", color="C3", linestyle="--")
         else:
             ln_pred = None
 
         ax.set_xlabel("k")
         ax.set_ylabel("E(k)")
-        ax.set_title(f"KE spectrum (t={frames[0]})")
-        ax.grid(True)
-        if ln_pred is not None:
-            ax.legend()
+        ax.set_title(f"KE spectrum (t={frame_indices[0]})")
+        ax.grid(True, which="both")
+        ax.legend()
 
-        def update(frame_idx):
-            frame = frames[frame_idx]
-            psi = invert_pv_to_psi(q_truth[frame], grid)
-            u, v = velocity_from_psi(psi, grid)
-            spec = isotropic_ke_spectrum(u, v, grid)
-            E = spec["E"]
-            if E.ndim > 1:
-                E = E.mean(axis=0)
-            E = np.asarray(E).ravel()
-            ln_truth.set_data(k[1:], E[1:])
-
-            if q_pred is not None and ln_pred is not None:
-                psi_p = invert_pv_to_psi(q_pred[frame], grid)
-                up, vp = velocity_from_psi(psi_p, grid)
-                spec_p = isotropic_ke_spectrum(up, vp, grid)
-                Ep = spec_p["E"]
-                if Ep.ndim > 1:
-                    Ep = Ep.mean(axis=0)
-                Ep = np.asarray(Ep).ravel()
+        def update(i):
+            idx = frame_indices[i]
+            Et = E_truth_frames[idx]
+            ln_truth.set_data(k[1:], Et[1:])
+            if ln_pred is not None:
+                Ep = E_pred_frames[idx]
                 ln_pred.set_data(k[1:], Ep[1:])
-
             ax.relim()
             ax.autoscale_view()
-            ax.set_title(f"KE spectrum (t={frame})")
-            if ln_pred is not None:
-                return (ln_truth, ln_pred)
-            return (ln_truth,)
+            ax.set_title(f"KE spectrum (t={idx})")
+            return (ln_truth, ln_pred) if ln_pred is not None else (ln_truth,)
 
-        ani = FuncAnimation(fig, update, frames=len(frames), interval=200)
+        ani = FuncAnimation(fig, update, frames=len(frame_indices), interval=200)
         ani.save(out_path, writer=PillowWriter(fps=5))
         plt.close(fig)
 
@@ -171,8 +169,11 @@ class MSEDiagnostic(Diagnostic):
 
     def run(self, trajs, out_path, cadence):
         # Prefer full-resolution data if available
-        pred = trajs.get("pred_full", trajs.get("pred"))
-        truth = trajs.get("truth_full", trajs.get("truth"))
+        pred = trajs.get("pred_frames")
+        truth = trajs.get("truth")
+
+        if pred is None or truth is None:
+            raise KeyError("mse diagnostic requires 'pred' and 'truth' in trajectories")
 
         pred = np.asarray(pred)
         truth = np.asarray(truth)
@@ -182,14 +183,20 @@ class MSEDiagnostic(Diagnostic):
             pred = pred[:, None, ...]
             truth = truth[:, None, ...]
 
+        # Compute MSE averaged over spatial dimensions and layers
         mse = np.mean((pred - truth) ** 2, axis=(-2, -1))  # (nt, nz)
         mse = np.mean(mse, axis=1)                         # (nt,)
 
+        nt = mse.shape[0]
+        x = np.arange(nt)
+
         fig, ax = plt.subplots()
-        ax.plot(mse, "-o", markersize=3)
-        ax.set_title("MSE per timestep")
-        ax.set_xlabel("t")
+        ax.plot(x, mse, "-o", markersize=3, label="MSE")
+        ax.set_title("MSE per timestep (domain mean)")
+        ax.set_xlabel("Timestep")
         ax.set_ylabel("MSE")
+        if nt > 0:
+            ax.set_xlim(0, max(0, nt - 1))
         ax.grid(True)
 
         # Plot zero-model baseline if provided. Accept scalar or per-timestep array.
@@ -199,8 +206,8 @@ class MSEDiagnostic(Diagnostic):
             # Scalar baseline: draw horizontal dashed line
             if zl.ndim == 0 or zl.size == 1:
                 val = float(zl.reshape(()))
-                if mse.size > 0:
-                    ax.hlines(val, 0, mse.size - 1, colors="C2", linestyles="--", label="zero model")
+                if nt > 0:
+                    ax.hlines(val, 0, nt - 1, colors="C2", linestyles="--", label="zero model")
                 else:
                     ax.axhline(val, color="C2", linestyle="--", label="zero model")
             else:
@@ -210,7 +217,9 @@ class MSEDiagnostic(Diagnostic):
                         zl = zl[: mse.shape[0]]
                     else:
                         zl = np.pad(zl, (0, mse.shape[0] - zl.shape[0]), constant_values=np.nan)
-                ax.plot(zl, "--", color="C2", label="zero model")
+                ax.plot(x, zl, "--", color="C2", label="zero model")
+
+        if ax.get_legend_handles_labels()[0]:
             ax.legend()
 
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
@@ -225,45 +234,77 @@ class KESpectrumDiagnostic(Diagnostic):
     name = "ke_spectrum"
 
     def run(self, trajs, out_path, cadence):
-        grid = trajs["grid"]
-
-        # --- get PV fields ---
-        # Prefer full-resolution inputs when available for spectral diagnostics
-        q_truth = trajs.get("truth_full", trajs.get("truth"))
-        q_pred  = trajs.get("pred_full", trajs.get("pred"))
+        # --- get stuff ---
+        grid = trajs.get("grid")
+        q_truth = trajs.get("truth")
+        q_pred  = trajs.get("pred_frames")
         q_truth = np.asarray(q_truth)
-        q_pred  = None if q_pred is None else np.asarray(q_pred)
+        q_pred  = np.asarray(q_pred)
 
-        # --- helper: compute spectrum from PV ---
-        def compute_spectrum(q):
+        # --- helper: compute spectrum from PV (time-averaged) ---
+        def compute_avg_spectrum(q):
             psi = invert_pv_to_psi(q, grid)
             u, v = velocity_from_psi(psi, grid)
             spec = isotropic_ke_spectrum(u, v, grid)
-            return spec["k"], spec["E"].mean(axis=0).squeeze()  # time-average
+            k = np.asarray(spec["k"]).ravel()
+            E = spec["E"]
+            if E.ndim > 1:
+                E = E.mean(axis=0)
+            return k, np.asarray(E).ravel()
 
-        k, E_truth = compute_spectrum(q_truth)
-
+        # compute averaged spectra
+        k, E_truth_avg = compute_avg_spectrum(q_truth)
+        E_pred_avg = None
         if q_pred is not None:
-            _, E_pred = compute_spectrum(q_pred)
-        else:
-            E_pred = None
+            _, E_pred_avg = compute_avg_spectrum(q_pred)
+
+        # --- compute per-frame spectra ---
+        def compute_frame_spectra(q):
+            try:
+                frames = []
+                if q.ndim == 4:
+                    for t in range(q.shape[0]):
+                        psi_t = invert_pv_to_psi(q[t], grid)
+                        u_t, v_t = velocity_from_psi(psi_t, grid)
+                        spec_t = isotropic_ke_spectrum(u_t, v_t, grid)
+                        Et = spec_t["E"]
+                        if Et.ndim > 1:
+                            Et = Et.mean(axis=0)
+                        frames.append(np.asarray(Et).ravel())
+                return np.stack(frames, axis=0)
+            except Exception:
+                return None
+
+        E_truth_frames = compute_frame_spectra(q_truth)
+        E_pred_frames = compute_frame_spectra(q_pred) if q_pred is not None else None
+
+
+        E_truth_std = E_truth_frames.std(axis=0) if E_truth_frames is not None else None
+        E_pred_std = E_pred_frames.std(axis=0) if E_pred_frames is not None else None
 
         # --- plot ---
         fig, ax = plt.subplots()
 
-        ax.loglog(k[1:], E_truth[1:], label="Truth", color="k")
+        # Plot time-averaged spectra
+        ax.loglog(k[1:], E_truth_avg[1:], label="Truth (avg)", color="k")
+        if E_pred_avg is not None:
+            ax.loglog(k[1:], E_pred_avg[1:], label="ML (avg)", linestyle="--", color="C1")
 
-        if E_pred is not None:
-            ax.loglog(k[1:], E_pred[1:], label="ML", linestyle="--")
+
+        # Shade ±1σ around the mean if available
+        try:
+            if E_truth_std is not None:
+                ax.fill_between(k[1:], (E_truth_avg - E_truth_std)[1:], (E_truth_avg + E_truth_std)[1:], color="k", alpha=0.12)
+            if E_pred_std is not None and E_pred_avg is not None:
+                ax.fill_between(k[1:], (E_pred_avg - E_pred_std)[1:], (E_pred_avg + E_pred_std)[1:], color="C1", alpha=0.08)
+        except Exception:
+            pass
 
         ax.set_xlabel("k")
         ax.set_ylabel("E(k)")
         ax.set_title("Time-averaged KE spectrum")
         ax.grid(True, which="both")
-
-        if E_pred is not None:
-            ax.legend()
-
+        ax.legend()
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
 
@@ -337,93 +378,107 @@ class QuadGifDiagnostic(Diagnostic):
     name = "quad"
     output = "gif"
 
-    def run(self, trajs, out_path, cadence): #whats going on with cadence here?
-        pred = trajs.get("pred")
+    def run(self, trajs, out_path, cadence):
+        pred = trajs.get("pred_frames")
         truth = trajs.get("truth")
-        sgs_pred = trajs.get("sgs")
         pred_np = np.asarray(pred)
         truth_np = np.asarray(truth)
-        err = pred_np - truth_np
+        err = pred_np - truth_np # not used here
 
-        # safe-guard: if no sgs provided, create zeros to avoid crashes
-        if sgs_pred is None:
-            sgs_pred = np.zeros_like(pred_np)
-        sgs_pred = np.asarray(sgs_pred)
+        # Get predicted/applied SGS and the target SGS
+        sgs_pred = trajs.get("sgs")
+        sgs_target = trajs.get("target_sgs")
+        sgs_pred_np = np.asarray(sgs_pred)
+        sgs_target_np = np.asarray(sgs_target)
 
-        # cumulative SGS across time (simple cumsum as requested)
-        try:
-            sgs_cum = np.cumsum(sgs_pred, axis=0)
-        except Exception:
-            sgs_cum = np.zeros_like(sgs_pred)
+        nt = pred_np.shape[0]
 
-        indices = np.arange(0, pred_np.shape[0], cadence)
-        # determine color limits per panel
-        vmin_truth = np.percentile(truth_np, 1)
-        vmax_truth = np.percentile(truth_np, 99)
-        vmin_err = np.percentile(err, 1)
-        vmax_err = np.percentile(err, 99)
-        vmin_sgs = np.percentile(sgs_pred, 1)
-        vmax_sgs = np.percentile(sgs_pred, 99)
-        vmin_sgs_cum = np.percentile(sgs_cum, 1)
-        vmax_sgs_cum = np.percentile(sgs_cum, 99)
+        def pad_to_frames(arr):
+            if arr is None:
+                return np.zeros_like(pred_np)
+            if arr.shape[0] == nt:
+                return arr
+            if arr.shape[0] == nt - 1:
+                pad = np.zeros_like(arr[0:1])
+                return np.concatenate([pad, arr], axis=0)
+            if arr.shape[0] < nt:
+                pad = np.zeros((nt - arr.shape[0],) + arr.shape[1:], dtype=arr.dtype)
+                return np.concatenate([pad, arr], axis=0)
+            return arr[:nt]
 
-        # expand layout to include instantaneous SGS and cumulative SGS
-        fig, axes = plt.subplots(2,3,figsize=(12,8))
-        ax_truth = axes[0,0]
-        ax_ml = axes[0,1]
-        ax_err = axes[0,2]
-        ax_sgs_inst = axes[1,0]
-        ax_sgs_cum = axes[1,1]
-        ax_empty = axes[1,2]
+        sgs_pred_np = pad_to_frames(sgs_pred_np)
+        sgs_target_np = pad_to_frames(sgs_target_np)
 
-        im_truth = ax_truth.imshow(truth_np[0,0], origin='lower', cmap='RdBu_r', vmin=vmin_truth, vmax=vmax_truth)
-        ax_truth.set_title('Truth')
-        im_ml = ax_ml.imshow(pred_np[0,0], origin='lower', cmap='RdBu_r', vmin=vmin_truth, vmax=vmax_truth)
-        ax_ml.set_title('ML adjusted')
-        im_err = ax_err.imshow(err[0,0], origin='lower', cmap='RdBu_r', vmin=vmin_err, vmax=vmax_err)
-        ax_err.set_title('Error')
+        indices = np.arange(0, nt, max(1, int(cadence)))
+        if indices.size == 0:
+            raise ValueError("No frames selected for quad diagnostic (check cadence)")
 
-        im_sgs_inst = ax_sgs_inst.imshow(sgs_pred[0,0], origin='lower', cmap='RdBu_r', vmin=vmin_sgs, vmax=vmax_sgs)
-        ax_sgs_inst.set_title('SGS (instant)')
+        def pick(arr, idx):
+            if arr.ndim == 4:
+                return arr[idx, 0]
+            return arr[idx]
 
-        im_sgs_cum = ax_sgs_cum.imshow(sgs_cum[0,0], origin='lower', cmap='RdBu_r', vmin=vmin_sgs_cum, vmax=vmax_sgs_cum)
-        ax_sgs_cum.set_title('SGS (cumulative)')
+        # robust percentiles
+        def pct(a, q):
+            try:
+                return np.nanpercentile(a, q)
+            except Exception:
+                return 0.0
 
-        # clear the empty axis (use for annotations or leave blank)
-        ax_empty.axis('off')
+        vmin_truth = pct(truth_np, 1)
+        vmax_truth = pct(truth_np, 99)
+        vmin_sgs_t = pct(sgs_target_np, 1)
+        vmax_sgs_t = pct(sgs_target_np, 99)
+        vmin_sgs_p = pct(sgs_pred_np, 1)
+        vmax_sgs_p = pct(sgs_pred_np, 99)
+
+
+        # Layout: top row - Truth  | Target SGS 
+        # bottom row - ML adjusted | Pred SGS
+        fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+        ax_truth = axes[0, 0]
+        ax_ml = axes[1, 0]
+        ax_target_sgs = axes[0, 1]
+        ax_pred_sgs = axes[1, 1]
+
+        im_truth = ax_truth.imshow(pick(truth_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_truth, vmax=vmax_truth)
+        ax_truth.set_title("Truth")
+        im_ml = ax_ml.imshow(pick(pred_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_truth, vmax=vmax_truth)
+        ax_ml.set_title("ML adjusted")
+
+        im_target_sgs = ax_target_sgs.imshow(pick(sgs_target_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_sgs_t, vmax=vmax_sgs_t)
+        ax_target_sgs.set_title("Target SGS")
+
+        im_pred_sgs = ax_pred_sgs.imshow(pick(sgs_pred_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_sgs_p, vmax=vmax_sgs_p)
+        ax_pred_sgs.set_title("Predicted SGS")
+
 
         for ax in axes.ravel():
             ax.set_xticks([])
             ax.set_yticks([])
 
         fig.colorbar(im_truth, ax=[ax_truth, ax_ml], shrink=0.6)
-        fig.colorbar(im_err, ax=ax_err, shrink=0.6)
-        fig.colorbar(im_sgs_inst, ax=ax_sgs_inst, shrink=0.6)
-        fig.colorbar(im_sgs_cum, ax=ax_sgs_cum, shrink=0.6)
+        fig.colorbar(im_target_sgs, ax=ax_target_sgs, shrink=0.6)
+        fig.colorbar(im_pred_sgs, ax=ax_pred_sgs, shrink=0.6)
+
 
         def update(i):
             idx = indices[i]
-            im_truth.set_data(truth_np[idx,0])
-            im_ml.set_data(pred_np[idx,0])
-            im_err.set_data(err[idx,0])
-            # instantaneous SGS (true incremental term we are aspiring for)
-            if idx < sgs_pred.shape[0]:
-                im_sgs_inst.set_data(sgs_pred[idx,0])
-            # cumulative SGS up to this frame
-            if idx < sgs_cum.shape[0]:
-                im_sgs_cum.set_data(sgs_cum[idx,0])
-            fig.suptitle(f'timestep {idx}')
-            return im_truth, im_ml, im_err, im_sgs_inst, im_sgs_cum
+            im_truth.set_data(pick(truth_np, idx))
+            im_ml.set_data(pick(pred_np, idx))
+            im_target_sgs.set_data(pick(sgs_target_np, idx))
+            im_pred_sgs.set_data(pick(sgs_pred_np, idx))
+            fig.suptitle(f"timestep {idx}")
+            return im_truth, im_ml, im_target_sgs, im_pred_sgs
 
         anim = FuncAnimation(fig, update, frames=len(indices), interval=100, blit=False)
 
         try:
-            from matplotlib.animation import PillowWriter
             writer = PillowWriter(fps=10)
             anim.save(out_path, writer=writer)
             plt.close(fig)
         except Exception as e:
-            print('Pillow save failed:', e)
+            print("Pillow save failed:", e)
 
 
 # ============================================================

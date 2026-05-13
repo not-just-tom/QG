@@ -22,7 +22,7 @@ import numpy as np
 import equinox as eqx
 from model.utils.config import Config
 from model.utils.logging import configure_logging
-from model.core.steppers import SteppedModel, AB3Stepper
+from model.core.steppers import SteppedModel, AB3Stepper, CNABStepper
 from model.utils.plotting import make_quad_gif, gif_that
 from model.ML.utils.dataloading import find_existing_closure, find_existing_run, checkpointer, ZarrDataLoader
 from model.ML.architectures.build_model import build_closure
@@ -93,7 +93,7 @@ def run():
     # instantiate the model
     hr_model = SteppedModel(
         model=QGM({**params, "nx": params['hr_nx']}),
-        stepper=AB3Stepper(dt=dt),
+        stepper=CNABStepper(dt=dt),
     )
     # build low-resolution physics model (coarsened from high-res physics)
     lr_model = coarsen(hr_model.model, params['nx'])

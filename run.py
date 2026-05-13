@@ -57,7 +57,7 @@ from model.ML.generate_data import generate_train_data
 from model.ML.utils.dataloading import find_existing_closure, find_existing_data, ZarrDataLoader, checkpointer, prefetch_generator
 from model.utils.logging import configure_logging
 from model.utils.plotting import find_output_dir, gif_that, Plotter
-from model.core.steppers import SteppedModel, AB3Stepper
+from model.core.steppers import SteppedModel, AB3Stepper, CNABStepper
 from model.core.model import QGM
 import logging
 import jax
@@ -78,6 +78,7 @@ def run(cfg):
     dt = cfg.plotting.dt
     njets= cfg.plotting.njets
     nsteps = cfg.plotting.nsteps
+    cadence = int(getattr(cfg.plotting, 'cadence', 100))
     batch_size = cfg.ml.batch_size
     n_train = cfg.ml.n_train
     n_test = cfg.ml.n_test
@@ -126,7 +127,7 @@ def run(cfg):
     # instantiate the model
     hr_model = SteppedModel(
         model=QGM({**params, "nx": params['hr_nx']}),
-        stepper=AB3Stepper(dt=dt),
+        stepper=CNABStepper(dt=dt),
     )
     # build low-resolution physics model (coarsened from high-res physics)
     lr_model = coarsen(hr_model.model, params['nx'])
@@ -166,8 +167,7 @@ def run(cfg):
         os.makedirs(run_dir, exist_ok=False)
         generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, run_dir)
         data_loader = ZarrDataLoader(run_dir)
-    # If caller requested generate-only mode, stop after data creation to avoid
-    # concurrently running heavy training workloads from multiple tasks.
+
     if os.environ.get('GENERATE_ONLY') == '1':
         logger.info("Generate-only flag set; exiting after data generation")
         return
@@ -262,19 +262,6 @@ def run(cfg):
         logger.exception("Failed to restore loss history; starting fresh")
 
     # === Curriculum learning =============================================
-    logger.info(
-        "Runnning window %d→%d days (%d stages × %d epochs/stage = %d total epochs, %d steps/day)",
-        start_days, end_days, len(window_days), n_epochs, total_curriculum_epochs, steps_per_day,
-    )
-
-    if start_epoch >= total_curriculum_epochs:
-        logger.info(
-            "Checkpoint already at/after final curriculum epoch (%d/%d); skipping training.",
-            start_epoch, total_curriculum_epochs,
-        )
-
-    # Resume from checkpoint epoch, not just loss-history length.
-    # If history is shorter (e.g. interrupted write), pad with NaNs to keep alignment.
     epoch_counter = int(start_epoch)
     if len(train_mean_losses) < epoch_counter:
         train_mean_losses.extend([float('nan')] * (epoch_counter - len(train_mean_losses)))
@@ -441,70 +428,34 @@ def run(cfg):
     try:
         loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = checkpointer(None, None, model_dir, save=False)
         closure = build_closure(cfg, loaded_leaves)
-        eps = 1e-8
-
-        _orig_closure = closure
-
-        def projected_closure(q):
-            out = _orig_closure(q)
-            qh = jnp.fft.rfftn(q, axes=(-2,-1), norm='ortho')
-            out_qh = jnp.fft.rfftn(out, axes=(-2,-1), norm='ortho')
-            num = jnp.real(jnp.conj(qh) * out_qh)
-            den = jnp.abs(qh)**2 + eps
-            alpha = num / den
-            out_qh_proj = out_qh - alpha * qh
-            return jnp.fft.irfftn(out_qh_proj, axes=(-2,-1), norm='ortho', s=out.shape[-2:])
-        closure = projected_closure
     except Exception:
         logger.exception("Failed to load trained model for testing.")
 
     # Build validation function and run it on a held-out trajectory
     validation_epoch = make_validation_epoch(lr_model, low_res_dt)
     truth_traj = data_loader.get_trajectory(n_epochs)  # shape (time, layers, ny, nx)
-    cadence = int(getattr(cfg.plotting, 'cadence', 100))
-    val_traj = validation_epoch(truth_traj, cfg, closure)
+    trajectories = validation_epoch(truth_traj, cfg, closure)
 
     if cfg.plotting.plotting_window != 0:
         window = cfg.plotting.plotting_window
     else:
-        window = val_traj["pred_frames"].shape[0]
-    pred_frames = np.asarray(val_traj["pred_frames"])[:window]  # (plotting_window, nz, ny, nx)
-    sgs_traj = np.asarray(val_traj["sgs"])[:window]
-    hr_frames = np.asarray(truth_traj)[:window]
+        window = truth_traj.shape[0] - 1 # full trajectory length minus initial state
 
-    try:
-        from model.ML.architectures.zero import ZeroModel
-        zero_closure = ZeroModel()
-        zero_val = validation_epoch(truth_traj, cfg, zero_closure)
-        zero_pred = np.asarray(zero_val["pred_frames"][:window])  # (nt, nz, ny, nx)
-        maddison = maddison_loss(hr_frames - zero_pred, lr_model, beta=float(lr_model.beta))
-    except Exception as e:
-        logger.exception("Failed to compute zero-model baseline: %s", str(e))
+    for k,v in trajectories.items():
+        if isinstance(v, np.ndarray) and v.ndim > 1 and v.shape[0] > window:
+            trajectories[k] = v[:window]
 
-    trajectories = {
-        "pred": pred_frames,
-        "truth": hr_frames,
-        "sgs": sgs_traj,
-        "loss_history": {"train": train_mean_losses, "test": test_mean_losses, 'zero': maddison},
-        "cadence": cadence,
-    }
-
-
-    # If running in HPC mode, skip all plotting and return a single scalar
-    # metric: summed validation MSE across all timesteps (mean over layers)
-    hpc_mode = os.environ.get('HPC_RUN', '0') == '1'
-    if hpc_mode:
-        # pred_frames, hr_frames shapes: (nt, nz, ny, nx)
-        mse_per_t = np.mean((pred_frames - hr_frames) ** 2, axis=(-2, -1))  # (nt, nz)
-        mse_per_t_mean = np.mean(mse_per_t, axis=1)  # (nt,)
-        total_mse = float(np.sum(mse_per_t_mean))
-        logging.getLogger(__name__).info(f"HPC mode: total validation MSE (summed over timesteps) = {total_mse:.6E}")
-        return total_mse
+    trajectories["loss_history"] = {"train": train_mean_losses, "test": test_mean_losses}
+    trajectories["grid"] = lr_model.get_grid()
+    
+    if os.environ.get('HPC_RUN', '0') == '1':
+        return print("hello you have skipped the plotting")
 
     Plotter(cfg, trajectories=trajectories, out_dir=out_dir, cadence=cadence).plot()
 
-    # ============================
 
+# ========================================================
+# ========================================================
 
 def main():
     import argparse

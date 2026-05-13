@@ -32,7 +32,7 @@ importlib.reload(model.core.steppers)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
 from model.utils.logging import configure_logging
-from model.core.steppers import SteppedModel, AB3Stepper
+from model.core.steppers import SteppedModel, AB3Stepper, CNABStepper
 from model.core.model import QGM
 from model.utils.diagnostics import Animator
 from model.utils.plotting import find_output_dir
@@ -70,7 +70,7 @@ def main():
         init_state = model.initialise(key, tune=True, n_jets=njets, verbose=True)
         dt = model.estimate_cfl_dt(init_state)
 
-    sm = SteppedModel(model=model, stepper=AB3Stepper(dt))
+    sm = SteppedModel(model=model, stepper=CNABStepper(dt))
     init_state = sm.initialise(key)
 
 

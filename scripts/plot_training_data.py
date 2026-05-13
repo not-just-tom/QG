@@ -21,7 +21,7 @@ import numpy as np
 import zarr
 
 from model.core.model import QGM
-from model.core.steppers import AB3Stepper, SteppedModel
+from model.core.steppers import AB3Stepper, SteppedModel, CNABStepper
 from model.ML.utils.coarsen import coarsen
 
 
@@ -72,7 +72,7 @@ def simulate_lr_rollout(q_truth: np.ndarray, meta: dict) -> tuple[np.ndarray, fl
 
     hr_model = QGM({**params, "nx": hr_nx, "ny": hr_nx})
     lr_model = coarsen(hr_model, lr_nx)
-    stepped_lr = SteppedModel(model=lr_model, stepper=AB3Stepper(dt=dt_lr))
+    stepped_lr = SteppedModel(model=lr_model, stepper=CNABStepper(dt=dt_lr))
 
     nsteps = q_truth.shape[0]
     q_pred = np.zeros_like(q_truth, dtype=np.float32)

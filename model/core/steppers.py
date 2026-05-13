@@ -292,6 +292,88 @@ class AB3Stepper(Stepper):
         )
     
 
+
+@Pytree.register_pytree_dataclass
+@dataclasses.dataclass(repr=False)
+class CNABStepper(Stepper):
+    """Crank-Nicolson / Adams-Bashforth (CNAB) stepper.
+
+    This implements the explicit AB2 treatment of the nonlinear term and
+    provides a place to insert an implicit Crank-Nicolson solve for a
+    linear operator in future (e.g. viscous Laplacian handled implicitly
+    in spectral space). At present, when no implicit linear solve is
+    available, it falls back to an explicit AB2 update for stability and
+    API compatibility.
+
+    Notes
+    -----
+    - The stepper stores the two most recent updates (u^n and u^{n-1}).
+    - If you want full CNAB implicit solves, provide a helper that can be
+      called from `apply_updates` to compute (I - dt/2 L)^{-1} acting on
+      the RHS. That helper is not assumed here to keep the stepper pure
+      and JAX-friendly without extra model hooks.
+    """
+
+    def initialize_stepper_state(self, state: P) -> AB3State[P]:
+        base_state = super().initialize_stepper_state(state)
+        dummy_update: P = _dummy_step_init(state)
+        return AB3State(
+            state=base_state.state,
+            t=base_state.t,
+            tc=base_state.tc,
+            _ablevel=jnp.uint8(0),
+            _updates=(dummy_update, dummy_update),
+        )
+
+    def apply_updates(
+        self,
+        stepper_state: AB3State[P],
+        updates: P,
+    ) -> AB3State[P]:
+        """Apply CNAB/AB2 style update.
+
+        If an implicit linear solver is available it may be inserted here by
+        replacing the final assignment with a solve for (I - dt/2 L) q^{n+1}.
+        """
+        # AB2-like coefficients for explicit nonlinear term
+        new_ablevel, coeff1, coeff2 = jax.lax.switch(
+            stepper_state._ablevel,
+            [
+                lambda: (jnp.uint8(1), 1.0, 0.0),  # first step: forward Euler
+                lambda: (jnp.uint8(2), 1.5, -0.5),  # second step: AB2 boot
+                lambda: (jnp.uint8(2), 1.5, -0.5),  # steady AB2 thereafter
+            ],
+        )
+
+        def do_update(v, u, u_p):
+            dt = jnp.astype(self.dt, jax.eval_shape(jnp.real, v).dtype)
+            # Explicit AB2 update for the non-linear part
+            return v + ((coeff1 * dt) * u) + ((coeff2 * dt) * u_p)
+
+        updates_p, updates_pp = stepper_state._updates
+        new_state = _nostep_tree_map(
+            do_update,
+            stepper_state.state,
+            updates,
+            updates_p,
+        )
+
+        # NOTE: Placeholder for implicit CN solve. If the wrapped model exposes
+        # a linear operator in spectral space and a solver, it can be applied
+        # here to compute (I - dt/2 L)^{-1} acting on new_state.
+
+        new_t = stepper_state.t + jnp.float32(self.dt)
+        new_tc = stepper_state.tc + 1
+        new_updates = (_map_state_remove_nostep(updates), updates_p)
+        return AB3State(
+            state=new_state,
+            t=new_t,
+            tc=new_tc,
+            _ablevel=new_ablevel,
+            _updates=new_updates,
+        )
+    
+
 @Pytree.register_pytree_dataclass
 @dataclasses.dataclass
 class NoStepValue(typing.Generic[P]):
