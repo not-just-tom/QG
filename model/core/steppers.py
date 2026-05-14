@@ -132,6 +132,7 @@ class SteppedModel:
             self.model.get_updates(stepper_state.state),
         )
         postprocessed_state = self.model.dealias(new_stepper_state.state)
+        postprocessed_state = self.model.apply_exact_step_filter(postprocessed_state)
         return new_stepper_state.update(state=postprocessed_state)
 
     def get_full_state(self, stepper_state, /):

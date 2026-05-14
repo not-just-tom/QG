@@ -69,6 +69,13 @@ class ForcedModel:
             param_aux=state.param_aux,
         )
 
+    def apply_exact_step_filter(self, state):
+        """Apply wrapped model's exact post-step spectral damping."""
+        return ForcedModelState(
+            model_state=self.model.apply_exact_step_filter(state.model_state),
+            param_aux=state.param_aux,
+        )
+
     def initialise(self, key, *args, **kwargs):
         return self.initialise_param_state(
             self.model.initialise(key=key), *args, **kwargs

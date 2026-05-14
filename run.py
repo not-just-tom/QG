@@ -117,7 +117,8 @@ def run(cfg):
     logger.info(f"Requested device: {device_type}, using device: {chosen.upper()}")
     
     # === dataloading === #
-    if cfg.plotting.auto_dt:
+    old_dt = dt
+    if cfg.plotting.auto_dt == True:
         old_dt = dt
         logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
         raw_model = QGM({**params, "nx": params['hr_nx']})
@@ -189,7 +190,7 @@ def run(cfg):
         if saved_epoch >= saved_n_epochs:
             logger.info(f"Model at {model_dir} already trained for {saved_n_epochs} epochs; skipping training loop.")
         else:
-            logger.info(f"Resuming training from epoch {saved_epoch} (saved) out of {saved_n_epochs}")
+            pass
         start_epoch = saved_epoch
 
     closure = build_closure(cfg)
@@ -338,7 +339,11 @@ def run(cfg):
                 losses = np.asarray(losses).reshape(-1)
                 max_cfls = np.asarray(max_cfls).reshape(-1)
                 if np.any(discard_flags):
-                    print(f"Discarded training batch: max rollout CFL={float(np.max(max_cfls)):.4f} > limit {cfl_limit:.4f}")
+                    n_discard = int(np.sum(discard_flags))
+                    logger.warning(
+                        "Discarded training batch: %d/%d samples; max rollout CFL=%.4f > limit %.4f",
+                        n_discard, discard_flags.size, float(np.max(max_cfls)), cfl_limit,
+                    )
                 train_losses_accum.extend([float(loss) for loss, discarded in zip(losses, discard_flags) if not discarded])
 
 
@@ -358,7 +363,11 @@ def run(cfg):
                 losses = np.asarray(losses).reshape(-1)
                 max_cfls = np.asarray(max_cfls).reshape(-1)
                 if np.any(discard_flags):
-                    print(f"Discarded test batch: max rollout CFL={float(np.max(max_cfls)):.4f} > limit {cfl_limit:.4f}")
+                    n_discard = int(np.sum(discard_flags))
+                    logger.warning(
+                        "Discarded test batch: %d/%d samples; max rollout CFL=%.4f > limit %.4f",
+                        n_discard, discard_flags.size, float(np.max(max_cfls)), cfl_limit,
+                    )
                 test_losses_accum.extend([float(loss) for loss, discarded in zip(losses, discard_flags) if not discarded])
 
             train_mean = float(np.mean(train_losses_accum)) if train_losses_accum else float('nan')

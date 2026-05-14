@@ -65,6 +65,11 @@ class QGM(Kernel):
         self._K2 = self._Kmag ** 2
         # Use the same default dealiasing form as before (alpha=36, p=8)
         self._dealias_mask = jnp.exp(-36 * (self._Kmag / jnp.max(self._Kmag)) ** 8)
+        # Optional exact post-step spectral damping (qg_closure-style)
+        cphi = 0.65 * jnp.pi
+        wvx = jnp.sqrt((self._KX * grid.dx) ** 2 + (self._KY * grid.dx) ** 2)
+        exact_filter = jnp.exp(-self.filterfac * (wvx - cphi) ** 4)
+        self._exact_step_filter = jnp.where(wvx <= cphi, 1.0, exact_filter)
 
     def initialise(
         self,
@@ -135,6 +140,10 @@ class QGM(Kernel):
     def _dealias(self):
         """Dealias filter as a property."""
         return self._get_dealias_filter()
+
+    def apply_exact_step_filter(self, state: states.State) -> states.State:
+        """Apply exact spectral damping after each explicit step."""
+        return state.update(qh=state.qh * jnp.expand_dims(self._exact_step_filter, 0))
     
     @property
     def x(self):

@@ -13,23 +13,101 @@ from model.core.steppers import SteppedModel, AB3Stepper, CNABStepper
 import numpy as np
 
 
-def closure_combiner(state, closure_params, static_closure_obj=None):
+def _build_closure_scalers(trajs, closure_scale=1e-2, eps=1e-6):
+    """Build simple per-layer scalers for closure input/output.
+
+    The state scaler is used to normalize q before it is passed to the
+    closure network. A separate, smaller output scaler is used for closure
+    increments to reduce the risk of destabilizing large updates.
+    """
+    trajs = jnp.asarray(trajs)
+    layer_axis = trajs.ndim - 3
+    reduce_axes = tuple(i for i in range(trajs.ndim) if i != layer_axis)
+    q_std = jnp.std(trajs, axis=reduce_axes)
+    q_std = jnp.maximum(q_std, eps).reshape((-1, 1, 1))
+    q_mean = jnp.zeros_like(q_std)
+
+    dq_std = jnp.maximum(q_std * closure_scale, eps)
+    dq_mean = jnp.zeros_like(dq_std)
+    return q_mean, q_std, dq_mean, dq_std
+
+
+def _build_closure_highpass_filter(lr_model, power=2.0):
+    """Construct a smooth high-pass mask in spectral space.
+
+    This suppresses low-wavenumber closure forcing and concentrates closure
+    effects toward smaller scales, analogous to unresolved-scale gating.
+    """
+    kmag = jnp.asarray(lr_model.Kmag)
+    kref = jnp.maximum(jnp.max(kmag), 1e-12)
+    filt = (kmag / kref) ** power
+    filt = jnp.where(kmag == 0, 0.0, filt)
+    return filt
+
+
+def closure_combiner(
+    state,
+    closure_params,
+    static_closure_obj=None,
+    q_mean=None,
+    q_std=None,
+    dq_mean=None,
+    dq_std=None,
+    closure_filter=None,
+):
     """Combine params and static closure, evaluate closure, return dq and params.
     """
     assert static_closure_obj is not None, "static_closure_obj must be provided"
     closure = eqx.combine(closure_params, static_closure_obj)
     q = state.q
-    dq_closure = closure(q.astype(jnp.float32))
+    if q_mean is None or q_std is None:
+        q_in = q
+    else:
+        q_in = (q - q_mean) / (q_std + 1e-6)
+
+    dq_closure = closure(q_in.astype(jnp.float32)).astype(q.dtype)
+
+    if dq_mean is not None and dq_std is not None:
+        dq_closure = (dq_closure * dq_std) + dq_mean
+
+    if closure_filter is not None:
+        dqh = jnp.fft.rfftn(dq_closure, axes=(-2, -1), norm='ortho')
+        dqh = dqh * jnp.expand_dims(closure_filter, 0)
+        dq_closure = jnp.fft.irfftn(
+            dqh,
+            axes=(-2, -1),
+            norm='ortho',
+            s=q.shape[-2:],
+        ).astype(q.dtype)
+
     return dq_closure.astype(q.dtype), closure_params
 
-def load_forced_model(lr_model, closure, dt):
+def load_forced_model(
+    lr_model,
+    closure,
+    dt,
+    q_mean=None,
+    q_std=None,
+    dq_mean=None,
+    dq_std=None,
+    closure_filter=None,
+):
     '''Load forced model from provided closure'''
 
     closure_params, closure_static = eqx.partition(closure, eqx.is_array)
     init_param_func = lambda state, model, params: params
 
     def _param_adapter(state, param_aux, model, *args, **kwargs):
-        return closure_combiner(state, param_aux, closure_static)
+        return closure_combiner(
+            state,
+            param_aux,
+            closure_static,
+            q_mean=q_mean,
+            q_std=q_std,
+            dq_mean=dq_mean,
+            dq_std=dq_std,
+            closure_filter=closure_filter,
+        )
 
     closure_func = parameterization(_param_adapter)
 
@@ -139,8 +217,19 @@ def make_train_epoch(lr_model, dt, optim, cfl_limit=1.0):
     template_state = lr_model.initialise(jax.random.PRNGKey(0))
 
     def _train_epoch(train_trajs, closure, optim_state):
+        q_mean, q_std, dq_mean, dq_std = _build_closure_scalers(train_trajs)
+        closure_filter = _build_closure_highpass_filter(lr_model)
         # Use the low-resolution physics model for training 
-        forced_model, closure_params, static_closure_obj = load_forced_model(lr_model, closure, dt)
+        forced_model, closure_params, static_closure_obj = load_forced_model(
+            lr_model,
+            closure,
+            dt,
+            q_mean=q_mean,
+            q_std=q_std,
+            dq_mean=dq_mean,
+            dq_std=dq_std,
+            closure_filter=closure_filter,
+        )
 
         def step_fn(carry, batch):
             closure_params, optim_state = carry
@@ -196,8 +285,19 @@ def make_test_epoch(lr_model, dt, cfl_limit=1.0):
     template_state = lr_model.initialise(jax.random.PRNGKey(0))
 
     def _test_epoch(test_trajs, closure, optim_state):
+        q_mean, q_std, dq_mean, dq_std = _build_closure_scalers(test_trajs)
+        closure_filter = _build_closure_highpass_filter(lr_model)
         # Use the low-resolution physics model for testing 
-        forced_model, closure_params, static_closure_obj = load_forced_model(lr_model, closure, dt)
+        forced_model, closure_params, static_closure_obj = load_forced_model(
+            lr_model,
+            closure,
+            dt,
+            q_mean=q_mean,
+            q_std=q_std,
+            dq_mean=dq_mean,
+            dq_std=dq_std,
+            closure_filter=closure_filter,
+        )
 
         def step_fn(carry, batch):
             # carry is (closure_params, optim_state) but test epoch does not update
@@ -266,15 +366,31 @@ def make_validation_epoch(lr_model, dt):
         seed = int(getattr(cfg.params, "seed", 0))
 
         n_intervals = min(nsteps_cfg, int(truth_traj.shape[0]) - 1)
+        q_mean, q_std, dq_mean, dq_std = _build_closure_scalers(truth_traj)
+        closure_filter = _build_closure_highpass_filter(lr_model)
         forced_model, closure_params, closure_static = load_forced_model(
-            lr_model, closure, dt
+            lr_model,
+            closure,
+            dt,
+            q_mean=q_mean,
+            q_std=q_std,
+            dq_mean=dq_mean,
+            dq_std=dq_std,
+            closure_filter=closure_filter,
         )
 
         # Zero model baseline
         from model.ML.architectures.zero import ZeroModel
         zero_closure = ZeroModel()
         zero_model, zero_params, _ = load_forced_model(
-            lr_model, zero_closure, dt
+            lr_model,
+            zero_closure,
+            dt,
+            q_mean=q_mean,
+            q_std=q_std,
+            dq_mean=dq_mean,
+            dq_std=dq_std,
+            closure_filter=closure_filter,
         )
 
         template_state = lr_model.initialise(
@@ -312,6 +428,11 @@ def make_validation_epoch(lr_model, dt):
                 carry.state.model_state,
                 carry.state.param_aux.value,
                 closure_static,
+                q_mean=q_mean,
+                q_std=q_std,
+                dq_mean=dq_mean,
+                dq_std=dq_std,
+                closure_filter=closure_filter,
             )
 
             next_state = forced_model.step_model(carry)

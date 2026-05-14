@@ -36,6 +36,13 @@ class Kernel(ABC):
         # describe this 
         return state.update(qh=self._dealias*state.qh)
 
+    def apply_exact_step_filter(self, state: states.State) -> states.State:
+        """Apply optional exact post-step spectral damping.
+
+        Base kernels default to no-op; concrete models can override.
+        """
+        return state
+
     def get_full_state(self, state: states.State) -> states.FullState:
         def _empty_real():
             return jnp.zeros(
