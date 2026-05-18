@@ -93,7 +93,6 @@ def run(cfg):
     learning_rate = learning_rate = cfg['architectures'][model_type].get('learning_rate')
 
     # curriculum stuff
-    steps_per_day     = cfg.ml.steps_per_day
     start_days        = cfg.ml.start_days
     end_days          = cfg.ml.end_days
     window_days       = list(range(start_days, end_days + 1))
@@ -122,7 +121,8 @@ def run(cfg):
         logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
         raw_model = QGM({**params, "nx": params['hr_nx']})
         init_state = raw_model.initialise(key, tune=True, n_jets=njets, verbose=True)
-        dt = raw_model.estimate_cfl_dt(init_state)
+        dt = float(raw_model.estimate_cfl_dt(init_state))
+    steps_per_day = int(24 * 3600 // dt)
 
     # instantiate the model
     hr_model = SteppedModel(
@@ -306,7 +306,7 @@ def run(cfg):
             optim_state = optim.init(eqx.filter(closure, eqx.is_array))
 
         logger.info(
-            "Curriculum stage %d/%d | window = %d days (%d steps, %d samples/traj) | resuming sub-epoch %d/%d",
+            "Curriculum stage %d/%d | window = %d days (%d steps, %d samples/traj) | sub-epoch %d/%d",
             day_idx + 1, len(window_days), current_days, current_batch_steps, current_n_samples,
             stage_resume_epoch + 1, n_epochs,
         )

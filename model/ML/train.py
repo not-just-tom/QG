@@ -55,7 +55,7 @@ def closure_combiner(
     dq_std=None,
     closure_filter=None,
 ):
-    """Combine params and static closure, evaluate closure, return dq and params.
+    """Evaluate closure and return per-step PV increment dQ plus params.
     """
     assert static_closure_obj is not None, "static_closure_obj must be provided"
     closure = eqx.combine(closure_params, static_closure_obj)
@@ -65,22 +65,22 @@ def closure_combiner(
     else:
         q_in = (q - q_mean) / (q_std + 1e-6)
 
-    dq_closure = closure(q_in.astype(jnp.float32)).astype(q.dtype)
+    dq_increment = closure(q_in.astype(jnp.float32)).astype(q.dtype)
 
     if dq_mean is not None and dq_std is not None:
-        dq_closure = (dq_closure * dq_std) + dq_mean
+        dq_increment = (dq_increment * dq_std) + dq_mean
 
     if closure_filter is not None:
-        dqh = jnp.fft.rfftn(dq_closure, axes=(-2, -1), norm='ortho')
-        dqh = dqh * jnp.expand_dims(closure_filter, 0)
-        dq_closure = jnp.fft.irfftn(
-            dqh,
+        dqh_increment = jnp.fft.rfftn(dq_increment, axes=(-2, -1), norm='ortho')
+        dqh_increment = dqh_increment * jnp.expand_dims(closure_filter, 0)
+        dq_increment = jnp.fft.irfftn(
+            dqh_increment,
             axes=(-2, -1),
             norm='ortho',
             s=q.shape[-2:],
         ).astype(q.dtype)
 
-    return dq_closure.astype(q.dtype), closure_params
+    return dq_increment.astype(q.dtype), closure_params
 
 def load_forced_model(
     lr_model,
@@ -96,9 +96,10 @@ def load_forced_model(
 
     closure_params, closure_static = eqx.partition(closure, eqx.is_array)
     init_param_func = lambda state, model, params: params
+    dt_arr = jnp.asarray(dt)
 
     def _param_adapter(state, param_aux, model, *args, **kwargs):
-        return closure_combiner(
+        dq_increment, new_params = closure_combiner(
             state,
             param_aux,
             closure_static,
@@ -108,6 +109,10 @@ def load_forced_model(
             dq_std=dq_std,
             closure_filter=closure_filter,
         )
+        # Closure network predicts a per-step increment dQ; the parameterization
+        # wrapper expects a tendency dQ/dt to add to model.get_updates(...).
+        dq_forcing = dq_increment / dt_arr
+        return dq_forcing, new_params
 
     closure_func = parameterization(_param_adapter)
 
@@ -424,7 +429,7 @@ def make_validation_epoch(lr_model, dt):
         # ML closure rollout
         def _step(carry, _x):
 
-            dq_closure, _ = closure_combiner(
+            dq_increment, _ = closure_combiner(
                 carry.state.model_state,
                 carry.state.param_aux.value,
                 closure_static,
@@ -442,9 +447,9 @@ def make_validation_epoch(lr_model, dt):
                 - carry.state.model_state.qh
             )
 
-            return next_state, (dqh_total, dq_closure)
+            return next_state, (dqh_total, dq_increment)
 
-        _, (traj_dqh, sgs_dq) = jax.lax.scan(
+        _, (traj_dqh, sgs_increment_step) = jax.lax.scan(
             _step,
             init_stepper_state,
             None,
@@ -511,10 +516,10 @@ def make_validation_epoch(lr_model, dt):
         )(zero_qh_traj)
 
         # SGS diagnostics
-        sgs_increment = sgs_dq
-        sgs_forcing = sgs_increment / dt # timestep-independent forcing form
-        target_sgs = truth_traj[1:n_intervals + 1] - zero_frames[1:]
-        target_sgs_forcing = target_sgs / dt
+        sgs_increment = sgs_increment_step
+        sgs_forcing = sgs_increment / dt
+        target_sgs_increment = truth_traj[1:n_intervals + 1] - zero_frames[1:]
+        target_sgs_forcing = target_sgs_increment / dt
 
         result = {
             "pred_frames": jax.device_get(pred_frames),
@@ -525,7 +530,9 @@ def make_validation_epoch(lr_model, dt):
 
             "sgs_forcing": jax.device_get(sgs_forcing),
 
-            "target_sgs": jax.device_get(target_sgs),
+            "target_sgs": jax.device_get(target_sgs_increment),
+
+            "target_sgs_increment": jax.device_get(target_sgs_increment),
 
             "target_sgs_forcing": jax.device_get(target_sgs_forcing),
 

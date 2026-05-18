@@ -12,7 +12,7 @@ class ForcedModelState:
     """
 
     model_state: states.State
-    param_aux: steppers.NoStepValue
+    param_aux: steppers.PassWeights
 
 
 def _init_none(init_state, model):
@@ -58,7 +58,7 @@ class ForcedModel:
         )
         return ForcedModelState(
             model_state=param_updates,
-            param_aux=steppers.NoStepValue(new_param_aux),
+            param_aux=steppers.PassWeights(new_param_aux),
         )
 
     def dealias(self, state):
@@ -85,5 +85,5 @@ class ForcedModel:
         init_param_state = self.init_param_aux_func(state, self.model, *args, **kwargs)
         return ForcedModelState(
             model_state=state,
-            param_aux=steppers.NoStepValue(init_param_state),
+            param_aux=steppers.PassWeights(init_param_state),
         )

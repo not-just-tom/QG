@@ -111,11 +111,11 @@ class QGM(Kernel):
         if verbose:
             logger.info(f"Initialised state with U_rms={U_rms:.3f}, scaled to U_target={U_target:.3f} with scale factor {scaler:.3f}")
 
-        # Compute suggested dt on the scaled state 
+        # Compute suggested dt only for debugging/logging to avoid extra work in vmapped init.
         scaled_state = base_state.update(qh=qh)
-        suggest_dt = self.estimate_cfl_dt(scaled_state)
         if verbose:
-            logger.info(f"Suggested initial dt for stability: {suggest_dt:.3f}")
+            suggest_dt = self.estimate_cfl_dt(scaled_state)
+            logger.info(f"Suggested initial dt for stability: {float(suggest_dt):.3f}")
 
         return scaled_state
     
@@ -296,26 +296,24 @@ class QGM(Kernel):
     def rhines_length(self, state: states.State):
         """Estimate Rhines length from a `State` by computing U_rms and Lr = sqrt(U/beta).
 
-        Returns (Lr, U_rms) as floats.
+        Returns (Lr, U_rms) as JAX scalars (trace-safe under jit/vmap).
         """
         full = self.get_full_state(state)
         u = full.u
         v = full.v
         U_rms = jnp.sqrt(jnp.mean(u ** 2 + v ** 2))
-        beta = self.beta
-        if beta == 0:
-            return float('inf'), float(U_rms)
-        Lr = jnp.sqrt(U_rms / beta)
-        return float(Lr), float(U_rms)
+        beta = jnp.asarray(self.beta, dtype=U_rms.dtype)
+        safe_beta = jnp.where(beta == 0, jnp.inf, beta)
+        Lr = jnp.sqrt(U_rms / safe_beta)
+        return Lr, U_rms
 
     def estimate_cfl_dt(self, state: states.State, cfl=0.1):
         """Estimate a stable `dt` based on CFL: dt = courant_no. * x_lengthscale/abs(U)
         """
         full = self.get_full_state(state)
         U_rms = jnp.sqrt(jnp.mean(full.u ** 2 + full.v ** 2))
-        # convert to python float for use in dt selection
-        Ur = float(U_rms)
-        dt = float(cfl * self.dx / (abs(Ur) + 1e-12))
+        # Return a JAX scalar so this function remains safe under jit/vmap.
+        dt = jnp.asarray(cfl, dtype=U_rms.dtype) * jnp.asarray(self.dx, dtype=U_rms.dtype) / (jnp.abs(U_rms) + 1e-12)
         return dt
 
     @classmethod

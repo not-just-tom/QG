@@ -19,9 +19,9 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
 
     # Timing parameters
     n_total = cfg.ml.n_train + cfg.ml.n_test + 1 # one for validation
-    nsteps = cfg.plotting.nsteps
+    nsteps = max(cfg.plotting.nsteps, int(cfg.ml.end_days * 24 * 3600 // hr_model.stepper.dt))
     batch_size = 11 # hardcoded bc it was confusing me. It's just the trajs generated in batches of 5 rn
-    spinup = int(50 * 24 * 60 * 60 // hr_model.stepper.dt)  # 50 days of spinup in high-res steps
+    spinup = int(100 * 24 * 60 * 60 // hr_model.stepper.dt)  # 100 days of spinup in high-res steps
 
     logger.info(f"Generating %d trajectories with %d steps.", n_total, nsteps)
     
@@ -110,6 +110,15 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
         # `vmap` over the batch axis is sufficient.
         _spinup_batched = jax.vmap(_spinup_state, in_axes=(0, None))
 
+    # Prefer balanced, band-limited initial conditions when available.
+    n_jets = getattr(cfg.plotting, "njets", None)
+    init_kwargs = {}
+    if n_jets is not None:
+        init_kwargs = {"n_jets": int(n_jets), "pseudo": True, "tune": True}
+        logger.info("Using tuned jet initialisation for data generation (n_jets=%s)", n_jets)
+    else:
+        logger.info("Using default random initialisation for data generation")
+
     while n_generated < n_total:
 
         current_batch = min(batch_size, n_total - n_generated)
@@ -117,7 +126,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
         rng, subkey = jax.random.split(rng)
         keys = jax.random.split(subkey, current_batch)
 
-        init_states = jax.vmap(functools.partial(hr_model.initialise))(keys)
+        init_states = jax.vmap(functools.partial(hr_model.initialise, **init_kwargs))(keys)
         
         logger.info(f"Initialised batch of {current_batch} trajectories")
 
