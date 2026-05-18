@@ -23,7 +23,8 @@ class Diffusion(eqx.Module):
     n_steps: int
     alpha: float
 
-    def __init__(self, channels=1, cutoff=8.0, n_steps=3, alpha=0.2, **kwargs):
+    def __init__(self, cutoff=8.0, n_steps=3, alpha=0.2, cfg=None, **kwargs):
+        channels = cfg.params.nz if cfg is not None else 1
         self.channels = int(channels)
         self.cutoff = float(cutoff)
         self.n_steps = int(n_steps)

@@ -9,25 +9,25 @@ params:
   seed: 42
   nx: 64
   Lx: 1000000 #6.283185307179586  # 2π
-  beta: 0.000000000001
+  beta: 0.00000000001
   kmin: 4.0 
   kmax: 10.0
-  nz: 1
+  nz: 2
   # multi-layer model parameters (only used if nz>1)
-  Lz: 50
-  rek: 5.787e-7 # this might balls up with the number stuff - check if i should remove config file and just yaml it 
-  rd: 15.0
-  delta: 0.25
-  U1: 0.0
+  Lz: 500
+  rek: 7.0e-8 # gamma
+  rd: 15.0 # dunno
+  delta: 0.1 # ratio between top/bottom layer depth
+  U1: 0.025
   U2: 0.0
-  hr_nx: 1024
+  hr_nx: 512
 
 plotting:
   nsteps: 1500
   dt: 450
   plotting_window: 0
   cadence: 10
-  plot: ['loss', 'mse', 'quad', 'ke_spectrum']
+  plot: ['loss', 'mse', 'cfl']
   group_animated: true
   auto_dt: false
   njets: 6
@@ -66,7 +66,6 @@ architectures:
     modes1: 8 #[8, 16, 24]
   diffusion:
     learning_rate: 0 # is this needed?
-    channels: 1
     cutoff: 16.0
     n_steps: 3
     alpha: 0.2
@@ -79,8 +78,6 @@ architectures:
   mlp:
     learning_rate: 0.0001
     nlayers: 3
-    in_channels: 1
-    out_channels: 1
     kernel_size: 3
     width: 64
     activation: "tanh"

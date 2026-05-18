@@ -20,8 +20,8 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     # Timing parameters
     n_total = cfg.ml.n_train + cfg.ml.n_test + 1 # one for validation
     nsteps = cfg.plotting.nsteps
-    batch_size = 5 # hardcoded bc it was confusing me. It's just the trajs generated in batches of 5 rn
-    spinup = int(100 * 24 * 60 * 60 // hr_model.stepper.dt)  # 100 days of spinup in high-res steps
+    batch_size = 11 # hardcoded bc it was confusing me. It's just the trajs generated in batches of 5 rn
+    spinup = int(50 * 24 * 60 * 60 // hr_model.stepper.dt)  # 50 days of spinup in high-res steps
 
     logger.info(f"Generating %d trajectories with %d steps.", n_total, nsteps)
     

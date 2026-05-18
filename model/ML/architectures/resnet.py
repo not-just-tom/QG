@@ -18,8 +18,6 @@ class ResNet(eqx.Module):
         self,
         key=jax.random.PRNGKey(0),
         nlayers=7,
-        in_channels=1,
-        out_channels=1,
         kernel_size=5,
         width=64,
         activation="elu",
@@ -28,6 +26,9 @@ class ResNet(eqx.Module):
     ):
         if nlayers < 1:
             raise ValueError("nlayers must be >= 1")
+        
+        in_channels = cfg.params.nz if cfg is not None else 1
+        out_channels = in_channels
 
         padding = kernel_size // 2
         # split keys for convs and projections

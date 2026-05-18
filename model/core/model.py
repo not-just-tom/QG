@@ -63,6 +63,17 @@ class QGM(Kernel):
         self._KX, self._KY = jnp.meshgrid(self._kx, self._ky)
         self._Kmag = jnp.sqrt(self._KX ** 2 + self._KY ** 2)
         self._K2 = self._Kmag ** 2
+        # Precompute two-layer elliptic inversion matrix A such that ph = A qh.
+        # The (k,l)=(0,0) mode is singular and is explicitly set to zero.
+        det = self._K2 * (self._K2 + self.F1 + self.F2)
+        det_inv = jnp.where(det != 0, 1.0 / det, 0.0)
+        det_inv = det_inv.at[0, 0].set(0.0)
+        A = jnp.zeros((2, 2, self.ny, self.nx // 2 + 1), dtype=det_inv.dtype)
+        A = A.at[0, 0].set(-(self._K2 + self.F2))
+        A = A.at[0, 1].set(-self.F1)
+        A = A.at[1, 0].set(-self.F2)
+        A = A.at[1, 1].set(-(self._K2 + self.F1))
+        self._A = A * det_inv
         # Use the same default dealiasing form as before (alpha=36, p=8)
         self._dealias_mask = jnp.exp(-36 * (self._Kmag / jnp.max(self._Kmag)) ** 8)
         # Optional exact post-step spectral damping (qg_closure-style)
@@ -276,35 +287,10 @@ class QGM(Kernel):
         # move layer axis to the last position: (..., nl, nk, nz)
         qh_last = jnp.moveaxis(qh, layer_axis, -1)
 
-        # Choose working dtypes to avoid unnecessary upcasts. Use complex64/float32
-        # when input is complex64, otherwise preserve complex128/float64.
-        if qh.dtype == jnp.complex128:
-            c_dtype = jnp.complex128
-            f_dtype = jnp.float64
-        else:
-            c_dtype = jnp.complex64
-            f_dtype = jnp.float32
-
-        K2 = self._K2.astype(f_dtype)
-        F1 = jnp.array(self.F1, dtype=f_dtype)
-        F2 = jnp.array(self.F2, dtype=f_dtype)
-
-        a00 = -(K2 + F1)
-        a01 = jnp.full_like(K2, F1)
-        a10 = jnp.full_like(K2, F2)
-        a11 = -(K2 + F2)
-
-        # inv_mat shape (..., nl, nk, 2, 2) as complex for solve
-        inv_mat = jnp.stack(
-            [jnp.stack([a00, a01], axis=-1), jnp.stack([a10, a11], axis=-1)],
-            axis=-2,
-        ).astype(c_dtype)
-
-        rhs = jnp.expand_dims(qh_last.astype(c_dtype), axis=-1)
-
-        sol = jnp.linalg.solve(inv_mat, rhs).astype(state.qh.dtype)
-        sol = jnp.squeeze(sol, axis=-1)
-        ph = jnp.moveaxis(sol, -1, layer_axis)
+        # qg_closure-style stable inversion: ph = A qh with A[...,0,0] mode zeroed.
+        A = self._A.astype(qh.dtype)
+        ph_last = jnp.einsum("ijlk,...lkj->...lki", A, qh_last)
+        ph = jnp.moveaxis(ph_last, -1, layer_axis)
         return ph
 
     def rhines_length(self, state: states.State):

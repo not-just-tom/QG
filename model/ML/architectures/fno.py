@@ -77,15 +77,16 @@ class FNO(eqx.Module):
 
     def __init__(
         self,
-        in_channels = 1,
-        out_channels = 1,
         width = 64,
         modes1 = 16,
         modes2 = 16,
         depth = 4,
         key= jax.random.PRNGKey(0),
+        cfg=None,
         **kwargs,
     ):
+        in_channels = cfg.params.nz if cfg is not None else 1
+        out_channels = in_channels
         keys = jax.random.split(key, 2 * depth + 2)
         k0 = keys[0]
         self.input_proj = eqx.nn.Conv2d(in_channels, width, kernel_size=1, key=k0)

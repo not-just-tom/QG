@@ -11,15 +11,17 @@ class CNN(eqx.Module):
         self,
         key=jax.random.PRNGKey(0),
         nlayers=3,
-        in_channels=1,
-        out_channels=1,
         kernel_size=3,
         width=64,
         activation="tanh",
+        cfg=None,
         **kwargs,
     ):
         if nlayers < 2:
             raise ValueError("nlayers must be >= 2")
+        
+        in_channels = cfg.params.nz if cfg is not None else 1
+        out_channels = in_channels
         # force same-padding so the network preserves spatial dimensions
         padding = kernel_size // 2
 

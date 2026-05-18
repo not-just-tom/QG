@@ -65,12 +65,15 @@ class UNet(eqx.Module):
 
     def __init__(
         self,
-        in_channels=1,
-        out_channels=1,
         base_channels=32,
         depth=4,
         key=jax.random.PRNGKey(0),
+        cfg=None,
+        **kwargs,
     ):
+        in_channels = cfg.params.nz if cfg is not None else 1
+        out_channels = in_channels
+        
         keys = jax.random.split(key, 2 * depth + 2)
 
         # Encoder
