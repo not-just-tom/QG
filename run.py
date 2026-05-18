@@ -50,7 +50,7 @@ importlib.reload(model.ML.utils.dataloading)
 importlib.reload(model.ML.train)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
-from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch, maddison_loss, compute_traj_errors_and_cfl
+from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import coarsen
 from model.ML.generate_data import generate_train_data
@@ -83,7 +83,6 @@ def run(cfg):
     n_train = cfg.ml.n_train
     n_test = cfg.ml.n_test
     n_epochs = n_train + n_test
-    spinup = cfg.plotting.spinup
     params = dict(OmegaConf.to_container(cfg.params, resolve=True))
     seed = params.get("seed", 42)
     key = jax.random.PRNGKey(seed)
@@ -128,13 +127,14 @@ def run(cfg):
     # instantiate the model
     hr_model = SteppedModel(
         model=QGM({**params, "nx": params['hr_nx']}),
-        stepper=CNABStepper(dt=dt),
+        stepper=AB3Stepper(dt=dt),
     )
     # build low-resolution physics model (coarsened from high-res physics)
     lr_model = coarsen(hr_model.model, params['nx'])
 
+    logger.info(f'Fine timestep is {dt:.2g}s, giving a total of {nsteps*ratio*dt/(365*24*3600):.2g} years of rollout. The coarsened timestep is {dt*ratio:.2g}s.')
+
     timing_metadata = {
-        'spinup': int(spinup),
         'nsteps': int(nsteps),
         "dt (original)": float(old_dt),
         'auto_dt': bool(cfg.plotting.auto_dt),
@@ -170,7 +170,7 @@ def run(cfg):
         data_loader = ZarrDataLoader(run_dir)
 
     if os.environ.get('GENERATE_ONLY') == '1':
-        logger.info("Generate-only flag set; exiting after data generation")
+        logger.info("Generate-only flag set; exiting now.")
         return
 
     # === closure building === 

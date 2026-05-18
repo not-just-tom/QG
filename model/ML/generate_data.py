@@ -21,7 +21,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     n_total = cfg.ml.n_train + cfg.ml.n_test + 1 # one for validation
     nsteps = cfg.plotting.nsteps
     batch_size = 5 # hardcoded bc it was confusing me. It's just the trajs generated in batches of 5 rn
-    spinup = int(cfg.plotting.spinup)
+    spinup = int(100 * 24 * 60 * 60 // hr_model.stepper.dt)  # 100 days of spinup in high-res steps
 
     logger.info(f"Generating %d trajectories with %d steps.", n_total, nsteps)
     
@@ -33,10 +33,9 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     # JIT the trajectory generation; closure captures `lr_template`, `lr_model._dealias`, and `ratio`.
     @functools.partial(jax.jit, static_argnames=["nsteps"])
     def generate_trajectory(init_state, nsteps):
-        """Generate coarsened trajectory with subsampling."""
-        def step(carry, _x):
-            next_state = hr_model.step_model(carry)
-            state = next_state.state
+        """Generate coarsened trajectory with one coarsen per coarse sample."""
+        def _coarsen_state(step_state):
+            state = step_state.state
             # Galerkin truncation to low-res spectral coefficients
             nk = lr_template.qh.shape[-2] // 2
             trunc = jnp.concatenate(
@@ -48,10 +47,18 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
             )
             filtered = trunc * lr_model._dealias / (ratio ** 2)
             lr_state = lr_template.update(qh=filtered)
-            return next_state, lr_state.q
+            return lr_state.q
+
+        def step(carry, _x):
+            # Advance ratio high-res steps, then emit one low-res sample.
+            def _hr_step(inner_carry, _):
+                return hr_model.step_model(inner_carry), None
+
+            next_state, _ = jax.lax.scan(_hr_step, carry, None, length=ratio)
+            return next_state, _coarsen_state(next_state)
 
         _, traj_q = jax.lax.scan(step, init_state, None, length=nsteps)
-        return traj_q[::ratio]  # Subsample in time to match low-res steps
+        return traj_q
     
     # Vectorize over trajectories
     batched_traj = jax.jit(
@@ -116,11 +123,10 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
 
         # Run spinup on each initial state if requested
         if spinup > 0:
-            logger.info(f"Running spinup of {spinup} steps for the batch")
             init_states = _spinup_batched(init_states, spinup)
 
-        # Generate batch
-        traj_batch = batched_traj(init_states, nsteps*ratio) # multiplied so after sumsampling we get nsteps
+        # Generate batch: one coarsened sample per coarse step.
+        traj_batch = batched_traj(init_states, nsteps)
 
         logger.info(f"Generating current batch of {current_batch} trajectories, shape: {traj_batch.shape}")
         # Transfer once per batch

@@ -70,7 +70,7 @@ def main():
         init_state = model.initialise(key, tune=True, n_jets=njets, verbose=True)
         dt = model.estimate_cfl_dt(init_state)
 
-    sm = SteppedModel(model=model, stepper=CNABStepper(dt))
+    sm = SteppedModel(model=model, stepper=AB3Stepper(dt))
     init_state = sm.initialise(key)
 
 

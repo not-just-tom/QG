@@ -111,7 +111,7 @@ def load_forced_model(
 
     closure_func = parameterization(_param_adapter)
 
-    lr_stepper = CNABStepper(dt=dt)
+    lr_stepper = AB3Stepper(dt=dt)
     forced_model = SteppedModel(
         model=ForcedModel(model=lr_model, closure=closure_func, init_param_aux_func=init_param_func),
         stepper=lr_stepper,

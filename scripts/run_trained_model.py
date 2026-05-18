@@ -93,7 +93,7 @@ def run():
     # instantiate the model
     hr_model = SteppedModel(
         model=QGM({**params, "nx": params['hr_nx']}),
-        stepper=CNABStepper(dt=dt),
+        stepper=AB3Stepper(dt=dt),
     )
     # build low-resolution physics model (coarsened from high-res physics)
     lr_model = coarsen(hr_model.model, params['nx'])
