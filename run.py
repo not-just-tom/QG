@@ -68,6 +68,7 @@ import numpy as np
 import equinox as eqx
 import matplotlib.pyplot as plt
 import optax
+import gc
 
 
 # =========================================
@@ -91,6 +92,7 @@ def run(cfg):
     prefetch = cfg.ml.prefetch
     model_type = cfg.ml.model_type
     learning_rate = learning_rate = cfg['architectures'][model_type].get('learning_rate')
+    gc_every_batches = int(getattr(cfg.ml, 'gc_every_batches', 10))
 
     # curriculum stuff
     start_days        = cfg.ml.start_days
@@ -274,6 +276,11 @@ def run(cfg):
     for day_idx, current_days in enumerate(window_days):
         current_batch_steps = current_days * steps_per_day
         current_n_samples   = nsteps // current_batch_steps
+        stage_batch_size = batch_size
+        if current_days >= 14:
+            stage_batch_size = max(1, batch_size // 4)
+        elif current_days >= 7:
+            stage_batch_size = max(1, batch_size // 2)
         if current_n_samples < 1:
             logger.warning(
                 "Window %d days (%d steps) >= nsteps=%d; stopping curriculum early.",
@@ -306,8 +313,8 @@ def run(cfg):
             optim_state = optim.init(eqx.filter(closure, eqx.is_array))
 
         logger.info(
-            "Curriculum stage %d/%d | window = %d days (%d steps, %d samples/traj) | sub-epoch %d/%d",
-            day_idx + 1, len(window_days), current_days, current_batch_steps, current_n_samples,
+            "Curriculum stage %d/%d | window = %d days (%d steps, %d samples/traj, batch_size=%d) | sub-epoch %d/%d",
+            day_idx + 1, len(window_days), current_days, current_batch_steps, current_n_samples, stage_batch_size,
             stage_resume_epoch + 1, n_epochs,
         )
 
@@ -317,6 +324,7 @@ def run(cfg):
         for stage_epoch in range(stage_resume_epoch, n_epochs):
             train_losses_accum = []
             test_losses_accum = []
+            batch_counter = 0
             train_rng, test_rng, rng = jax.random.split(rng, 3)
             shuffled = shuffled[1:] + shuffled[:1] # move all indice in shuffled forward one
             
@@ -328,9 +336,10 @@ def run(cfg):
                 n_samples=current_n_samples,
                 batch_steps=current_batch_steps,
                 key=train_rng,
-                batch_size=batch_size,
+                batch_size=stage_batch_size,
             )
             for windows in prefetch_generator(train_gen, size=prefetch):
+                batch_counter += 1
                 windows = windows.astype(np.float32)
                 chunk = windows.reshape((1, windows.shape[0], current_batch_steps) + windows.shape[2:])
                 chunk = jax.device_put(chunk)
@@ -345,6 +354,8 @@ def run(cfg):
                         n_discard, discard_flags.size, float(np.max(max_cfls)), cfl_limit,
                     )
                 train_losses_accum.extend([float(loss) for loss, discarded in zip(losses, discard_flags) if not discarded])
+                if batch_counter % gc_every_batches == 0:
+                    gc.collect()
 
 
             test_gen = data_loader.iterate_batches(
@@ -352,9 +363,10 @@ def run(cfg):
                 n_samples=current_n_samples,
                 batch_steps=current_batch_steps,
                 key=test_rng,
-                batch_size=batch_size,
+                batch_size=stage_batch_size,
             )
             for windows in prefetch_generator(test_gen, size=prefetch):
+                batch_counter += 1
                 windows = windows.astype(np.float32)
                 chunk = windows.reshape((1, windows.shape[0], current_batch_steps) + windows.shape[2:])
                 chunk = jax.device_put(chunk)
@@ -369,6 +381,8 @@ def run(cfg):
                         n_discard, discard_flags.size, float(np.max(max_cfls)), cfl_limit,
                     )
                 test_losses_accum.extend([float(loss) for loss, discarded in zip(losses, discard_flags) if not discarded])
+                if batch_counter % gc_every_batches == 0:
+                    gc.collect()
 
             train_mean = float(np.mean(train_losses_accum)) if train_losses_accum else float('nan')
             test_mean  = float(np.mean(test_losses_accum))  if test_losses_accum  else float('nan')
@@ -431,6 +445,9 @@ def run(cfg):
             window_test_mean,
             len(window_train_epoch_means),
         )
+        gc.collect()
+        if hasattr(jax, "clear_caches"):
+            jax.clear_caches()
 
 
     # === validation & diagnostics ===
