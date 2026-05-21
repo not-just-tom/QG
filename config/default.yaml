@@ -23,11 +23,11 @@ params:
   hr_nx: 128
 
 plotting:
-  nsteps: 1500
+  nsteps: 10000
   dt: 450
   plotting_window: 0
   cadence: 100
-  plot: ['loss', 'mse', 'cfl', 'quad']
+  plot: ['loss', 'mse', 'zero', 'ke_spectrum', 'ke_spectrum_movie']
   group_animated: true
   auto_dt: false
   njets: 6

@@ -193,8 +193,9 @@ class MSEDiagnostic(Diagnostic):
         x = np.arange(nt)
 
         fig, ax = plt.subplots()
-        ax.plot(x, mse, "-o", markersize=3, label="MSE")
+        ax.plot(x, mse, markersize=3, label="MSE")
         ax.set_title("MSE per timestep (domain mean)")
+        ax.set_yscale("log")
         ax.set_xlabel("Timestep")
         ax.set_ylabel("MSE")
         if nt > 0:
@@ -484,6 +485,104 @@ class QuadGifDiagnostic(Diagnostic):
 
 
 # ============================================================
+# Zero Comparison Quad GIF (same as above but with zero model SGS as one of the panels)
+# ============================================================
+
+class ZeroComparisonDiagnostic(Diagnostic):
+    name = "quad"
+    output = "gif"
+
+    def run(self, trajs, out_path, cadence):
+        pred = trajs.get("pred_frames")
+        truth = trajs.get("truth")
+        zero = trajs.get("zero_frames")
+        pred_np = np.asarray(pred)
+        truth_np = np.asarray(truth)
+        zero_np = np.asarray(zero) if zero is not None else np.zeros_like(truth_np)
+
+        # Get predicted/applied SGS
+        sgs_pred = trajs.get("sgs")
+        sgs_pred_np = np.asarray(sgs_pred)
+
+        nt = pred_np.shape[0]
+
+        def pad_to_frames(arr):
+            if arr is None:
+                return np.zeros_like(pred_np)
+            if arr.shape[0] == nt:
+                return arr
+            if arr.shape[0] == nt - 1:
+                pad = np.zeros_like(arr[0:1])
+                return np.concatenate([pad, arr], axis=0)
+            if arr.shape[0] < nt:
+                pad = np.zeros((nt - arr.shape[0],) + arr.shape[1:], dtype=arr.dtype)
+                return np.concatenate([pad, arr], axis=0)
+            return arr[:nt]
+
+        sgs_pred_np = pad_to_frames(sgs_pred_np)
+        zero_np = pad_to_frames(zero_np)
+
+        indices = np.arange(0, nt, max(1, int(cadence)))
+        if indices.size == 0:
+            raise ValueError("No frames selected for quad diagnostic (check cadence)")
+
+        def pick(arr, idx):
+            if arr.ndim == 4:
+                return arr[idx, 0]
+            return arr[idx]
+
+        # robust percentiles
+        def pct(a, q):
+            try:
+                return np.nanpercentile(a, q)
+            except Exception:
+                return 0.0
+
+        vmin_truth = pct(truth_np, 1)
+        vmax_truth = pct(truth_np, 99)
+
+
+        # Layout: top row - Truth  | Zero Model
+        # bottom row - ML adjusted | Pred SGS
+        fig, axes = plt.subplots(1, 3, figsize=(12, 8))
+        ax_truth = axes[0]
+        ax_ml = axes[1]
+        ax_zero = axes[2]
+
+        im_truth = ax_truth.imshow(pick(truth_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_truth, vmax=vmax_truth)
+        ax_truth.set_title("Truth")
+        im_ml = ax_ml.imshow(pick(pred_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_truth, vmax=vmax_truth)
+        ax_ml.set_title("ML adjusted")
+        im_zero = ax_zero.imshow(pick(zero_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_truth, vmax=vmax_truth)
+        ax_zero.set_title("Without closure")
+
+
+        for ax in axes.ravel():
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+        fig.colorbar(im_truth, ax=[ax_truth, ax_ml, ax_zero], shrink=0.6)
+
+
+        def update(i):
+            idx = indices[i]
+            im_truth.set_data(pick(truth_np, idx))
+            im_ml.set_data(pick(pred_np, idx))
+            im_zero.set_data(pick(zero_np, idx))
+            fig.suptitle(f"timestep {idx}")
+            return im_truth, im_ml, im_zero
+
+        anim = FuncAnimation(fig, update, frames=len(indices), interval=100, blit=False)
+
+        try:
+            writer = PillowWriter(fps=10)
+            anim.save(out_path, writer=writer)
+            plt.close(fig)
+        except Exception as e:
+            print("Pillow save failed:", e)
+
+
+# ============================================================
 # Energy (timeseries)
 # ============================================================
 
@@ -567,6 +666,7 @@ _REGISTRY = {
     "ke_spectrum": KESpectrumDiagnostic,
     "PV": VorticityDiagnostic,
     "quad": QuadGifDiagnostic,
+    'zero': ZeroComparisonDiagnostic,
     "energy": EnergyDiagnostic,
     "ke_spectrum_movie": KESpectrumAnimationDiagnostic,
     'cfl': CFLDiagnostic,
