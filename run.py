@@ -471,7 +471,7 @@ def run(cfg):
         if isinstance(v, np.ndarray) and v.ndim > 1 and v.shape[0] > window:
             trajectories[k] = v[:window]
 
-    trajectories["loss_history"] = {"train": train_mean_losses, "test": test_mean_losses}
+    trajectories["loss_history"].update({"train": train_mean_losses, "test": test_mean_losses})
     trajectories["grid"] = lr_model.get_grid()
     
     if os.environ.get('HPC_RUN', '0') == '1':

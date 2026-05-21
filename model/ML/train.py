@@ -537,6 +537,8 @@ def make_validation_epoch(lr_model, dt):
             "target_sgs_forcing": jax.device_get(target_sgs_forcing),
 
             "truth": jax.device_get(truth_traj),
+
+            'loss_history': {'zero': jnp.mean((truth_traj[1:n_intervals + 1] - zero_frames[1:]) ** 2, axis=(1,2,3))}, # keep in mind this is MSE
         }
         return result
 

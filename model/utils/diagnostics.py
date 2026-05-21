@@ -200,7 +200,7 @@ class MSEDiagnostic(Diagnostic):
         ax.grid(True)
 
         # Plot zero-model baseline if provided. Accept scalar or per-timestep array.
-        zero_loss = trajs.get("zero_loss")
+        zero_loss = trajs.get("loss_history", {}).get("zero", None)
         if zero_loss is not None:
             zl = np.asarray(zero_loss)
             # Scalar baseline: draw horizontal dashed line
@@ -525,9 +525,7 @@ class CFLDiagnostic(Diagnostic):
         if grid is None:
             raise KeyError("cfl diagnostic requires 'grid' in trajectories")
 
-        q_pred = trajs.get("pred", trajs.get("q"))
-        if q_pred is None:
-            raise KeyError("cfl diagnostic requires 'truth' or 'q' in trajectories")
+        q_pred = trajs.get("pred_frames")
         q_pred = np.asarray(q_pred)
         if q_pred.ndim == 3:
             q_pred = q_pred[:, None, ...]

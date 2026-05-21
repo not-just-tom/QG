@@ -7,7 +7,7 @@ filepaths:
 
 params: 
   seed: 42
-  nx: 64
+  nx: 32
   Lx: 1000000 #6.283185307179586  # 2π
   beta: 0.00000000001
   kmin: 4.0 
@@ -20,7 +20,7 @@ params:
   delta: 0.1 # ratio between top/bottom layer depth
   U1: 0.025
   U2: 0.0
-  hr_nx: 512
+  hr_nx: 128
 
 plotting:
   nsteps: 1500
@@ -35,13 +35,13 @@ plotting:
 
 ml:
   enabled: true
-  model_type: resnet
+  model_type: fno
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 4
   n_test: 1
   start_days: 1        # initial window length in days
-  end_days: 30          # final window length in days
+  end_days: 3         # final window length in days
   batch_size: 10 # number of samples in a training batch per update <--------------------------- is this used?
   prefetch: 3       # prefetch a few batches to aid efficiency
   use_float64: false
@@ -63,6 +63,8 @@ architectures:
     width: 32 #[32, 64, 128]
     modes2: 8 #[8, 16, 24]
     modes1: 8 #[8, 16, 24]
+    n_layers: 3
+    zero_mean: true
   diffusion:
     learning_rate: 0 # is this needed?
     cutoff: 16.0
