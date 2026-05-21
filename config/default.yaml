@@ -26,8 +26,8 @@ plotting:
   nsteps: 1500
   dt: 450
   plotting_window: 0
-  cadence: 10
-  plot: ['loss', 'mse', 'cfl']
+  cadence: 100
+  plot: ['loss', 'mse', 'cfl', 'quad']
   group_animated: true
   auto_dt: false
   njets: 6
@@ -50,23 +50,26 @@ ml:
 architectures:
   cnn:
     learning_rate: 0.0001
+    loss: mse
     nlayers: 10
     width: 64
     kernel_size: 5
     activation: "relu" 
   unet:
     learning_rate: 0.0005
+    loss: mse
     base_channels: 32
     depth: 4
   fno:
     learning_rate: 0.0001 #[0.0001, 0.0005, 0.001]
+    loss: maddison
     width: 32 #[32, 64, 128]
     modes2: 8 #[8, 16, 24]
     modes1: 8 #[8, 16, 24]
     n_layers: 3
     zero_mean: true
   diffusion:
-    learning_rate: 0 # is this needed?
+    loss: mse
     cutoff: 16.0
     n_steps: 3
     alpha: 0.2
@@ -84,11 +87,12 @@ architectures:
     activation: "tanh"
   resnet:
     learning_rate: 0.0001
+    loss: mse
     nlayers: 7
     width: 32
     kernel_size: 5
     activation: "elu" 
   zero:
-    learning_rate: 0 # obviously not needed but coded in regardless
+    loss: mse
 
   

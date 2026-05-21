@@ -50,7 +50,7 @@ importlib.reload(model.ML.utils.dataloading)
 importlib.reload(model.ML.train)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
-from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch
+from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch, zero_validation
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import coarsen
 from model.ML.generate_data import generate_train_data
@@ -91,7 +91,8 @@ def run(cfg):
     use_float64 = cfg.ml.use_float64
     prefetch = cfg.ml.prefetch
     model_type = cfg.ml.model_type
-    learning_rate = learning_rate = cfg['architectures'][model_type].get('learning_rate')
+    learning_rate = learning_rate = cfg['architectures'][model_type].get('learning_rate', 0)
+    loss = cfg['architectures'][model_type].get('loss')
     gc_every_batches = int(getattr(cfg.ml, 'gc_every_batches', 10))
 
     # curriculum stuff
@@ -234,8 +235,8 @@ def run(cfg):
     # Build training and test functions (JIT retraces automatically when batch_steps changes shape)
     low_res_dt = dt*ratio
     cfl_limit = float(getattr(cfg.plotting, 'cfl', 1.0))
-    train_epoch = make_train_epoch(lr_model, low_res_dt, optim, cfl_limit=cfl_limit)
-    test_epoch = make_test_epoch(lr_model, low_res_dt, cfl_limit=cfl_limit)
+    train_epoch = make_train_epoch(lr_model, low_res_dt, optim, loss, cfl_limit=cfl_limit)
+    test_epoch = make_test_epoch(lr_model, low_res_dt, loss, cfl_limit=cfl_limit)
 
     # Prepare trajectory indices
     all_traj_indices = list(range(len(data_loader)))
@@ -451,16 +452,28 @@ def run(cfg):
 
 
     # === validation & diagnostics ===
+    truth_traj = data_loader.get_trajectory(n_epochs)  # shape (time, layers, ny, nx)
+    trajectories = {}
     try:
         loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = checkpointer(None, None, model_dir, save=False)
         closure = build_closure(cfg, loaded_leaves)
     except Exception:
         logger.exception("Failed to load trained model for testing.")
 
+    # Compute zero model baseline for diagnostics
+    try:
+        zero_results = zero_validation(lr_model, low_res_dt, truth_traj, cfg, loss)
+        trajectories['zero_frames'] = zero_results['zero_frames']
+        if 'loss_history' not in trajectories:
+            trajectories['loss_history'] = {}
+        trajectories['loss_history']['zero'] = zero_results['zero_loss']
+    except Exception:
+        logger.exception("Failed to compute zero model baseline, continuing without.")
+
     # Build validation function and run it on a held-out trajectory
-    validation_epoch = make_validation_epoch(lr_model, low_res_dt)
-    truth_traj = data_loader.get_trajectory(n_epochs)  # shape (time, layers, ny, nx)
-    trajectories = validation_epoch(truth_traj, cfg, closure)
+    validation_epoch = make_validation_epoch(lr_model, low_res_dt, loss)
+    validation_results = validation_epoch(truth_traj, cfg, closure, trajectories['zero_frames'])
+    trajectories.update(validation_results)
 
     if cfg.plotting.plotting_window != 0:
         window = cfg.plotting.plotting_window

@@ -18,5 +18,10 @@ def configure_logging(level="info", out_file=None):
         force=True,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+    
+    # Suppress verbose matplotlib animation logging
+    logging.getLogger('matplotlib.animation').setLevel(logging.WARNING)
+    
+    return logging.getLogger(__name__)
 
 

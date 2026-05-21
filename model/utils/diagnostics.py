@@ -44,6 +44,8 @@ class LossDiagnostic(Diagnostic):
         if zero.size:
             # plot average zero loss
             ax.hlines(zero.mean(), 1, len(test), colors="C2", linestyles="--", label="zero model")
+            # one sd range for zero loss
+            ax.fill_between(np.arange(1, len(test) + 1), zero.mean() - zero.std(), zero.mean() + zero.std(), color="C2", alpha=0.08)
 
         ax.set_title("Training / Validation Loss")
         ax.set_xlabel("Epoch")

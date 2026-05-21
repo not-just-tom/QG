@@ -214,7 +214,7 @@ def maddison_loss(residual_q, lr_model, beta=10.0, scale_factor=1e4):
     loss = norm_factor * jnp.mean(weighted_residual_sq)
     return loss
 
-def make_train_epoch(lr_model, dt, optim, cfl_limit=1.0):
+def make_train_epoch(lr_model, dt, optim, loss, cfl_limit=1.0):
     """Factory that returns a JIT-compiled `train_epoch` function bound to
     the provided low-resolution physics model `lr_model`, a step `dt` (low_res?), and optimizer.
     """
@@ -254,11 +254,11 @@ def make_train_epoch(lr_model, dt, optim, cfl_limit=1.0):
 
             def loss_fn(params, batch):
                 err, _ = metrics_fn(params, batch)
-                try:
+                if loss == "maddison":
                     return maddison_loss(err, lr_model, beta=float(lr_model.beta))
-                except Exception:
-                    # Fallback to simple MSE if Maddison loss fails
+                elif loss == "mse":
                     return jnp.mean(err**2)
+                else: raise ValueError(f"Unsupported loss type: {loss}")
 
             _, max_cfl = metrics_fn(closure_params, batch)
             discard = jnp.any(max_cfl > cfl_limit)
@@ -283,7 +283,7 @@ def make_train_epoch(lr_model, dt, optim, cfl_limit=1.0):
 
     return eqx.filter_jit(_train_epoch)
 
-def make_test_epoch(lr_model, dt, cfl_limit=1.0):
+def make_test_epoch(lr_model, dt, loss, cfl_limit=1.0):
     """basically the same minus the optim update. 
     """
     # Prepare any template state that is static and can be captured
@@ -323,22 +323,23 @@ def make_test_epoch(lr_model, dt, cfl_limit=1.0):
 
             def loss_fn(params, batch):
                 err, _ = metrics_fn(params, batch)
-                try:
+                if loss == "maddison":
                     return maddison_loss(err, lr_model, beta=float(lr_model.beta))
-                except Exception:
-                    # Fallback to simple MSE if Maddison loss fails
+                elif loss == "mse":
                     return jnp.mean(err**2)
+                else: 
+                    raise ValueError(f"Unsupported loss type: {loss}")
 
             _, max_cfl = metrics_fn(closure_params, batch)
             discard = jnp.any(max_cfl > cfl_limit)
-            loss = jax.lax.cond(
+            computed_loss = jax.lax.cond(
                 discard,
                 lambda _: jnp.asarray(jnp.nan, dtype=batch.dtype),
                 lambda _: loss_fn(closure_params, batch),
                 operand=None,
             )
             # Return unchanged carry and the computed loss
-            return (closure_params, optim_state), (loss, discard, jnp.max(max_cfl))
+            return (closure_params, optim_state), (computed_loss, discard, jnp.max(max_cfl))
 
         (final_closure_params, final_optim_state), (losses, discard_flags, max_cfls) = jax.lax.scan(
             step_fn, (closure_params, optim_state), test_trajs
@@ -348,24 +349,15 @@ def make_test_epoch(lr_model, dt, cfl_limit=1.0):
     return eqx.filter_jit(_test_epoch)
 
 
-def make_validation_epoch(lr_model, dt):
+def make_validation_epoch(lr_model, dt, loss):
     """Factory that returns a validation_epoch function with
     SGS diagnostics and target SGS computation.
     """
 
-    def _validation_epoch(truth_traj, cfg, closure):
+    def _validation_epoch(truth_traj, cfg, closure, zero_frames):
 
         truth_traj = jnp.asarray(truth_traj)
 
-        if truth_traj.ndim == 4:
-            pass
-        elif truth_traj.ndim == 5:
-            truth_traj = truth_traj[0]
-        else:
-            raise ValueError(
-                "Validation trajectory must have shape "
-                "(nt, nz, ny, nx) or (batch, nt, nz, ny, nx)"
-            )
 
         nsteps_cfg = int(getattr(cfg.plotting, "nsteps", truth_traj.shape[0] - 1))
         seed = int(getattr(cfg.params, "seed", 0))
@@ -376,20 +368,6 @@ def make_validation_epoch(lr_model, dt):
         forced_model, closure_params, closure_static = load_forced_model(
             lr_model,
             closure,
-            dt,
-            q_mean=q_mean,
-            q_std=q_std,
-            dq_mean=dq_mean,
-            dq_std=dq_std,
-            closure_filter=closure_filter,
-        )
-
-        # Zero model baseline
-        from model.ML.architectures.zero import ZeroModel
-        zero_closure = ZeroModel()
-        zero_model, zero_params, _ = load_forced_model(
-            lr_model,
-            zero_closure,
             dt,
             q_mean=q_mean,
             q_std=q_std,
@@ -414,13 +392,6 @@ def make_validation_epoch(lr_model, dt):
             forced_model.model.initialise_param_state(
                 base_state,
                 closure_params
-            )
-        )
-
-        init_zero_state = zero_model.initialize_stepper_state(
-            zero_model.model.initialise_param_state(
-                base_state,
-                zero_params
             )
         )
 
@@ -456,24 +427,6 @@ def make_validation_epoch(lr_model, dt):
             length=n_intervals,
         )
 
-        def _zero_step(carry, _x):
-
-            next_state = zero_model.step_model(carry)
-
-            dqh_total = (
-                next_state.state.model_state.qh
-                - carry.state.model_state.qh
-            )
-
-            return next_state, dqh_total
-
-        _, zero_dqh = jax.lax.scan(
-            _zero_step,
-            init_zero_state,
-            None,
-            length=n_intervals,
-        )
-
         # Reconstruct trajectories in physical space
         qh0 = jnp.fft.rfftn(
             truth_traj[0],
@@ -489,14 +442,6 @@ def make_validation_epoch(lr_model, dt):
             axis=0,
         )
 
-        zero_qh_traj = jnp.concatenate(
-            [
-                qh0[None, ...],
-                qh0[None, ...] + jnp.cumsum(zero_dqh, axis=0),
-            ],
-            axis=0,
-        )
-
         pred_frames = jax.vmap(
             lambda x: jnp.fft.irfftn(
                 x,
@@ -506,20 +451,9 @@ def make_validation_epoch(lr_model, dt):
             )
         )(qh_traj)
 
-        zero_frames = jax.vmap(
-            lambda x: jnp.fft.irfftn(
-                x,
-                axes=(-2, -1),
-                norm='ortho',
-                s=real_shape,
-            )
-        )(zero_qh_traj)
-
         # SGS diagnostics
         sgs_increment = sgs_increment_step
-        sgs_forcing = sgs_increment / dt
         target_sgs_increment = truth_traj[1:n_intervals + 1] - zero_frames[1:]
-        target_sgs_forcing = target_sgs_increment / dt
 
         result = {
             "pred_frames": jax.device_get(pred_frames),
@@ -528,20 +462,125 @@ def make_validation_epoch(lr_model, dt):
 
             "sgs": jax.device_get(sgs_increment),
 
-            "sgs_forcing": jax.device_get(sgs_forcing),
-
             "target_sgs": jax.device_get(target_sgs_increment),
 
-            "target_sgs_increment": jax.device_get(target_sgs_increment),
-
-            "target_sgs_forcing": jax.device_get(target_sgs_forcing),
-
             "truth": jax.device_get(truth_traj),
-
-            'loss_history': {'zero': jnp.mean((truth_traj[1:n_intervals + 1] - zero_frames[1:]) ** 2, axis=(1,2,3))}, # keep in mind this is MSE
         }
         return result
 
     return _validation_epoch
+
+
+def zero_validation(lr_model, dt, truth_traj, cfg, loss):
+    """Run zero model baseline and return zero_frames and zero_loss.
+    
+    Args:
+        lr_model: Low-resolution physics model
+        dt: Timestep
+        truth_traj: Truth trajectory array (time, layers, ny, nx)
+        cfg: Configuration object
+        loss: Loss type string ('maddison' or 'mse')
+    
+    Returns:
+        dict with 'zero_frames' and 'zero_loss' keys
+    """
+    truth_traj = jnp.asarray(truth_traj)
+    
+    nsteps_cfg = int(getattr(cfg.plotting, "nsteps", truth_traj.shape[0] - 1))
+    seed = int(getattr(cfg.params, "seed", 0))
+    n_intervals = min(nsteps_cfg, int(truth_traj.shape[0]) - 1)
+    
+    q_mean, q_std, dq_mean, dq_std = _build_closure_scalers(truth_traj)
+    closure_filter = _build_closure_highpass_filter(lr_model)
+    
+    # Build zero model
+    from model.ML.architectures.zero import ZeroModel
+    zero_closure = ZeroModel()
+    zero_model, zero_params, _ = load_forced_model(
+        lr_model,
+        zero_closure,
+        dt,
+        q_mean=q_mean,
+        q_std=q_std,
+        dq_mean=dq_mean,
+        dq_std=dq_std,
+        closure_filter=closure_filter,
+    )
+    
+    template_state = lr_model.initialise(jax.random.PRNGKey(seed))
+    
+    init_qh = jnp.fft.rfftn(
+        truth_traj[0],
+        axes=(-2, -1),
+        norm='ortho'
+    ).astype(template_state.qh.dtype)
+    
+    base_state = template_state.update(qh=init_qh)
+    
+    init_zero_state = zero_model.initialize_stepper_state(
+        zero_model.model.initialise_param_state(
+            base_state,
+            zero_params
+        )
+    )
+    
+    real_shape = truth_traj.shape[-2:]
+    
+    # Zero model rollout
+    def _zero_step(carry, _x):
+        next_state = zero_model.step_model(carry)
+        dqh_total = (
+            next_state.state.model_state.qh
+            - carry.state.model_state.qh
+        )
+        return next_state, dqh_total
+    
+    _, zero_dqh = jax.lax.scan(
+        _zero_step,
+        init_zero_state,
+        None,
+        length=n_intervals,
+    )
+    
+    # Reconstruct zero trajectory in physical space
+    qh0 = jnp.fft.rfftn(
+        truth_traj[0],
+        axes=(-2, -1),
+        norm='ortho'
+    )
+    
+    zero_qh_traj = jnp.concatenate(
+        [
+            qh0[None, ...],
+            qh0[None, ...] + jnp.cumsum(zero_dqh, axis=0),
+        ],
+        axis=0,
+    )
+    
+    zero_frames = jax.vmap(
+        lambda x: jnp.fft.irfftn(
+            x,
+            axes=(-2, -1),
+            norm='ortho',
+            s=real_shape,
+        )
+    )(zero_qh_traj)
+    
+    # Compute zero loss using the same loss function as training
+    zero_error = truth_traj[1:n_intervals + 1] - zero_frames[1:]
+    if loss == "maddison":
+        zero_loss = jnp.array([
+            maddison_loss(zero_error[t:t+1], lr_model, beta=float(lr_model.beta)) 
+            for t in range(zero_error.shape[0])
+        ])
+    elif loss == 'mse':
+        zero_loss = jnp.mean(zero_error ** 2, axis=(1, 2, 3))
+    else:
+        raise ValueError(f"Unsupported loss type: {loss}")
+    
+    return {
+        'zero_frames': jax.device_get(zero_frames),
+        'zero_loss': jax.device_get(zero_loss),
+    }
 
 

@@ -18,8 +18,8 @@
     "timing": {
         "nsteps": 1500,
         "dt (original)": 450.0,
-        "auto_dt": false,
-        "final dt": 450.0
+        "auto_dt": true,
+        "final dt": 27758.259765625
     },
     "model_type": "fno",
     "training": {
@@ -29,7 +29,7 @@
         "n_test": 1,
         "model_arch": {
             "learning_rate": 0.0001,
-            "loss": "mse",
+            "loss": "maddison",
             "width": 32,
             "modes2": 8,
             "modes1": 8,
