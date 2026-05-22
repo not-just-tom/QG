@@ -2,8 +2,6 @@ from __future__ import annotations
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
-import os
-import json
 import importlib
 import model.utils.physics_ops
 importlib.reload(model.utils.physics_ops)
@@ -67,8 +65,6 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
     output = "gif"
 
     def run(self, trajs, out_path, cadence):
-        from matplotlib.animation import FuncAnimation, PillowWriter
-
         grid = trajs.get("grid")
         if grid is None:
             raise KeyError("ke_spectrum_movie requires 'grid' in trajectories")
@@ -76,8 +72,10 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
         # prefer physical predicted frames produced by validation; fallback to 'pred'
         q_truth = trajs.get("truth")
         q_pred = trajs.get("pred_frames")
+        zero = trajs.get("zero_frames")
         q_truth = np.asarray(q_truth[10:]) # im trying out skipping first few frames to avoid 0s ?
         q_pred = np.asarray(q_pred[10:])
+        zero = np.asarray(zero[10:])
 
         # compute per-frame spectra helper
         def compute_frame_spectra(q):
@@ -86,11 +84,9 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
                 nt = q.shape[0]
                 for t in range(nt):
                     psi_t = invert_pv_to_psi(q[t], grid)
-                    u_t, v_t = velocity_from_psi(psi_t, grid)
+                    u_t, v_t = velocity_from_psi(psi_t, grid) # shape (nz, ny, nx)
                     spec_t = isotropic_ke_spectrum(u_t, v_t, grid)
                     Et = spec_t["E"]
-                    if Et.ndim > 1:
-                        Et = Et.mean(axis=0)
                     frames.append(np.asarray(Et).ravel())
                 k = np.asarray(spec_t["k"]).ravel()
                 return np.stack(frames, axis=0), k
@@ -98,45 +94,33 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
                 return None, None
 
         E_truth_frames, k = compute_frame_spectra(q_truth)
-        E_pred_frames, _ = compute_frame_spectra(q_pred) if q_pred is not None else (None, None)
-
-        if E_truth_frames is None:
-            raise RuntimeError("Failed to compute truth spectra for KE animation")
+        E_pred_frames, _ = compute_frame_spectra(q_pred) 
+        E_zero_frames, _ = compute_frame_spectra(zero)
 
         # averages and stds
         E_truth_avg = E_truth_frames.mean(axis=0)
-        E_truth_std = E_truth_frames.std(axis=0)
-        E_pred_avg = E_pred_frames.mean(axis=0) if E_pred_frames is not None else None
-        E_pred_std = E_pred_frames.std(axis=0) if E_pred_frames is not None else None
+        E_pred_avg = E_pred_frames.mean(axis=0)
+        E_pred_std = E_pred_frames.std(axis=0)
+        E_zero_avg = E_zero_frames.mean(axis=0)
 
         # select frames for animation using cadence
         nt = E_truth_frames.shape[0]
         frame_indices = list(range(0, nt, max(1, cadence)))
-        if len(frame_indices) == 0:
-            raise ValueError("No frames selected for KE spectrum movie (check cadence)")
 
         # Build plot: avg lines + shading, instant lines animated on top
         fig, ax = plt.subplots()
-        # plot avg
-        ax.loglog(k[1:], E_truth_avg[1:], label="Truth (avg)", color="k")
-        if E_pred_avg is not None:
-            ax.loglog(k[1:], E_pred_avg[1:], label="ML (avg)", linestyle="--", color="C1")
-        # shading ±1σ
+        ax.loglog(k[1:], E_truth_avg[1:], label="Truth", color="k")
+
         try:
-            ax.fill_between(k[1:], (E_truth_avg - E_truth_std)[1:], (E_truth_avg + E_truth_std)[1:], color="k", alpha=0.12)
-            if E_pred_avg is not None:
-                ax.fill_between(k[1:], (E_pred_avg - E_pred_std)[1:], (E_pred_avg + E_pred_std)[1:], color="C1", alpha=0.08)
+            ax.fill_between(k[1:], (E_pred_avg - E_pred_std)[1:], (E_pred_avg + E_pred_std)[1:], color="C1", alpha=0.08)
         except Exception:
             pass
 
-        # instantaneous lines (start with first selected frame)
-        E0 = E_truth_frames[frame_indices[0]]
-        ln_truth, = ax.loglog(k[1:], E0[1:], label="Truth (inst)", color="0.25")
-        if E_pred_frames is not None:
-            Ep0 = E_pred_frames[frame_indices[0]]
-            ln_pred, = ax.loglog(k[1:], Ep0[1:], label="ML (inst)", color="C3", linestyle="--")
-        else:
-            ln_pred = None
+        # instantaneous lines
+        Ep0 = E_pred_frames[frame_indices[0]]
+        Ez0 = E_zero_frames[frame_indices[0]]
+        ln_pred, = ax.loglog(k[1:], Ep0[1:], label="ML", color="C3", linestyle="--")
+        ln_zero, = ax.loglog(k[1:], Ez0[1:], label="Zero", color="C2", linestyle="--")
 
         ax.set_xlabel("k")
         ax.set_ylabel("E(k)")
@@ -146,15 +130,16 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
 
         def update(i):
             idx = frame_indices[i]
-            Et = E_truth_frames[idx]
-            ln_truth.set_data(k[1:], Et[1:])
             if ln_pred is not None:
                 Ep = E_pred_frames[idx]
                 ln_pred.set_data(k[1:], Ep[1:])
+            if ln_zero is not None:
+                Ez = E_zero_frames[idx]
+                ln_zero.set_data(k[1:], Ez[1:])
             ax.relim()
             ax.autoscale_view()
             ax.set_title(f"KE spectrum (t={idx})")
-            return (ln_truth, ln_pred) if ln_pred is not None else (ln_truth,)
+            return (ln_pred, ln_zero)
 
         ani = FuncAnimation(fig, update, frames=len(frame_indices), interval=200)
         ani.save(out_path, writer=PillowWriter(fps=5))
@@ -241,8 +226,10 @@ class KESpectrumDiagnostic(Diagnostic):
         grid = trajs.get("grid")
         q_truth = trajs.get("truth")
         q_pred  = trajs.get("pred_frames")
+        zero = trajs.get("zero_frames")
         q_truth = np.asarray(q_truth)
         q_pred  = np.asarray(q_pred)
+        zero = np.asarray(zero)
 
         # --- helper: compute spectrum from PV (time-averaged) ---
         def compute_avg_spectrum(q):
@@ -250,48 +237,42 @@ class KESpectrumDiagnostic(Diagnostic):
             u, v = velocity_from_psi(psi, grid)
             spec = isotropic_ke_spectrum(u, v, grid)
             k = np.asarray(spec["k"]).ravel()
-            E = spec["E"]
-            if E.ndim > 1:
-                E = E.mean(axis=0)
-            return k, np.asarray(E).ravel()
+            E = np.asarray(spec["E"]).ravel()
+            return k, E
 
         # compute averaged spectra
         k, E_truth_avg = compute_avg_spectrum(q_truth)
-        E_pred_avg = None
-        if q_pred is not None:
-            _, E_pred_avg = compute_avg_spectrum(q_pred)
+        _, E_pred_avg = compute_avg_spectrum(q_pred)
+        _, E_zero_avg = compute_avg_spectrum(zero)
 
         # --- compute per-frame spectra ---
         def compute_frame_spectra(q):
             try:
                 frames = []
-                if q.ndim == 4:
-                    for t in range(q.shape[0]):
-                        psi_t = invert_pv_to_psi(q[t], grid)
-                        u_t, v_t = velocity_from_psi(psi_t, grid)
-                        spec_t = isotropic_ke_spectrum(u_t, v_t, grid)
-                        Et = spec_t["E"]
-                        if Et.ndim > 1:
-                            Et = Et.mean(axis=0)
-                        frames.append(np.asarray(Et).ravel())
+                for t in range(q.shape[0]):
+                    psi_t = invert_pv_to_psi(q[t], grid)
+                    u_t, v_t = velocity_from_psi(psi_t, grid)
+                    spec_t = isotropic_ke_spectrum(u_t, v_t, grid)
+                    Et = np.asarray(spec_t["E"]).ravel()
+                    frames.append(Et)
                 return np.stack(frames, axis=0)
             except Exception:
                 return None
 
         E_truth_frames = compute_frame_spectra(q_truth)
-        E_pred_frames = compute_frame_spectra(q_pred) if q_pred is not None else None
-
-
-        E_truth_std = E_truth_frames.std(axis=0) if E_truth_frames is not None else None
-        E_pred_std = E_pred_frames.std(axis=0) if E_pred_frames is not None else None
+        E_pred_frames = compute_frame_spectra(q_pred)
+        E_zero_frames = compute_frame_spectra(zero)
+        E_truth_std = E_truth_frames.std(axis=0)
+        E_pred_std = E_pred_frames.std(axis=0)
 
         # --- plot ---
         fig, ax = plt.subplots()
 
-        # Plot time-averaged spectra
-        ax.loglog(k[1:], E_truth_avg[1:], label="Truth (avg)", color="k")
+        ax.loglog(k[1:], E_truth_avg[1:], label="Truth", color="k")
         if E_pred_avg is not None:
-            ax.loglog(k[1:], E_pred_avg[1:], label="ML (avg)", linestyle="--", color="C1")
+            ax.loglog(k[1:], E_pred_avg[1:], label="ML", linestyle="--", color="C1")
+        if E_zero_avg is not None:
+            ax.loglog(k[1:], E_zero_avg[1:], label="Zero", linestyle="--", color="C2")
 
 
         # Shade ±1σ around the mean if available

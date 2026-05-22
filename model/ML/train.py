@@ -13,7 +13,7 @@ from model.core.steppers import SteppedModel, AB3Stepper, CNABStepper
 import numpy as np
 
 
-def _build_closure_scalers(trajs, closure_scale=1e-2, eps=1e-6):
+def _build_closure_scalers(trajs, closure_scale=5e-2, eps=1e-6):
     """Build simple per-layer scalers for closure input/output.
 
     The state scaler is used to normalize q before it is passed to the
@@ -43,6 +43,23 @@ def _build_closure_highpass_filter(lr_model, power=2.0):
     filt = (kmag / kref) ** power
     filt = jnp.where(kmag == 0, 0.0, filt)
     return filt
+
+
+def _spectrum_aux_loss(target_qh, pred_qh, lr_model, weight=0.1, power=1.0, eps=1e-12):
+    """Compare target and predicted spectra in Fourier space.
+
+    The penalty is shell-aware via a wavenumber weighting, and it operates on the
+    predicted vs target trajectory spectra rather than on the physical-space residual.
+    """
+    target_spec = jnp.mean(jnp.abs(target_qh) ** 2, axis=(0, 1))
+    pred_spec = jnp.mean(jnp.abs(pred_qh) ** 2, axis=(0, 1))
+
+    kmag = jnp.asarray(lr_model.Kmag)
+    kref = jnp.maximum(jnp.max(kmag), 1e-12)
+    shell_weight = 1.0 + (kmag / kref) ** power
+
+    log_spec_err = jnp.log(pred_spec + eps) - jnp.log(target_spec + eps)
+    return weight * jnp.mean(shell_weight * (log_spec_err ** 2))
 
 
 def closure_combiner(
@@ -187,7 +204,7 @@ def compute_traj_errors_and_cfl(target_traj, forced_model, template_state, closu
     # (nsteps, nz, ny, nx)
     residual_q = jax.vmap(lambda x: jnp.fft.irfftn(x, axes=(-2, -1), norm='ortho', s=target_traj.shape[-2:]))(residual_qh)
 
-    return residual_q, max_cfl
+    return residual_q, max_cfl, target_qh[1:], pred_qh
 
 def maddison_loss(residual_q, lr_model, beta=10.0, scale_factor=1e4):
     """Compute loss per Maddison (2026) eqn 7: spatial interior weighting, no boundary.
@@ -240,7 +257,7 @@ def make_train_epoch(lr_model, dt, optim, loss, cfl_limit=1.0):
             closure_params, optim_state = carry
 
             def metrics_fn(params, batch):
-                errs, max_cfl = jax.vmap(
+                errs, max_cfl, target_qh, pred_qh = jax.vmap(
                     functools.partial(
                         compute_traj_errors_and_cfl,
                         forced_model=forced_model,
@@ -250,17 +267,22 @@ def make_train_epoch(lr_model, dt, optim, loss, cfl_limit=1.0):
                         dt=dt,
                     )
                 )(batch)
-                return errs, max_cfl
+                return errs, max_cfl, target_qh, pred_qh
 
             def loss_fn(params, batch):
-                err, _ = metrics_fn(params, batch)
+                err, _, target_qh, pred_qh = metrics_fn(params, batch)
                 if loss == "maddison":
                     return maddison_loss(err, lr_model, beta=float(lr_model.beta))
+                elif loss in {"maddison_spectral", "maddison+spectral"}:
+                    return (
+                        maddison_loss(err, lr_model, beta=float(lr_model.beta))
+                        + _spectrum_aux_loss(target_qh, pred_qh, lr_model)
+                    )
                 elif loss == "mse":
                     return jnp.mean(err**2)
                 else: raise ValueError(f"Unsupported loss type: {loss}")
 
-            _, max_cfl = metrics_fn(closure_params, batch)
+            _, max_cfl, _, _ = metrics_fn(closure_params, batch)
             discard = jnp.any(max_cfl > cfl_limit)
 
             def do_update(args):
@@ -309,7 +331,7 @@ def make_test_epoch(lr_model, dt, loss, cfl_limit=1.0):
             closure_params, optim_state = carry
 
             def metrics_fn(params, batch):
-                errs, max_cfl = jax.vmap(
+                errs, max_cfl, target_qh, pred_qh = jax.vmap(
                     functools.partial(
                         compute_traj_errors_and_cfl,
                         forced_model=forced_model,
@@ -319,18 +341,23 @@ def make_test_epoch(lr_model, dt, loss, cfl_limit=1.0):
                         dt=dt,
                     )
                 )(batch)
-                return errs, max_cfl
+                return errs, max_cfl, target_qh, pred_qh
 
             def loss_fn(params, batch):
-                err, _ = metrics_fn(params, batch)
+                err, _, target_qh, pred_qh = metrics_fn(params, batch)
                 if loss == "maddison":
                     return maddison_loss(err, lr_model, beta=float(lr_model.beta))
+                elif loss in {"maddison_spectral", "maddison+spectral"}:
+                    return (
+                        maddison_loss(err, lr_model, beta=float(lr_model.beta))
+                        + _spectrum_aux_loss(target_qh, pred_qh, lr_model)
+                    )
                 elif loss == "mse":
                     return jnp.mean(err**2)
                 else: 
                     raise ValueError(f"Unsupported loss type: {loss}")
 
-            _, max_cfl = metrics_fn(closure_params, batch)
+            _, max_cfl, _, _ = metrics_fn(closure_params, batch)
             discard = jnp.any(max_cfl > cfl_limit)
             computed_loss = jax.lax.cond(
                 discard,
@@ -451,6 +478,28 @@ def make_validation_epoch(lr_model, dt, loss):
             )
         )(qh_traj)
 
+        # Validation loss on rollout trajectory (per timestep)
+        val_error = truth_traj[1:n_intervals + 1] - pred_frames[1:]
+        if loss == "maddison":
+            val_loss = jnp.array([
+                maddison_loss(val_error[t:t + 1], lr_model, beta=float(lr_model.beta))
+                for t in range(val_error.shape[0])
+            ])
+        elif loss in {"maddison_spectral", "maddison+spectral"}:
+            target_qh = jax.vmap(
+                lambda x: jnp.fft.rfftn(x, axes=(-2, -1), norm='ortho')
+            )(truth_traj[1:n_intervals + 1])
+            pred_qh = qh_traj[1:]
+            val_loss = jnp.array([
+                maddison_loss(val_error[t:t + 1], lr_model, beta=float(lr_model.beta))
+                + _spectrum_aux_loss(target_qh[t:t + 1], pred_qh[t:t + 1], lr_model)
+                for t in range(val_error.shape[0])
+            ])
+        elif loss == "mse":
+            val_loss = jnp.mean(val_error ** 2, axis=(1, 2, 3))
+        else:
+            raise ValueError(f"Unsupported loss type: {loss}")
+
         # SGS diagnostics
         sgs_increment = sgs_increment_step
         target_sgs_increment = truth_traj[1:n_intervals + 1] - zero_frames[1:]
@@ -463,6 +512,8 @@ def make_validation_epoch(lr_model, dt, loss):
             "sgs": jax.device_get(sgs_increment),
 
             "target_sgs": jax.device_get(target_sgs_increment),
+
+            "val_loss": jax.device_get(val_loss),
 
             "truth": jax.device_get(truth_traj),
         }
@@ -571,6 +622,16 @@ def zero_validation(lr_model, dt, truth_traj, cfg, loss):
     if loss == "maddison":
         zero_loss = jnp.array([
             maddison_loss(zero_error[t:t+1], lr_model, beta=float(lr_model.beta)) 
+            for t in range(zero_error.shape[0])
+        ])
+    elif loss in {"maddison_spectral", "maddison+spectral"}:
+        target_qh = jax.vmap(
+            lambda x: jnp.fft.rfftn(x, axes=(-2, -1), norm='ortho')
+        )(truth_traj[1:n_intervals + 1])
+        pred_qh = zero_qh_traj[1:]
+        zero_loss = jnp.array([
+            maddison_loss(zero_error[t:t + 1], lr_model, beta=float(lr_model.beta))
+            + _spectrum_aux_loss(target_qh[t:t + 1], pred_qh[t:t + 1], lr_model)
             for t in range(zero_error.shape[0])
         ])
     elif loss == 'mse':

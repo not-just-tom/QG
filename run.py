@@ -78,7 +78,7 @@ def run(cfg):
     # load values
     dt = cfg.plotting.dt
     njets= cfg.plotting.njets
-    nsteps = cfg.plotting.nsteps
+    rollout_nsteps = int(getattr(cfg.plotting, 'nsteps', 0))
     cadence = int(getattr(cfg.plotting, 'cadence', 100))
     batch_size = cfg.ml.batch_size
     n_train = cfg.ml.n_train
@@ -125,7 +125,6 @@ def run(cfg):
         raw_model = QGM({**params, "nx": params['hr_nx']})
         init_state = raw_model.initialise(key, tune=True, n_jets=njets, verbose=True)
         dt = float(raw_model.estimate_cfl_dt(init_state))
-    steps_per_day = int(24 * 3600 // dt)
 
     # instantiate the model
     hr_model = SteppedModel(
@@ -134,11 +133,43 @@ def run(cfg):
     )
     # build low-resolution physics model (coarsened from high-res physics)
     lr_model = coarsen(hr_model.model, params['nx'])
+    low_res_dt = dt * ratio
+    steps_per_day = int(24 * 3600 // low_res_dt)
+    model_nsteps = int(end_days * 24 * 3600 // low_res_dt)
+    requested_rollout_days = (rollout_nsteps * low_res_dt) / (24.0 * 3600.0)
 
-    logger.info(f'Fine timestep is {dt:.2g}s, giving a total of {nsteps*ratio*dt/(365*24*3600):.2g} years of rollout. The coarsened timestep is {dt*ratio:.2g}s.')
+    try:
+        lr_init_state = lr_model.initialise(key, tune=True, n_jets=njets, verbose=False)
+        lr_rhines_length, lr_u_rms = lr_model.rhines_length(lr_init_state)
+        tau_eddy = lr_rhines_length / (lr_u_rms + 1e-12)
+        logger.info(
+            'Fine timestep is %.2gs and coarsened timestep is %.2gs. '
+            'Training horizon is %d low-res steps (~%.2f days). '
+            'Requested validation rollout is %d steps (~%.2f days). '
+            'Estimated eddy turnover time is %.2g days.',
+            dt,
+            low_res_dt,
+            model_nsteps,
+            model_nsteps * low_res_dt / (24.0 * 3600.0),
+            rollout_nsteps,
+            requested_rollout_days,
+            float(tau_eddy) / (24.0 * 3600.0),
+        )
+    except Exception:
+        logger.info(
+            'Fine timestep is %.2gs and coarsened timestep is %.2gs. '
+            'Training horizon is %d low-res steps (~%.2f days). '
+            'Requested validation rollout is %d steps (~%.2f days).',
+            dt,
+            low_res_dt,
+            model_nsteps,
+            model_nsteps * low_res_dt / (24.0 * 3600.0),
+            rollout_nsteps,
+            requested_rollout_days,
+        )
 
     timing_metadata = {
-        'nsteps': int(nsteps),
+        'nsteps': int(model_nsteps),
         "dt (original)": float(old_dt),
         'auto_dt': bool(cfg.plotting.auto_dt),
         'final dt': float(dt),
@@ -233,7 +264,6 @@ def run(cfg):
         optim_state = template_optim_state
 
     # Build training and test functions (JIT retraces automatically when batch_steps changes shape)
-    low_res_dt = dt*ratio
     cfl_limit = float(getattr(cfg.plotting, 'cfl', 1.0))
     train_epoch = make_train_epoch(lr_model, low_res_dt, optim, loss, cfl_limit=cfl_limit)
     test_epoch = make_test_epoch(lr_model, low_res_dt, loss, cfl_limit=cfl_limit)
@@ -276,7 +306,7 @@ def run(cfg):
 
     for day_idx, current_days in enumerate(window_days):
         current_batch_steps = current_days * steps_per_day
-        current_n_samples   = nsteps // current_batch_steps
+        current_n_samples   = model_nsteps // current_batch_steps
         stage_batch_size = batch_size
         if current_days >= 14:
             stage_batch_size = max(1, batch_size // 4)
@@ -285,7 +315,7 @@ def run(cfg):
         if current_n_samples < 1:
             logger.warning(
                 "Window %d days (%d steps) >= nsteps=%d; stopping curriculum early.",
-                current_days, current_batch_steps, nsteps,
+                current_days, current_batch_steps, model_nsteps,
             )
             break
 
@@ -453,6 +483,25 @@ def run(cfg):
 
     # === validation & diagnostics ===
     truth_traj = data_loader.get_trajectory(n_epochs)  # shape (time, layers, ny, nx)
+    available_rollout_steps = int(truth_traj.shape[0]) - 1
+    available_rollout_days = available_rollout_steps * low_res_dt / (24.0 * 3600.0)
+    effective_rollout_steps = min(rollout_nsteps, available_rollout_steps)
+    effective_rollout_days = effective_rollout_steps * low_res_dt / (24.0 * 3600.0)
+    if rollout_nsteps > available_rollout_steps:
+        logger.warning(
+            "Requested validation rollout is %d steps (~%.2f days), but data only provides %d steps (~%.2f days). "
+            "Validation will use the shorter available rollout.",
+            rollout_nsteps,
+            requested_rollout_days,
+            available_rollout_steps,
+            available_rollout_days,
+        )
+    else:
+        logger.info(
+            "Validation rollout will run %d steps (~%.2f days).",
+            effective_rollout_steps,
+            effective_rollout_days,
+        )
     trajectories = {}
     try:
         loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = checkpointer(None, None, model_dir, save=False)
@@ -468,12 +517,16 @@ def run(cfg):
             trajectories['loss_history'] = {}
         trajectories['loss_history']['zero'] = zero_results['zero_loss']
     except Exception:
-        logger.exception("Failed to compute zero model baseline, continuing without.")
+        raise RuntimeError("Failed to compute zero model baseline")
 
     # Build validation function and run it on a held-out trajectory
     validation_epoch = make_validation_epoch(lr_model, low_res_dt, loss)
     validation_results = validation_epoch(truth_traj, cfg, closure, trajectories['zero_frames'])
     trajectories.update(validation_results)
+    if 'val_loss' in validation_results:
+        if 'loss_history' not in trajectories:
+            trajectories['loss_history'] = {}
+        trajectories['loss_history']['val'] = validation_results['val_loss']
 
     if cfg.plotting.plotting_window != 0:
         window = cfg.plotting.plotting_window

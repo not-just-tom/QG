@@ -69,16 +69,11 @@ def velocity_from_psi(psi: np.ndarray, grid) -> tuple[np.ndarray, np.ndarray]:
 def isotropic_ke_spectrum(u: np.ndarray, v: np.ndarray, grid) -> dict:
     """Compute the isotropic kinetic energy spectrum E(k).
 
-    Args:
-        u, v: (..., ny, nx) velocity arrays.
-        grid: object with scalar attributes ``dx``, ``dy``.
+    The spectrum is accumulated over spatial wavenumber shells and then
+    averaged across any leading non-spatial axes, e.g. QG layers.
 
-    Returns:
-        dict with:
-            ``k``:  (nk,) 1-D wavenumber array (integer bin centres).
-            ``E``:  (..., nk) spectral energy array (leading dims match u/v).
     """
-    u = np.asarray(u, dtype=float)
+    u = np.asarray(u, dtype=float) #shape (nz, ny, nx)
     v = np.asarray(v, dtype=float)
     ny, nx = u.shape[-2], u.shape[-1]
 
@@ -89,26 +84,36 @@ def isotropic_ke_spectrum(u: np.ndarray, v: np.ndarray, grid) -> dict:
 
     uh = np.fft.rfftn(u, axes=(-2, -1))
     vh = np.fft.rfftn(v, axes=(-2, -1))
-    ke_spec = 0.5 * (np.abs(uh) ** 2 + np.abs(vh) ** 2)  # (..., ny, nx//2+1)
+    ke_spec = 0.5 * (np.abs(uh) ** 2 + np.abs(vh) ** 2)  # (nz, ny, nx//2+1)
 
-    kmax = int(kmag.max())
-    nbins = kmax + 1
-    k = np.arange(nbins, dtype=float)
+    positive_steps = []
+    if kx.size > 1:
+        positive_steps.append(float(kx[1] - kx[0]))
+    if ky.size > 1:
+        positive_steps.append(float(np.abs(ky[1] - ky[0])))
+    dk = min(step for step in positive_steps if step > 0.0)
+
+    kmax = float(kmag.max())
+    nbins = int(np.floor(kmax / dk)) + 1
+    k = np.arange(nbins, dtype=float) * dk
 
     lead_shape = u.shape[:-2]
     E = np.zeros((*lead_shape, nbins))
 
     # Flatten spatial dims for vectorised bin selection
     kmag_flat = kmag.ravel()                          # (ny*(nx//2+1),)
-    ke_flat = ke_spec.reshape(*lead_shape, -1)        # (..., ny*(nx//2+1))
+    ke_flat = ke_spec.reshape(*lead_shape, -1)        # (nz, ny*(nx//2+1))
 
-    bin_idx = np.floor(kmag_flat).astype(int)
+    bin_idx = np.floor(kmag_flat / dk).astype(int)
     bin_idx = np.clip(bin_idx, 0, nbins - 1)
 
     for i in range(nbins):
         mask = bin_idx == i
         if mask.any():
             E[..., i] = ke_flat[..., mask].sum(axis=-1)
+
+    if E.ndim > 1:
+        E = E.mean(axis=tuple(range(E.ndim - 1)))
 
     return {"k": k, "E": E}
 

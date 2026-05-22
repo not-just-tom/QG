@@ -19,16 +19,23 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
 
     # Timing parameters
     n_total = cfg.ml.n_train + cfg.ml.n_test + 1 # one for validation
-    nsteps = max(cfg.plotting.nsteps, int(cfg.ml.end_days * 24 * 3600 // hr_model.stepper.dt))
     batch_size = 11 # hardcoded bc it was confusing me. It's just the trajs generated in batches of 5 rn
     spinup = int(100 * 24 * 60 * 60 // hr_model.stepper.dt)  # 100 days of spinup in high-res steps
-
-    logger.info(f"Generating %d trajectories with %d steps.", n_total, nsteps)
     
     # Prepare low-resolution template and ratio for coarsening
     dummy_key = jax.random.PRNGKey(0)
     lr_template = lr_model.initialise(dummy_key)
     ratio = int(float(hr_model.model.nx) / float(lr_model.nx))
+    fallback_low_res_steps = int(cfg.ml.end_days * 24 * 3600 // (hr_model.stepper.dt * ratio))
+    nsteps = int(timing_metadata.get("nsteps", fallback_low_res_steps))
+    logger.info(
+        "Generating %d trajectories with %d low-res steps (ratio=%d, dt_hr=%.3f s, dt_lr=%.3f s).",
+        n_total,
+        nsteps,
+        ratio,
+        float(hr_model.stepper.dt),
+        float(hr_model.stepper.dt * ratio),
+    )
 
     # JIT the trajectory generation; closure captures `lr_template`, `lr_model._dealias`, and `ratio`.
     @functools.partial(jax.jit, static_argnames=["nsteps"])

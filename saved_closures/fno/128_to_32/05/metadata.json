@@ -16,7 +16,7 @@
         "hr_nx": 128
     },
     "timing": {
-        "nsteps": 10000,
+        "nsteps": 2000,
         "dt (original)": 450.0,
         "auto_dt": false,
         "final dt": 450.0
@@ -29,12 +29,20 @@
         "n_test": 1,
         "model_arch": {
             "learning_rate": 0.0001,
-            "loss": "maddison",
+            "loss": "maddison_spectral",
             "width": 32,
             "modes2": 8,
             "modes1": 8,
             "n_layers": 3,
             "zero_mean": true
         }
+    },
+    "curriculum": {
+        "steps_per_day": 192,
+        "start_days": 1,
+        "end_days": 9,
+        "n_epochs": 5,
+        "current_day": 9,
+        "stage_epoch": 5
     }
 }
