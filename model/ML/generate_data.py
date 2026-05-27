@@ -29,12 +29,9 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     fallback_low_res_steps = int(cfg.ml.end_days * 24 * 3600 // (hr_model.stepper.dt * ratio))
     nsteps = int(timing_metadata.get("nsteps", fallback_low_res_steps))
     logger.info(
-        "Generating %d trajectories with %d low-res steps (ratio=%d, dt_hr=%.3f s, dt_lr=%.3f s).",
+        "Generating %d trajectories with %d low-res steps.",
         n_total,
         nsteps,
-        ratio,
-        float(hr_model.stepper.dt),
-        float(hr_model.stepper.dt * ratio),
     )
 
     # JIT the trajectory generation; closure captures `lr_template`, `lr_model._dealias`, and `ratio`.

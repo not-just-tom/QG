@@ -310,7 +310,10 @@ class VorticityDiagnostic(Diagnostic): # this might need cadence adding to it tb
             raise KeyError("PV diagnostic requires 'q' or 'truth' in trajectories")
         ml = trajs.get("pred")
 
-        nt, nz = truth.shape[:2]
+        # Auto-determine number of layers from data shape
+        # Expected shape: (nt, nz, ny, nx)
+        nt = truth.shape[0]
+        nz = truth.shape[1] if truth.ndim >= 2 else 1
         cols = 2 if ml is not None else 1
 
         fig, axes = plt.subplots(nz, cols, squeeze=False,

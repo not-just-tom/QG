@@ -60,6 +60,7 @@ from model.utils.plotting import find_output_dir, gif_that, Plotter
 from model.core.steppers import SteppedModel, AB3Stepper, CNABStepper
 from model.core.model import QGM
 import logging
+import functools
 import jax
 import jax.numpy as jnp
 import os
@@ -78,7 +79,7 @@ def run(cfg):
     # load values
     dt = cfg.plotting.dt
     njets= cfg.plotting.njets
-    rollout_nsteps = int(getattr(cfg.plotting, 'nsteps', 0))
+    nsteps = int(getattr(cfg.plotting, 'nsteps', 0))
     cadence = int(getattr(cfg.plotting, 'cadence', 100))
     batch_size = cfg.ml.batch_size
     n_train = cfg.ml.n_train
@@ -136,7 +137,7 @@ def run(cfg):
     low_res_dt = dt * ratio
     steps_per_day = int(24 * 3600 // low_res_dt)
     model_nsteps = int(end_days * 24 * 3600 // low_res_dt)
-    requested_rollout_days = (rollout_nsteps * low_res_dt) / (24.0 * 3600.0)
+    requested_rollout_days = (nsteps * low_res_dt) / (24.0 * 3600.0)
 
     try:
         lr_init_state = lr_model.initialise(key, tune=True, n_jets=njets, verbose=False)
@@ -144,14 +145,11 @@ def run(cfg):
         tau_eddy = lr_rhines_length / (lr_u_rms + 1e-12)
         logger.info(
             'Fine timestep is %.2gs and coarsened timestep is %.2gs. '
-            'Training horizon is %d low-res steps (~%.2f days). '
-            'Requested validation rollout is %d steps (~%.2f days). '
+            'Training horizon is %.2f days, and validation rollout is %.2f days. '
             'Estimated eddy turnover time is %.2g days.',
             dt,
             low_res_dt,
-            model_nsteps,
             model_nsteps * low_res_dt / (24.0 * 3600.0),
-            rollout_nsteps,
             requested_rollout_days,
             float(tau_eddy) / (24.0 * 3600.0),
         )
@@ -164,7 +162,7 @@ def run(cfg):
             low_res_dt,
             model_nsteps,
             model_nsteps * low_res_dt / (24.0 * 3600.0),
-            rollout_nsteps,
+            nsteps,
             requested_rollout_days,
         )
 
@@ -206,6 +204,68 @@ def run(cfg):
     if os.environ.get('GENERATE_ONLY') == '1':
         logger.info("Generate-only flag set; exiting now.")
         return
+    
+    if cfg.ml.enabled == False:
+        # just run the model and plot
+        init_state = hr_model.initialise(key, tune=True, n_jets=njets, verbose=True)
+        @functools.partial(jax.jit, static_argnames=["nsteps", "cadence"])
+        def rollout(state, nsteps, cadence):
+            def loop_fn(carry, step):
+                next_state = hr_model.step_model(carry)
+                # record spectral qh every cadence steps 
+                q_snapshot = jax.lax.cond(
+                    step % cadence == 0,
+                    lambda s: s.state.qh,
+                    lambda s: jnp.zeros_like(s.state.qh),
+                    next_state,
+                )
+                return next_state, q_snapshot
+
+            steps = jnp.arange(nsteps)
+            _final_carry, traj_steps = jax.lax.scan(loop_fn, state, steps)
+            return _final_carry, traj_steps#
+        
+        _, q_traj_spectral = rollout(init_state, nsteps, cadence)
+        q_traj_spectral = jax.device_get(q_traj_spectral)  # shape (nsteps, nz, ny, nx//2+1)
+
+        # select only the frames recorded at cadence
+        indices = np.arange(0, nsteps, cadence)
+        q_traj_spectral = q_traj_spectral[indices]
+
+        # Convert from spectral to physical space
+        # q_traj_spectral shape: (n_frames, nz, ny, nx//2+1)
+        from model.core.states import _generic_irfftn
+        nt, nz, ny, nx_spectral = q_traj_spectral.shape
+        nx = 2 * (nx_spectral - 1)
+        physical_shape = (ny, nx)
+        
+        q_traj_list = []
+        for t in range(nt):
+            q_physical = _generic_irfftn(q_traj_spectral[t], shape=physical_shape)
+            q_traj_list.append(np.asarray(q_physical))
+        q_traj = np.stack(q_traj_list, axis=0)  # shape (n_frames, nz, ny, nx)
+
+        outbase = os.path.join(cfg.filepaths.out_dir)
+        out_dir, found = find_output_dir(outbase, params, timing_metadata, model_type, training_metadata)
+        if found:
+            logger.info(f"Found existing output directory with matching parameters, replacing the original.")
+        else:
+            # Ensure the output directory exists when creating a new run directory
+            os.makedirs(out_dir, exist_ok=True)
+        
+        # Set up trajectories dict with truth data for PV diagnostic
+        trajectories = {
+            'truth': q_traj,
+            'grid': hr_model.model.get_grid()
+        }
+        
+        # Override config to plot only PV
+        cfg_plot = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
+        cfg_plot.plotting.plot = ['PV']
+        
+        Plotter(cfg_plot, trajectories=trajectories, out_dir=out_dir, cadence=cadence).plot()
+        return
+
 
     # === closure building === 
     # Build training/sweep metadata to avoid accidentally reusing closures from different sweeps
@@ -485,13 +545,13 @@ def run(cfg):
     truth_traj = data_loader.get_trajectory(n_epochs)  # shape (time, layers, ny, nx)
     available_rollout_steps = int(truth_traj.shape[0]) - 1
     available_rollout_days = available_rollout_steps * low_res_dt / (24.0 * 3600.0)
-    effective_rollout_steps = min(rollout_nsteps, available_rollout_steps)
+    effective_rollout_steps = min(nsteps, available_rollout_steps)
     effective_rollout_days = effective_rollout_steps * low_res_dt / (24.0 * 3600.0)
-    if rollout_nsteps > available_rollout_steps:
+    if nsteps > available_rollout_steps:
         logger.warning(
             "Requested validation rollout is %d steps (~%.2f days), but data only provides %d steps (~%.2f days). "
             "Validation will use the shorter available rollout.",
-            rollout_nsteps,
+            nsteps,
             requested_rollout_days,
             available_rollout_steps,
             available_rollout_days,
