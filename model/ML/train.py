@@ -384,8 +384,6 @@ def make_validation_epoch(lr_model, dt, loss):
     def _validation_epoch(truth_traj, cfg, closure, zero_frames):
 
         truth_traj = jnp.asarray(truth_traj)
-
-
         nsteps_cfg = int(getattr(cfg.plotting, "nsteps", truth_traj.shape[0] - 1))
         seed = int(getattr(cfg.params, "seed", 0))
 

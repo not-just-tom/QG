@@ -27,7 +27,7 @@ plotting:
   dt: 450
   plotting_window: 0
   cadence: 100
-  plot: ['loss', 'mse', 'cfl', 'ke_spectrum', 'ke_spectrum_movie', 'zero']
+  plot: ['loss', 'mse', 'cfl', 'ke_spectrum', 'ke_spectrum_movie', 'zero', 'quad']
   auto_dt: false
   njets: 6
   cfl: 0.5

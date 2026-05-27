@@ -26,15 +26,13 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     dummy_key = jax.random.PRNGKey(0)
     lr_template = lr_model.initialise(dummy_key)
     ratio = int(float(hr_model.model.nx) / float(lr_model.nx))
-    fallback_low_res_steps = int(cfg.ml.end_days * 24 * 3600 // (hr_model.stepper.dt * ratio))
-    nsteps = int(timing_metadata.get("nsteps", fallback_low_res_steps))
+    nsteps = max(int(timing_metadata.get("nsteps")), cfg.plotting.nsteps) # ensure we generate at least as many steps as needed for plotting diagnostics, even if timing metadata is shorter.
     logger.info(
         "Generating %d trajectories with %d low-res steps.",
         n_total,
         nsteps,
     )
 
-    # JIT the trajectory generation; closure captures `lr_template`, `lr_model._dealias`, and `ratio`.
     @functools.partial(jax.jit, static_argnames=["nsteps"])
     def generate_trajectory(init_state, nsteps):
         """Generate coarsened trajectory with one coarsen per coarse sample."""
