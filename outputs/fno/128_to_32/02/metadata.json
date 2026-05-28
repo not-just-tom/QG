@@ -16,10 +16,10 @@
         "hr_nx": 128
     },
     "timing": {
-        "nsteps": 432,
-        "dt (original)": 450.0,
+        "nsteps": 194,
+        "dt (original)": 1000.0,
         "auto_dt": false,
-        "final dt": 450.0
+        "final dt": 1000.0
     },
     "model_type": "fno",
     "training": {

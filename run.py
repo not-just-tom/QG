@@ -196,10 +196,11 @@ def run(cfg):
         logger.info(f"Found existing data with matching parameters at {run_dir}, loading trajectories from there.")
         data_loader = ZarrDataLoader(run_dir)
     else:
-        logger.info(f"No existing data found, generating new dataset at {run_dir}")
-        os.makedirs(run_dir, exist_ok=False)
-        generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, run_dir)
-        data_loader = ZarrDataLoader(run_dir)
+        if cfg.ml.enabled == True:
+            logger.info(f"No existing data found, generating new dataset at {run_dir}")
+            os.makedirs(run_dir, exist_ok=False)
+            generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, run_dir)
+            data_loader = ZarrDataLoader(run_dir)
 
     if os.environ.get('GENERATE_ONLY') == '1':
         logger.info("Generate-only flag set; exiting now.")
@@ -208,6 +209,18 @@ def run(cfg):
     if cfg.ml.enabled == False:
         # just run the model and plot
         init_state = hr_model.initialise(key, tune=True, n_jets=njets, verbose=True)
+        
+        # Calculate eddy turnover time for high-resolution model
+        hr_rhines_length, hr_u_rms = hr_model.model.rhines_length(init_state.state)
+        tau_eddy = hr_rhines_length / (hr_u_rms + 1e-12)
+        logger.info(
+            'High-resolution model: Rhines length = %.2g km, U_rms = %.2g m/s, '
+            'Estimated eddy turnover time = %.2f days',
+            float(hr_rhines_length) / 1000.0,
+            float(hr_u_rms),
+            float(tau_eddy) / (24.0 * 3600.0),
+        )
+        
         @functools.partial(jax.jit, static_argnames=["nsteps", "cadence"])
         def rollout(state, nsteps, cadence):
             def loop_fn(carry, step):
@@ -223,7 +236,15 @@ def run(cfg):
 
             steps = jnp.arange(nsteps)
             _final_carry, traj_steps = jax.lax.scan(loop_fn, state, steps)
-            return _final_carry, traj_steps#
+            return _final_carry, traj_steps
+        
+        #spinup 
+        spinup_days = cfg.plotting.spinup
+        spinup = int((spinup_days * 24* 3600)// dt)
+        rollout_days = nsteps * dt / (24 * 3600)
+        logger.info(f"Spinup duration: {spinup_days:.1f} days ({spinup} steps)")
+        logger.info(f"Rollout duration: {rollout_days:.1f} days ({nsteps} steps)")
+        init_state, _ = rollout(init_state, spinup, cadence)
         
         _, q_traj_spectral = rollout(init_state, nsteps, cadence)
         q_traj_spectral = jax.device_get(q_traj_spectral)  # shape (nsteps, nz, ny, nx//2+1)
@@ -393,8 +414,8 @@ def run(cfg):
 
         if stage_resume_epoch >= n_epochs:
             logger.info(
-                "Skipping curriculum stage %d/%d (day=%d): already completed.",
-                day_idx + 1, len(window_days), current_days,
+                "Skipping curriculum stage %d/%d : already completed.",
+                day_idx + 1, len(window_days),
             )
             continue
 
@@ -484,9 +505,9 @@ def run(cfg):
             epoch_counter += 1
 
             logger.info(
-                "Stage %d/%d (day=%d) | sub-epoch %d/%d | global epoch %d/%d | "
+                "Stage %d/%d | sub-epoch %d/%d | global epoch %d/%d | "
                 "mean_train=%.4E | mean_test=%.4E",
-                day_idx + 1, len(window_days), current_days,
+                day_idx + 1, len(window_days),
                 stage_epoch + 1, n_epochs,
                 epoch_counter, total_curriculum_epochs,
                 train_mean, test_mean,
@@ -516,7 +537,7 @@ def run(cfg):
                 with open(os.path.join(model_dir, "metadata.json"), "w") as f:
                     json.dump(meta, f, indent=4)
                 logger.info(
-                    "Saved curriculum checkpoint: stage %d/%d sub-epoch %d/%d",
+                    "Saved curriculum checkpoint: stage %d/%d | sub-epoch %d/%d",
                     day_idx + 1, len(window_days), stage_epoch + 1, n_epochs,
                 )
             except Exception:
@@ -528,10 +549,9 @@ def run(cfg):
         window_train_mean = float(np.mean(window_train_epoch_means)) if window_train_epoch_means else float('nan')
         window_test_mean = float(np.mean(window_test_epoch_means)) if window_test_epoch_means else float('nan')
         logger.info(
-            "Completed window %d/%d (day=%d): mean train=%.4E | mean test=%.4E over %d epochs",
+            "Completed window %d/%d: mean train=%.4E | mean test=%.4E over %d epochs",
             day_idx + 1,
             len(window_days),
-            current_days,
             window_train_mean,
             window_test_mean,
             len(window_train_epoch_means),

@@ -1,0 +1,40 @@
+{
+    "parameters": {
+        "seed": 42,
+        "nx": 32,
+        "Lx": 1000000,
+        "beta": 1e-11,
+        "kmin": 4.0,
+        "kmax": 10.0,
+        "nz": 2,
+        "Lz": 500,
+        "rek": 7e-08,
+        "rd": 15000,
+        "delta": 0.1,
+        "U1": 0.025,
+        "U2": 0.0,
+        "hr_nx": 128
+    },
+    "timing": {
+        "nsteps": 194,
+        "dt (original)": 1000.0,
+        "auto_dt": false,
+        "final dt": 1000.0
+    },
+    "model_type": "fno",
+    "training": {
+        "optimiser": "AdamW",
+        "prefetch": 3,
+        "n_train": 8,
+        "n_test": 2,
+        "model_arch": {
+            "learning_rate": 0.0001,
+            "loss": "maddison_spectral",
+            "width": 32,
+            "modes2": 8,
+            "modes1": 8,
+            "n_layers": 3,
+            "zero_mean": true
+        }
+    }
+}

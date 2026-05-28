@@ -345,12 +345,17 @@ class VorticityDiagnostic(Diagnostic): # this might need cadence adding to it tb
                     title += f" (layer {layer})"
 
                 ax.set_title(title)
-                ims.append((im, src, layer))
+                ims.append((im, src, layer, ax, col))
 
         def update(frame):
-            for im, src, layer in ims:
+            for im, src, layer, ax, col in ims:
                 im.set_data(src[frame, layer])
-            return [im for im, _, _ in ims]
+                title = "Truth" if col == 0 else "ML"
+                if nz > 1:
+                    title += f" (layer {layer})"
+                title += f" - Step {frame}"
+                ax.set_title(title)
+            return [im for im, _, _, _, _ in ims]
 
         anim = FuncAnimation(fig, update, frames=nt, interval=200)
         anim.save(out_path, writer=PillowWriter(fps=10))
@@ -644,6 +649,102 @@ class CFLDiagnostic(Diagnostic):
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
 
+# ============================================================
+# Domain-averaged Energy and Enstrophy
+# ============================================================
+
+class DomainDiagnostic(Diagnostic):
+    name = "domain"
+
+    def run(self, trajs, out_path, cadence):
+        grid = trajs.get("grid")
+        if grid is None:
+            raise KeyError("domain diagnostic requires 'grid' in trajectories")
+
+        # Get truth data
+        if "q" in trajs and trajs["q"] is not None:
+            q_truth = np.asarray(trajs["q"])
+        elif "truth" in trajs and trajs["truth"] is not None:
+            q_truth = np.asarray(trajs["truth"])
+        else:
+            raise KeyError("domain diagnostic requires 'q' or 'truth' in trajectories")
+
+        # Get predicted and zero model data if available
+        q_pred = trajs.get("pred_frames")
+        q_zero = trajs.get("zero_frames")
+        
+        if q_pred is not None:
+            q_pred = np.asarray(q_pred)
+        if q_zero is not None:
+            q_zero = np.asarray(q_zero)
+
+        # Compute energy and enstrophy over time for truth
+        def compute_timeseries(q):
+            """Compute energy and enstrophy for each timestep."""
+            energy = []
+            enstrophy = []
+            
+            for t in range(q.shape[0]):
+                # Invert PV to streamfunction
+                psi_t = invert_pv_to_psi(q[t], grid)
+                u_t, v_t = velocity_from_psi(psi_t, grid)
+                
+                # Domain-averaged kinetic energy
+                ke = 0.5 * np.mean(u_t**2 + v_t**2)
+                energy.append(ke)
+                
+                # Domain-averaged enstrophy (using q as vorticity for QG)
+                ens = 0.5 * np.mean(q[t]**2)
+                enstrophy.append(ens)
+            
+            return np.array(energy), np.array(enstrophy)
+
+        energy_truth, enstrophy_truth = compute_timeseries(q_truth)
+        
+        # Compute for predicted and zero models if available
+        energy_pred, enstrophy_pred = None, None
+        energy_zero, enstrophy_zero = None, None
+        
+        if q_pred is not None:
+            energy_pred, enstrophy_pred = compute_timeseries(q_pred)
+        if q_zero is not None:
+            energy_zero, enstrophy_zero = compute_timeseries(q_zero)
+
+        # Create side-by-side plots
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+        
+        nt = len(energy_truth)
+        time = np.arange(nt)
+
+        # Energy plot
+        ax1.plot(time, energy_truth, label="Truth", color="k")
+        if energy_pred is not None:
+            ax1.plot(time, energy_pred, label="ML", linestyle="--", color="C1")
+        if energy_zero is not None:
+            ax1.plot(time, energy_zero, label="Zero", linestyle="--", color="C2")
+        ax1.set_xlabel("Time")
+        ax1.set_ylabel("Energy")
+        ax1.set_title("Domain-averaged Energy")
+        ax1.grid(True)
+        ax1.legend()
+
+        # Enstrophy plot
+        ax2.plot(time, enstrophy_truth, label="Truth", color="k")
+        if enstrophy_pred is not None:
+            ax2.plot(time, enstrophy_pred, label="ML", linestyle="--", color="C1")
+        if enstrophy_zero is not None:
+            ax2.plot(time, enstrophy_zero, label="Zero", linestyle="--", color="C2")
+        ax2.set_xlabel("Time")
+        ax2.set_ylabel("Enstrophy")
+        ax2.set_title("Domain-averaged Enstrophy")
+        ax2.grid(True)
+        ax2.legend()
+
+        plt.tight_layout()
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+
+
 _REGISTRY = {
     "loss": LossDiagnostic,
     "mse": MSEDiagnostic,
@@ -654,6 +755,7 @@ _REGISTRY = {
     "energy": EnergyDiagnostic,
     "ke_spectrum_movie": KESpectrumAnimationDiagnostic,
     'cfl': CFLDiagnostic,
+    "domain": DomainDiagnostic,
 }
 
 def build_diagnostic(name: str) -> Diagnostic:

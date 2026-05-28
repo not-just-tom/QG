@@ -20,8 +20,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     # Timing parameters
     n_total = cfg.ml.n_train + cfg.ml.n_test + 1 # one for validation
     batch_size = 11 # hardcoded bc it was confusing me. It's just the trajs generated in batches of 5 rn
-    spinup = int(100 * 24 * 60 * 60 // hr_model.stepper.dt)  # 100 days of spinup in high-res steps
-    
+    spinup = int(cfg.plotting.spinup * 24 * 3600 // hr_model.stepper.dt)
     # Prepare low-resolution template and ratio for coarsening
     dummy_key = jax.random.PRNGKey(0)
     lr_template = lr_model.initialise(dummy_key)

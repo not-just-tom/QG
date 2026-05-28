@@ -8,7 +8,7 @@ filepaths:
 params: 
   seed: 42
   nx: 32
-  Lx: 1000000 #6.283185307179586  # 2π
+  Lx: 1000000 
   beta: 0.00000000001
   kmin: 4.0 
   kmax: 10.0
@@ -20,16 +20,17 @@ params:
   delta: 0.1 # ratio between top/bottom layer depth
   U1: 0.025
   U2: 0.0
-  hr_nx: 128
+  hr_nx: 512
 
 plotting:
   nsteps: 2000
-  dt: 450
+  dt: 1000
+  spinup: 200
   plotting_window: 0
   cadence: 100
-  plot: ['loss', 'mse', 'cfl', 'ke_spectrum', 'ke_spectrum_movie', 'zero', 'quad']
+  plot: ['loss', 'mse', 'ke_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
   auto_dt: false
-  njets: 6
+  njets: 3
   cfl: 0.5
 
 ml:
@@ -37,8 +38,8 @@ ml:
   model_type: fno
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
-  n_train: 4
-  n_test: 1
+  n_train: 8
+  n_test: 2
   start_days: 1        # initial window length in days
   end_days: 9         # final window length in days
   batch_size: 10 # number of samples in a training batch per update <--------------------------- is this used?
