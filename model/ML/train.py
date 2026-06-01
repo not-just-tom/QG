@@ -208,21 +208,14 @@ def compute_traj_errors_and_cfl(target_traj, forced_model, template_state, closu
 
 def maddison_loss(residual_q, lr_model, beta=10.0, scale_factor=1e4):
     """Compute loss per Maddison (2026) eqn 7: spatial interior weighting, no boundary.
-    
-    residual_q: (nsteps, nz, ny, nx) error in physical space
-    lr_model: QGM instance (provides grid spacing)
-    beta: Rossby parameter
-    scale_factor: front multiplier (10^4 in paper, can tune)
+    scale_factor: front multiplier (10^4 in paper, very odd)
     """
-    # With periodic (CIRCULAR) boundary conditions there is no true boundary,
-    # so weight all grid points equally.
     ny, nx = residual_q.shape[-2:]
     interior_mask = jnp.ones((ny, nx))
-    
     dx = lr_model.get_grid().dx
     L = float(lr_model.Lx)
     
-    # Normalization: 1 / (beta^2 * L^2) * 1/(4*L^2) * scale_factor
+    # Normalization
     norm_factor = scale_factor / (beta**2 * L**2 * 4.0 * L**2)
     
     # Squared residual weighted by interior mask and grid spacing dx^2
@@ -498,9 +491,54 @@ def make_validation_epoch(lr_model, dt, loss):
         else:
             raise ValueError(f"Unsupported loss type: {loss}")
 
-        # SGS diagnostics
+        # SGS diagnostics - compute ideal closure output by stepping physics from truth states
+        
+        # Build a physics-only model (no closure) for computing ideal targets
+        from model.ML.architectures.zero import ZeroModel
+        zero_closure_obj = ZeroModel()
+        physics_only_model, physics_params, _ = load_forced_model(
+            lr_model, zero_closure_obj, dt,
+            q_mean=None, q_std=None, dq_mean=None, dq_std=None, closure_filter=None,
+        )
+        
+        # Step physics forward from each truth state to see where physics alone would take us
+        def step_physics_from_truth(q_truth):
+            qh = jnp.fft.rfftn(q_truth, axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
+            state = template_state.update(qh=qh)
+            init = physics_only_model.initialize_stepper_state(
+                physics_only_model.model.initialise_param_state(state, physics_params)
+            )
+            next_state = physics_only_model.step_model(init)
+            # Return the change in physical space
+            q_next = jnp.fft.irfftn(
+                next_state.state.model_state.qh,
+                axes=(-2, -1), norm='ortho', s=real_shape
+            )
+            return q_next - q_truth
+        
+        # Compute where physics would take each truth state
+        dq_physics_from_truth = jax.vmap(step_physics_from_truth)(truth_traj[:n_intervals])
+        
+        # Ideal closure output: what you'd need to add to physics to reach next truth state
+        dq_truth_steps = jnp.diff(truth_traj[:n_intervals + 1], axis=0)
+        ideal_closure_output = dq_truth_steps - dq_physics_from_truth
+        
+        # Teacher-forced: what does the model actually predict at truth states?
+        def eval_closure_at_truth_state(q_truth):
+            qh = jnp.fft.rfftn(q_truth, axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
+            state = template_state.update(qh=qh)
+            dq_pred, _ = closure_combiner(
+                state, closure_params, closure_static,
+                q_mean=q_mean, q_std=q_std,
+                dq_mean=dq_mean, dq_std=dq_std,
+                closure_filter=closure_filter,
+            )
+            return dq_pred
+        
+        teacher_forced_sgs = jax.vmap(eval_closure_at_truth_state)(truth_traj[:n_intervals])
+        
+        # Rollout SGS (what was actually applied during deployment)
         sgs_increment = sgs_increment_step
-        target_sgs_increment = truth_traj[1:n_intervals + 1] - zero_frames[1:]
 
         result = {
             "pred_frames": jax.device_get(pred_frames),
@@ -509,7 +547,9 @@ def make_validation_epoch(lr_model, dt, loss):
 
             "sgs": jax.device_get(sgs_increment),
 
-            "target_sgs": jax.device_get(target_sgs_increment),
+            "target_sgs": jax.device_get(ideal_closure_output),
+            
+            "teacher_forced_sgs": jax.device_get(teacher_forced_sgs),
 
             "val_loss": jax.device_get(val_loss),
 

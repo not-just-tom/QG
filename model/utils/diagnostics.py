@@ -363,7 +363,7 @@ class VorticityDiagnostic(Diagnostic): # this might need cadence adding to it tb
 
 
 # ============================================================
-# Quad GIF (uses existing helper)
+# Comprehensive SGS Diagnostic Quad GIF
 # ============================================================
 
 class QuadGifDiagnostic(Diagnostic):
@@ -371,23 +371,37 @@ class QuadGifDiagnostic(Diagnostic):
     output = "gif"
 
     def run(self, trajs, out_path, cadence):
+        """
+        Comprehensive diagnostic showing:
+        - Row 1: PV fields (Truth, ML, Zero, Error)  
+        - Row 2: SGS forcing fields (Target, Rollout, Teacher-Forced, Difference)
+        - Text annotations with statistics
+        """
+        # Extract data
         pred = trajs.get("pred_frames")
         truth = trajs.get("truth")
+        zero = trajs.get("zero_frames")
+        grid = trajs.get("grid")
+        
         pred_np = np.asarray(pred)
         truth_np = np.asarray(truth)
-        err = pred_np - truth_np # not used here
+        zero_np = np.asarray(zero) if zero is not None else None
 
-        # Get predicted/applied SGS and the target SGS
-        sgs_pred = trajs.get("sgs")
-        sgs_target = trajs.get("target_sgs")
+        # Get SGS data
+        sgs_pred = trajs.get("sgs")  # Applied during rollout
+        sgs_target = trajs.get("target_sgs")  # Ideal from physics
+        sgs_teacher = trajs.get("teacher_forced_sgs")  # Model evaluated at truth states
+        
         sgs_pred_np = np.asarray(sgs_pred)
         sgs_target_np = np.asarray(sgs_target)
+        sgs_teacher_np = np.asarray(sgs_teacher) if sgs_teacher is not None else None
 
         nt = pred_np.shape[0]
 
+        # Padding helper
         def pad_to_frames(arr):
             if arr is None:
-                return np.zeros_like(pred_np)
+                return None
             if arr.shape[0] == nt:
                 return arr
             if arr.shape[0] == nt - 1:
@@ -400,77 +414,212 @@ class QuadGifDiagnostic(Diagnostic):
 
         sgs_pred_np = pad_to_frames(sgs_pred_np)
         sgs_target_np = pad_to_frames(sgs_target_np)
+        sgs_teacher_np = pad_to_frames(sgs_teacher_np)
+        zero_np = pad_to_frames(zero_np)
 
+        # Frame indices for animation
         indices = np.arange(0, nt, max(1, int(cadence)))
         if indices.size == 0:
             raise ValueError("No frames selected for quad diagnostic (check cadence)")
 
         def pick(arr, idx):
+            """Extract single frame, handling 3D and 4D arrays"""
+            if arr is None:
+                return None
             if arr.ndim == 4:
                 return arr[idx, 0]
             return arr[idx]
 
-        # robust percentiles
+        # Robust percentiles for color scaling
         def pct(a, q):
             try:
                 return np.nanpercentile(a, q)
             except Exception:
                 return 0.0
 
-        vmin_truth = pct(truth_np, 1)
-        vmax_truth = pct(truth_np, 99)
-        vmin_sgs_t = pct(sgs_target_np, 1)
-        vmax_sgs_t = pct(sgs_target_np, 99)
-        vmin_sgs_p = pct(sgs_pred_np, 1)
-        vmax_sgs_p = pct(sgs_pred_np, 99)
+        # Color scales
+        vmin_pv = pct(truth_np, 1)
+        vmax_pv = pct(truth_np, 99)
+        
+        # Unified SGS scale
+        all_sgs = [sgs_target_np, sgs_pred_np]
+        if sgs_teacher_np is not None:
+            all_sgs.append(sgs_teacher_np)
+        all_sgs_concat = np.concatenate([s for s in all_sgs if s is not None], axis=0)
+        vmin_sgs = pct(all_sgs_concat, 1)
+        vmax_sgs = pct(all_sgs_concat, 99)
 
+        # Error scale
+        pv_error = pred_np - truth_np
+        vmax_err = np.percentile(np.abs(pv_error), 99)
 
-        # Layout: top row - Truth  | Target SGS 
-        # bottom row - ML adjusted | Pred SGS
-        fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-        ax_truth = axes[0, 0]
-        ax_ml = axes[1, 0]
-        ax_target_sgs = axes[0, 1]
-        ax_pred_sgs = axes[1, 1]
+        # ==== Layout: 2 rows x 4 columns ====
+        fig = plt.figure(figsize=(20, 10))
+        gs = fig.add_gridspec(2, 4, hspace=0.35, wspace=0.3)
+        
+        # Row 1: PV fields
+        ax_truth = fig.add_subplot(gs[0, 0])
+        ax_ml = fig.add_subplot(gs[0, 1])
+        ax_zero = fig.add_subplot(gs[0, 2])
+        ax_pv_err = fig.add_subplot(gs[0, 3])
+        
+        # Row 2: SGS fields
+        ax_target_sgs = fig.add_subplot(gs[1, 0])
+        ax_pred_sgs = fig.add_subplot(gs[1, 1])
+        ax_teacher_sgs = fig.add_subplot(gs[1, 2])
+        ax_sgs_analysis = fig.add_subplot(gs[1, 3])
 
-        im_truth = ax_truth.imshow(pick(truth_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_truth, vmax=vmax_truth)
-        ax_truth.set_title("Truth")
-        im_ml = ax_ml.imshow(pick(pred_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_truth, vmax=vmax_truth)
-        ax_ml.set_title("ML adjusted")
+        # ==== Initialize PV plots (Row 1) ====
+        im_truth = ax_truth.imshow(pick(truth_np, indices[0]), origin="lower", 
+                                   cmap="RdBu_r", vmin=vmin_pv, vmax=vmax_pv)
+        ax_truth.set_title("Truth PV", fontsize=11, fontweight='bold')
+        
+        im_ml = ax_ml.imshow(pick(pred_np, indices[0]), origin="lower", 
+                            cmap="RdBu_r", vmin=vmin_pv, vmax=vmax_pv)
+        ax_ml.set_title("ML Rollout PV", fontsize=11, fontweight='bold')
+        
+        if zero_np is not None:
+            im_zero = ax_zero.imshow(pick(zero_np, indices[0]), origin="lower", 
+                                    cmap="RdBu_r", vmin=vmin_pv, vmax=vmax_pv)
+            ax_zero.set_title("Zero Model PV", fontsize=11, fontweight='bold')
+        else:
+            ax_zero.text(0.5, 0.5, 'No Zero Model', ha='center', va='center', 
+                        transform=ax_zero.transAxes)
+            ax_zero.set_title("Zero Model PV", fontsize=11, fontweight='bold')
+            im_zero = None
+        
+        im_pv_err = ax_pv_err.imshow(pick(pv_error, indices[0]), origin="lower", 
+                                     cmap="viridis", vmin=-vmax_err, vmax=vmax_err)
+        ax_pv_err.set_title("PV Error\n(ML - Truth)", fontsize=11, fontweight='bold')
 
-        im_target_sgs = ax_target_sgs.imshow(pick(sgs_target_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_sgs_t, vmax=vmax_sgs_t)
-        ax_target_sgs.set_title("Target SGS")
+        # ==== Initialize SGS plots (Row 2) ====
+        im_target_sgs = ax_target_sgs.imshow(pick(sgs_target_np, indices[0]), 
+                                            origin="lower", cmap="seismic", 
+                                            vmin=vmin_sgs, vmax=vmax_sgs)
+        ax_target_sgs.set_title("Target SGS\n(Physics @ Truth)", fontsize=11, fontweight='bold')
+        
+        im_pred_sgs = ax_pred_sgs.imshow(pick(sgs_pred_np, indices[0]), 
+                                        origin="lower", cmap="seismic", 
+                                        vmin=vmin_sgs, vmax=vmax_sgs)
+        ax_pred_sgs.set_title("Rollout SGS\n(Applied in Deployment)", fontsize=11, fontweight='bold')
+        
+        if sgs_teacher_np is not None:
+            im_teacher_sgs = ax_teacher_sgs.imshow(pick(sgs_teacher_np, indices[0]), 
+                                                  origin="lower", cmap="seismic", 
+                                                  vmin=vmin_sgs, vmax=vmax_sgs)
+            ax_teacher_sgs.set_title("Teacher-Forced SGS\n(Model @ Truth)", fontsize=11, fontweight='bold')
+        else:
+            ax_teacher_sgs.text(0.5, 0.5, 'No Teacher Forcing', ha='center', va='center',
+                               transform=ax_teacher_sgs.transAxes)
+            ax_teacher_sgs.set_title("Teacher-Forced SGS", fontsize=11, fontweight='bold')
+            im_teacher_sgs = None
 
-        im_pred_sgs = ax_pred_sgs.imshow(pick(sgs_pred_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_sgs_p, vmax=vmax_sgs_p)
-        ax_pred_sgs.set_title("Predicted SGS")
+        # Bottom-right: SGS difference (teacher - rollout) as spatial field
+        if sgs_teacher_np is not None:
+            sgs_diff = sgs_teacher_np - sgs_pred_np
+            vmax_diff = np.percentile(np.abs(sgs_diff), 99)
+            im_sgs_diff = ax_sgs_analysis.imshow(pick(sgs_diff, indices[0]), 
+                                                origin="lower", cmap="seismic",
+                                                vmin=-vmax_diff, vmax=vmax_diff)
+            ax_sgs_analysis.set_title("SGS Difference\n(Teacher - Rollout)", fontsize=11, fontweight='bold')
+        else:
+            sgs_diff = sgs_target_np - sgs_pred_np
+            vmax_diff = np.percentile(np.abs(sgs_diff), 99)
+            im_sgs_diff = ax_sgs_analysis.imshow(pick(sgs_diff, indices[0]), 
+                                                origin="lower", cmap="seismic",
+                                                vmin=-vmax_diff, vmax=vmax_diff)
+            ax_sgs_analysis.set_title("SGS Error\n(Target - Rollout)", fontsize=11, fontweight='bold')
 
-
-        for ax in axes.ravel():
+        # Remove ticks
+        for ax in [ax_truth, ax_ml, ax_zero, ax_pv_err, 
+                   ax_target_sgs, ax_pred_sgs, ax_teacher_sgs, ax_sgs_analysis]:
             ax.set_xticks([])
             ax.set_yticks([])
 
-        fig.colorbar(im_truth, ax=[ax_truth, ax_ml], shrink=0.6)
-        fig.colorbar(im_target_sgs, ax=ax_target_sgs, shrink=0.6)
-        fig.colorbar(im_pred_sgs, ax=ax_pred_sgs, shrink=0.6)
+        # Colorbars
+        fig.colorbar(im_truth, ax=[ax_truth, ax_ml, ax_zero], shrink=0.8, label="PV")
+        fig.colorbar(im_pv_err, ax=ax_pv_err, shrink=0.8, label="Error")
+        fig.colorbar(im_target_sgs, ax=[ax_target_sgs, ax_pred_sgs, ax_teacher_sgs], 
+                    shrink=0.8, label="SGS Forcing")
+        fig.colorbar(im_sgs_diff, ax=ax_sgs_analysis, shrink=0.8, label="Δ SGS")
 
+        # ==== Statistics text (will be updated each frame) ====
+        stats_text = fig.text(0.5, 0.95, "", ha='center', va='top', fontsize=10,
+                             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+
+        def compute_stats(idx):
+            """Compute diagnostic statistics for current frame"""
+            # PV errors
+            pv_rmse = np.sqrt(np.mean((pick(pred_np, idx) - pick(truth_np, idx))**2))
+            pv_max_err = np.max(np.abs(pick(pred_np, idx) - pick(truth_np, idx)))
+            
+            # SGS errors and correlations
+            target = pick(sgs_target_np, idx)
+            rollout = pick(sgs_pred_np, idx)
+            
+            sgs_rmse = np.sqrt(np.mean((rollout - target)**2))
+            sgs_rms_target = np.sqrt(np.mean(target**2))
+            sgs_rms_pred = np.sqrt(np.mean(rollout**2))
+            
+            # Correlation
+            target_flat = target.ravel()
+            rollout_flat = rollout.ravel()
+            corr = np.corrcoef(target_flat, rollout_flat)[0, 1]
+            
+            # Magnitude ratio
+            mag_ratio = sgs_rms_pred / sgs_rms_target if sgs_rms_target > 0 else 0
+            
+            stats = (f"Step {idx} | PV RMSE: {pv_rmse:.3e} | PV Max Error: {pv_max_err:.3e} | "
+                    f"SGS RMSE: {sgs_rmse:.3e} | SGS Corr: {corr:.3f} | "
+                    f"SGS Mag Ratio: {mag_ratio:.3f}")
+            
+            # Teacher forcing stats if available
+            if sgs_teacher_np is not None:
+                teacher = pick(sgs_teacher_np, idx)
+                teacher_rmse = np.sqrt(np.mean((teacher - target)**2))
+                deployment_gap = np.sqrt(np.mean((teacher - rollout)**2))
+                stats += f" | Teacher RMSE: {teacher_rmse:.3e} | Deploy Gap: {deployment_gap:.3e}"
+            
+            return stats
 
         def update(i):
+            """Update animation frame"""
             idx = indices[i]
+            
+            # Update PV fields
             im_truth.set_data(pick(truth_np, idx))
             im_ml.set_data(pick(pred_np, idx))
+            if im_zero is not None:
+                im_zero.set_data(pick(zero_np, idx))
+            im_pv_err.set_data(pick(pv_error, idx))
+            
+            # Update SGS fields
             im_target_sgs.set_data(pick(sgs_target_np, idx))
             im_pred_sgs.set_data(pick(sgs_pred_np, idx))
-            fig.suptitle(f"timestep {idx}")
-            return im_truth, im_ml, im_target_sgs, im_pred_sgs
+            if im_teacher_sgs is not None:
+                im_teacher_sgs.set_data(pick(sgs_teacher_np, idx))
+            
+            # Update difference field
+            if sgs_teacher_np is not None:
+                im_sgs_diff.set_data(pick(sgs_diff, idx))
+            else:
+                im_sgs_diff.set_data(pick(sgs_diff, idx))
+            
+            # Update statistics
+            stats_text.set_text(compute_stats(idx))
+            
+            return (im_truth, im_ml, im_pv_err, im_target_sgs, im_pred_sgs, 
+                   im_sgs_diff, stats_text)
 
-        anim = FuncAnimation(fig, update, frames=len(indices), interval=100, blit=False)
+        anim = FuncAnimation(fig, update, frames=len(indices), interval=150, blit=False)
 
         try:
-            writer = PillowWriter(fps=10)
+            writer = PillowWriter(fps=8)
             anim.save(out_path, writer=writer)
             plt.close(fig)
         except Exception as e:
-            print("Pillow save failed:", e)
+            print(f"Failed to save quad diagnostic: {e}")
+            raise
 
 
 # ============================================================
@@ -745,6 +894,208 @@ class DomainDiagnostic(Diagnostic):
         plt.close(fig)
 
 
+# ============================================================
+# SGS Spectral Analysis
+# ============================================================
+
+class SGSSpectralDiagnostic(Diagnostic):
+    name = "sgs_spectrum"
+
+    def run(self, trajs, out_path, cadence):
+        """
+        Analyze spectral properties of SGS forcing to diagnose why KE spectrum fails.
+        Shows:
+        - Power spectrum of target vs predicted SGS forcing
+        - Time-averaged and instantaneous comparisons
+        - Identifies scale-dependent errors
+        """
+        grid = trajs.get("grid")
+        if grid is None:
+            raise KeyError("sgs_spectrum diagnostic requires 'grid' in trajectories")
+
+        sgs_target = trajs.get("target_sgs")
+        sgs_pred = trajs.get("sgs")
+        sgs_teacher = trajs.get("teacher_forced_sgs")
+        
+        if sgs_target is None or sgs_pred is None:
+            raise KeyError("sgs_spectrum requires 'target_sgs' and 'sgs' in trajectories")
+
+        sgs_target_np = np.asarray(sgs_target)
+        sgs_pred_np = np.asarray(sgs_pred)
+        sgs_teacher_np = np.asarray(sgs_teacher) if sgs_teacher is not None else None
+
+        # Ensure same length
+        nt = min(sgs_target_np.shape[0], sgs_pred_np.shape[0])
+        sgs_target_np = sgs_target_np[:nt]
+        sgs_pred_np = sgs_pred_np[:nt]
+        if sgs_teacher_np is not None:
+            sgs_teacher_np = sgs_teacher_np[:nt]
+
+        def compute_2d_spectrum(field_2d):
+            """Compute isotropic power spectrum of a 2D field"""
+            if field_2d.ndim == 3:
+                field_2d = field_2d[0]  # Take first layer if multi-layer
+            
+            # FFT
+            fft = np.fft.fft2(field_2d)
+            power = np.abs(fft) ** 2
+            
+            # Get wavenumber grid
+            ny, nx = field_2d.shape
+            kx = np.fft.fftfreq(nx, d=grid.dx)
+            ky = np.fft.fftfreq(ny, d=grid.dy)
+            kx_grid, ky_grid = np.meshgrid(kx, ky)
+            k_mag = np.sqrt(kx_grid**2 + ky_grid**2)
+            
+            # Bin by radial wavenumber
+            k_max = np.sqrt((nx/2)**2 + (ny/2)**2) / max(grid.Lx, grid.Ly)
+            k_bins = np.linspace(0, k_max, min(nx, ny) // 2)
+            k_centers = (k_bins[:-1] + k_bins[1:]) / 2
+            
+            spectrum = np.zeros(len(k_centers))
+            counts = np.zeros(len(k_centers))
+            
+            for i in range(len(k_centers)):
+                mask = (k_mag >= k_bins[i]) & (k_mag < k_bins[i+1])
+                spectrum[i] = np.sum(power[mask])
+                counts[i] = np.sum(mask)
+            
+            # Normalize
+            spectrum = np.where(counts > 0, spectrum / counts, 0)
+            
+            return k_centers, spectrum
+
+        def compute_time_avg_spectrum(sgs_array):
+            """Compute time-averaged spectrum"""
+            spectra = []
+            for t in range(sgs_array.shape[0]):
+                k, spec = compute_2d_spectrum(sgs_array[t])
+                spectra.append(spec)
+            return k, np.mean(spectra, axis=0), np.std(spectra, axis=0)
+
+        # Compute time-averaged spectra
+        k, spec_target_avg, spec_target_std = compute_time_avg_spectrum(sgs_target_np)
+        _, spec_pred_avg, spec_pred_std = compute_time_avg_spectrum(sgs_pred_np)
+        
+        if sgs_teacher_np is not None:
+            _, spec_teacher_avg, spec_teacher_std = compute_time_avg_spectrum(sgs_teacher_np)
+
+        # Create comprehensive plot
+        fig = plt.figure(figsize=(16, 10))
+        gs = fig.add_gridspec(2, 3, hspace=0.3, wspace=0.3)
+
+        # Top row: Spectral comparisons
+        ax_spectrum = fig.add_subplot(gs[0, :2])
+        ax_ratio = fig.add_subplot(gs[0, 2])
+        
+        # Bottom row: Error analysis
+        ax_error_spec = fig.add_subplot(gs[1, 0])
+        ax_correlation = fig.add_subplot(gs[1, 1])
+        ax_transfer = fig.add_subplot(gs[1, 2])
+
+        # Main spectrum plot
+        ax_spectrum.loglog(k[1:], spec_target_avg[1:], 'k-', linewidth=2, label='Target SGS')
+        ax_spectrum.fill_between(k[1:], 
+                                 (spec_target_avg - spec_target_std)[1:],
+                                 (spec_target_avg + spec_target_std)[1:],
+                                 color='k', alpha=0.15)
+        
+        ax_spectrum.loglog(k[1:], spec_pred_avg[1:], 'C1--', linewidth=2, label='Rollout SGS')
+        ax_spectrum.fill_between(k[1:], 
+                                 (spec_pred_avg - spec_pred_std)[1:],
+                                 (spec_pred_avg + spec_pred_std)[1:],
+                                 color='C1', alpha=0.15)
+        
+        if sgs_teacher_np is not None:
+            ax_spectrum.loglog(k[1:], spec_teacher_avg[1:], 'C2:', linewidth=2, label='Teacher SGS')
+            ax_spectrum.fill_between(k[1:], 
+                                     (spec_teacher_avg - spec_teacher_std)[1:],
+                                     (spec_teacher_avg + spec_teacher_std)[1:],
+                                     color='C2', alpha=0.15)
+        
+        ax_spectrum.set_xlabel('Wavenumber k')
+        ax_spectrum.set_ylabel('SGS Forcing Power')
+        ax_spectrum.set_title('Time-Averaged SGS Forcing Spectrum', fontsize=12, fontweight='bold')
+        ax_spectrum.grid(True, which='both', alpha=0.3)
+        ax_spectrum.legend()
+
+        # Spectral ratio (how well does prediction match target at each scale?)
+        ratio = np.where(spec_target_avg > 1e-20, spec_pred_avg / spec_target_avg, 1.0)
+        ax_ratio.semilogx(k[1:], ratio[1:], 'C1-', linewidth=2)
+        ax_ratio.axhline(1.0, color='k', linestyle='--', alpha=0.5, label='Perfect match')
+        ax_ratio.fill_between(k[1:], 0.8, 1.2, color='green', alpha=0.1, label='±20%')
+        ax_ratio.set_xlabel('Wavenumber k')
+        ax_ratio.set_ylabel('Predicted / Target')
+        ax_ratio.set_title('Spectral Amplitude Ratio', fontsize=11, fontweight='bold')
+        ax_ratio.grid(True, which='both', alpha=0.3)
+        ax_ratio.legend()
+        ax_ratio.set_ylim([0, 3])
+
+        # Error spectrum
+        error_sgs = sgs_pred_np - sgs_target_np
+        _, spec_error_avg, spec_error_std = compute_time_avg_spectrum(error_sgs)
+        
+        ax_error_spec.loglog(k[1:], spec_target_avg[1:], 'k-', linewidth=2, alpha=0.5, label='Target')
+        ax_error_spec.loglog(k[1:], spec_error_avg[1:], 'r-', linewidth=2, label='Error')
+        ax_error_spec.set_xlabel('Wavenumber k')
+        ax_error_spec.set_ylabel('Power')
+        ax_error_spec.set_title('Error Spectrum\n(Target - Predicted)', fontsize=11, fontweight='bold')
+        ax_error_spec.grid(True, which='both', alpha=0.3)
+        ax_error_spec.legend()
+
+        # Scale-dependent correlation
+        def compute_scale_correlation(field1, field2, k_bins_edges):
+            """Compute correlation at different scales using filtering"""
+            correlations = []
+            scales = []
+            
+            for i in range(len(k_bins_edges) - 1):
+                k_low, k_high = k_bins_edges[i], k_bins_edges[i+1]
+                
+                # Simple low-pass approach: skip for now, use full field correlation
+                # This is a placeholder - would need proper bandpass filtering
+                corr = np.corrcoef(field1.ravel(), field2.ravel())[0, 1]
+                correlations.append(corr)
+                scales.append((k_low + k_high) / 2)
+            
+            return scales, correlations
+
+        # Time-averaged spatial correlation
+        corr_time = []
+        for t in range(nt):
+            target_flat = sgs_target_np[t].ravel()
+            pred_flat = sgs_pred_np[t].ravel()
+            corr_time.append(np.corrcoef(target_flat, pred_flat)[0, 1])
+        
+        ax_correlation.plot(np.arange(nt), corr_time, 'C1-', linewidth=1.5)
+        ax_correlation.axhline(0, color='k', linestyle='--', alpha=0.3)
+        ax_correlation.axhline(1, color='k', linestyle='--', alpha=0.3)
+        ax_correlation.set_xlabel('Time Step')
+        ax_correlation.set_ylabel('Spatial Correlation')
+        ax_correlation.set_title('SGS Correlation\n(Target vs Rollout)', fontsize=11, fontweight='bold')
+        ax_correlation.grid(True, alpha=0.3)
+        ax_correlation.set_ylim([-1, 1])
+
+        # Energy transfer at different scales (simplified metric)
+        # RMS by scale as a proxy for energy transfer
+        rms_target = np.sqrt(np.mean(sgs_target_np**2, axis=(1, 2, 3)))
+        rms_pred = np.sqrt(np.mean(sgs_pred_np**2, axis=(1, 2, 3)))
+        rms_error = np.sqrt(np.mean(error_sgs**2, axis=(1, 2, 3)))
+        
+        ax_transfer.plot(np.arange(nt), rms_target, 'k-', linewidth=2, label='Target RMS')
+        ax_transfer.plot(np.arange(nt), rms_pred, 'C1--', linewidth=2, label='Rollout RMS')
+        ax_transfer.plot(np.arange(nt), rms_error, 'r:', linewidth=2, label='Error RMS')
+        ax_transfer.set_xlabel('Time Step')
+        ax_transfer.set_ylabel('RMS SGS Forcing')
+        ax_transfer.set_title('SGS Magnitude Evolution', fontsize=11, fontweight='bold')
+        ax_transfer.grid(True, alpha=0.3)
+        ax_transfer.legend()
+
+        plt.suptitle('SGS Forcing Spectral Diagnostics', fontsize=14, fontweight='bold')
+        fig.savefig(out_path, dpi=150, bbox_inches='tight')
+        plt.close(fig)
+
+
 _REGISTRY = {
     "loss": LossDiagnostic,
     "mse": MSEDiagnostic,
@@ -756,6 +1107,7 @@ _REGISTRY = {
     "ke_spectrum_movie": KESpectrumAnimationDiagnostic,
     'cfl': CFLDiagnostic,
     "domain": DomainDiagnostic,
+    "sgs_spectrum": SGSSpectralDiagnostic,
 }
 
 def build_diagnostic(name: str) -> Diagnostic:

@@ -28,7 +28,7 @@ plotting:
   spinup: 200
   plotting_window: 0
   cadence: 100
-  plot: ['loss', 'mse', 'ke_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
+  plot: ['loss', 'mse', 'ke_spectrum', 'ke_spectrum_movie', 'zero', 'quad', 'sgs_spectrum', 'domain']
   auto_dt: false
   njets: 3
   cfl: 0.5
@@ -63,10 +63,10 @@ architectures:
   fno:
     learning_rate: 0.0001 #[0.0001, 0.0005, 0.001]
     loss: maddison_spectral
-    width: 32 #[32, 64, 128]
-    modes2: 8 #[8, 16, 24]
-    modes1: 8 #[8, 16, 24]
-    n_layers: 3
+    width: 64
+    modes2: 24 
+    modes1: 24 
+    n_layers: 4
     zero_mean: true
   diffusion:
     loss: mse

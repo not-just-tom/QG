@@ -1,6 +1,3 @@
-# Ignore outputs likely to be large
-# Ignore outputs likely to be large
-outputs/diagnostics.gif
 # Python cache and bytecode
 __pycache__/
 *.py[cod]
@@ -18,9 +15,8 @@ logs/
 data/
 **/trajectories.zarr/
 **/trajectories.zarr/**
-
-# Keep metadata but ignore large generated model/results folders
-results/closures/
+saved_closures/
+outputs/
 
 # Logs and local runs
 logs/
