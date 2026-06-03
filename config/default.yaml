@@ -12,7 +12,7 @@ params:
   beta: 0.00000000001
   kmin: 4.0 
   kmax: 10.0
-  nz: 2
+  nz: 1
   # multi-layer model parameters (only used if nz>1)
   Lz: 500
   rek: 7.0e-8 # gamma
@@ -23,11 +23,10 @@ params:
   hr_nx: 512
 
 plotting:
-  nsteps: 2000
+  nsteps: 600
   dt: 1000
   spinup: 200
-  plotting_window: 0
-  cadence: 100
+  cadence: 10
   plot: ['loss', 'mse', 'ke_spectrum', 'ke_spectrum_movie', 'zero', 'quad', 'sgs_spectrum', 'domain']
   auto_dt: false
   njets: 3
@@ -45,6 +44,7 @@ ml:
   batch_size: 10 # number of samples in a training batch per update <--------------------------- is this used?
   prefetch: 3       # prefetch a few batches to aid efficiency
   use_float64: false
+  closure_scale: 0.2
 
 
 architectures:
@@ -62,11 +62,11 @@ architectures:
     depth: 4
   fno:
     learning_rate: 0.0001 #[0.0001, 0.0005, 0.001]
-    loss: maddison_spectral
-    width: 64
-    modes2: 24 
-    modes1: 24 
-    n_layers: 4
+    loss: maddison
+    width: 32
+    modes2: 16
+    modes1: 16
+    n_layers: 3
     zero_mean: true
   diffusion:
     loss: mse
@@ -81,6 +81,7 @@ architectures:
       min_q_mag: 1e-6
   mlp:
     learning_rate: 0.0001
+    loss: mse
     nlayers: 3
     kernel_size: 3
     width: 64

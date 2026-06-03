@@ -27,6 +27,7 @@ import model.core.model
 import model.core.steppers
 import model.ML.generate_data
 import model.ML.utils.coarsen
+import model.ML.utils.loss
 import model.ML.architectures.build_model
 import model.ML.utils.dataloading
 import model.ML.train
@@ -45,14 +46,16 @@ importlib.reload(model.core.model)
 importlib.reload(model.core.steppers)
 importlib.reload(model.ML.generate_data)
 importlib.reload(model.ML.utils.coarsen)
+importlib.reload(model.ML.utils.loss)
 importlib.reload(model.ML.architectures.build_model)
 importlib.reload(model.ML.utils.dataloading)
 importlib.reload(model.ML.train)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
-from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch, zero_validation
+from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch, zero_validation, compute_zero_epoch_loss
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import coarsen
+from model.ML.utils.loss import build_loss
 from model.ML.generate_data import generate_train_data
 from model.ML.utils.dataloading import find_existing_closure, find_existing_data, ZarrDataLoader, checkpointer, prefetch_generator
 from model.utils.logging import configure_logging
@@ -67,7 +70,6 @@ import os
 import json
 import numpy as np
 import equinox as eqx
-import matplotlib.pyplot as plt
 import optax
 import gc
 
@@ -89,11 +91,14 @@ def run(cfg):
     seed = params.get("seed", 42)
     key = jax.random.PRNGKey(seed)
     ratio = params["hr_nx"]/params["nx"]
+    cfl_limit = float(getattr(cfg.plotting, 'cfl', 1.0))
+
     use_float64 = cfg.ml.use_float64
     prefetch = cfg.ml.prefetch
     model_type = cfg.ml.model_type
     learning_rate = learning_rate = cfg['architectures'][model_type].get('learning_rate', 0)
-    loss = cfg['architectures'][model_type].get('loss')
+    loss_fn = build_loss(cfg['architectures'][model_type].get('loss'))
+    closure_scale = cfg['architectures'][model_type].get('closure_scale', 0.1)
     gc_every_batches = int(getattr(cfg.ml, 'gc_every_batches', 10))
 
     # curriculum stuff
@@ -345,9 +350,8 @@ def run(cfg):
         optim_state = template_optim_state
 
     # Build training and test functions (JIT retraces automatically when batch_steps changes shape)
-    cfl_limit = float(getattr(cfg.plotting, 'cfl', 1.0))
-    train_epoch = make_train_epoch(lr_model, low_res_dt, optim, loss, cfl_limit=cfl_limit)
-    test_epoch = make_test_epoch(lr_model, low_res_dt, loss, cfl_limit=cfl_limit)
+    train_epoch = make_train_epoch(lr_model, low_res_dt, optim, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
+    test_epoch = make_test_epoch(lr_model, low_res_dt, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
 
     # Prepare trajectory indices
     all_traj_indices = list(range(len(data_loader)))
@@ -357,16 +361,19 @@ def run(cfg):
     # initialise loss history; if we loaded a saved history, continue it
     train_mean_losses = []
     test_mean_losses = []
+    zero_mean_losses = []
     try:
         if 'loaded_loss_history' in locals() and loaded_loss_history is not None and ckpt_meta is not None:
             saved_epoch = int(ckpt_meta.get('epoch', 0))
             loaded_train = list(loaded_loss_history.get('train', []))
             loaded_test = list(loaded_loss_history.get('test', []))
+            loaded_zero = list(loaded_loss_history.get('zero', []))
             # Only accept loaded history if it matches the saved epoch length exactly.
             if len(loaded_train) == saved_epoch:
                 train_mean_losses = loaded_train
                 test_mean_losses = loaded_test
-                logger.info(f"Loaded existing loss history: {len(train_mean_losses)} train entries, {len(test_mean_losses)} test entries")
+                zero_mean_losses = loaded_zero if len(loaded_zero) == saved_epoch else []
+                logger.info(f"Loaded existing loss history: {len(train_mean_losses)} train entries, {len(test_mean_losses)} test entries, {len(zero_mean_losses)} zero entries")
             else:
                 logger.warning(
                     "Ignoring loaded loss history: found %d train entries but checkpoint epoch=%d."
@@ -382,6 +389,8 @@ def run(cfg):
         train_mean_losses.extend([float('nan')] * (epoch_counter - len(train_mean_losses)))
     if len(test_mean_losses) < epoch_counter:
         test_mean_losses.extend([float('nan')] * (epoch_counter - len(test_mean_losses)))
+    if len(zero_mean_losses) < epoch_counter:
+        zero_mean_losses.extend([float('nan')] * (epoch_counter - len(zero_mean_losses)))
 
     rng = jax.random.PRNGKey(seed + 1)
 
@@ -496,21 +505,45 @@ def run(cfg):
                 if batch_counter % gc_every_batches == 0:
                     gc.collect()
 
+            # Compute zero model baseline for current window size
+            # Use one batch from test set for efficiency
+            try:
+                test_gen_zero = data_loader.iterate_batches(
+                    traj_indices=test_idx[:min(4, len(test_idx))],  # Use first few test trajectories
+                    n_samples=current_n_samples,
+                    batch_steps=current_batch_steps+1,
+                    key=test_rng,
+                    batch_size=min(4, stage_batch_size),
+                )
+                zero_batch = next(test_gen_zero).astype(np.float32)
+                zero_loss = compute_zero_epoch_loss(
+                    lr_model, 
+                    low_res_dt, 
+                    zero_batch, 
+                    loss_fn, 
+                    current_batch_steps,
+                    closure_scale=closure_scale
+                )
+            except Exception as e:
+                logger.warning(f"Failed to compute zero loss for epoch: {e}")
+                zero_loss = float('nan')
+
             train_mean = float(np.mean(train_losses_accum)) if train_losses_accum else float('nan')
             test_mean  = float(np.mean(test_losses_accum))  if test_losses_accum  else float('nan')
             train_mean_losses.append(train_mean)
             test_mean_losses.append(test_mean)
+            zero_mean_losses.append(float(zero_loss))
             window_train_epoch_means.append(train_mean)
             window_test_epoch_means.append(test_mean)
             epoch_counter += 1
 
             logger.info(
                 "Stage %d/%d | sub-epoch %d/%d | global epoch %d/%d | "
-                "mean_train=%.4E | mean_test=%.4E",
+                "mean_train=%.4E | mean_test=%.4E | mean_zero=%.4E",
                 day_idx + 1, len(window_days),
                 stage_epoch + 1, n_epochs,
                 epoch_counter, total_curriculum_epochs,
-                train_mean, test_mean,
+                train_mean, test_mean, float(zero_loss),
             )
 
             try:
@@ -518,7 +551,7 @@ def run(cfg):
                     closure, optim_state, model_dir, save=True,
                     epoch=epoch_counter,
                     n_epochs=total_curriculum_epochs,
-                    losses={"train": train_mean_losses, "test": test_mean_losses},
+                    losses={"train": train_mean_losses, "test": test_mean_losses, "zero": zero_mean_losses},
                 )
                 meta = {
                     "parameters": params,
@@ -589,18 +622,16 @@ def run(cfg):
     except Exception:
         logger.exception("Failed to load trained model for testing.")
 
-    # Compute zero model baseline for diagnostics
+    # Compute zero model baseline for diagnostics (for zero_frames visualization only)
     try:
-        zero_results = zero_validation(lr_model, low_res_dt, truth_traj, cfg, loss)
+        zero_results = zero_validation(lr_model, low_res_dt, truth_traj, cfg, loss_fn)
         trajectories['zero_frames'] = zero_results['zero_frames']
-        if 'loss_history' not in trajectories:
-            trajectories['loss_history'] = {}
-        trajectories['loss_history']['zero'] = zero_results['zero_loss']
+        # Note: zero loss from per-epoch computation will be used for loss_history
     except Exception:
         raise RuntimeError("Failed to compute zero model baseline")
 
     # Build validation function and run it on a held-out trajectory
-    validation_epoch = make_validation_epoch(lr_model, low_res_dt, loss)
+    validation_epoch = make_validation_epoch(lr_model, low_res_dt, loss_fn, closure_scale=closure_scale)
     validation_results = validation_epoch(truth_traj, cfg, closure, trajectories['zero_frames'])
     trajectories.update(validation_results)
     if 'val_loss' in validation_results:
@@ -608,16 +639,16 @@ def run(cfg):
             trajectories['loss_history'] = {}
         trajectories['loss_history']['val'] = validation_results['val_loss']
 
-    if cfg.plotting.plotting_window != 0:
-        window = cfg.plotting.plotting_window
-    else:
-        window = truth_traj.shape[0] - 1 # full trajectory length minus initial state
-
     for k,v in trajectories.items():
-        if isinstance(v, np.ndarray) and v.ndim > 1 and v.shape[0] > window:
-            trajectories[k] = v[:window]
+        if isinstance(v, np.ndarray) and v.ndim > 1 and v.shape[0] > effective_rollout_steps:
+            trajectories[k] = v[:effective_rollout_steps]
 
-    trajectories["loss_history"].update({"train": train_mean_losses, "test": test_mean_losses})
+    # Use per-epoch zero losses from training loop
+    trajectories["loss_history"] = {
+        "train": train_mean_losses, 
+        "test": test_mean_losses,
+        "zero": zero_mean_losses,  # Per-epoch zero losses with curriculum progression
+    }
     trajectories["grid"] = lr_model.get_grid()
     
     if os.environ.get('HPC_RUN', '0') == '1':

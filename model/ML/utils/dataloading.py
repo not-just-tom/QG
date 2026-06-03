@@ -6,10 +6,13 @@ import zarr
 import numpy as np
 import jax.numpy as jnp
 import equinox as eqx
-from typing import Optional, List
 import logging
 import threading
 import queue
+from model.ML.utils.utils import parameterization
+from model.ML.forced_model import ForcedModel
+from model.core.steppers import SteppedModel, AB3Stepper, CNABStepper
+from model.ML.architectures.build_model import closure_combiner
 logger = logging.getLogger(__name__)
 
 # Match either data or model run directories, e.g.:
@@ -38,6 +41,58 @@ def _load_leaves(basepath: str):
     leaves = [arrs[f"arr_{i}"] for i in range(len(arrs.files))]
     return leaves
 
+def load_forced_model(
+    lr_model,
+    closure,
+    dt,
+    trajs=None,
+    closure_scale=0.1,
+):
+    '''Load forced model from provided closure.
+    
+    If trajs is provided, automatically computes scalers and filter.
+    Otherwise uses provided scalers/filter (useful for inference).
+    '''
+    trajs_arr = jnp.asarray(trajs)
+    eps = 1e-6
+    layer_axis = trajs_arr.ndim - 3
+    reduce_axes = tuple(i for i in range(trajs_arr.ndim) if i != layer_axis)
+    q_std = jnp.std(trajs_arr, axis=reduce_axes)
+    q_std = jnp.maximum(q_std, eps).reshape((-1, 1, 1))
+    q_mean = jnp.zeros_like(q_std)
+    dq_std = jnp.maximum(q_std * closure_scale, eps)
+    dq_mean = jnp.zeros_like(dq_std)
+
+
+    closure_params, closure_static = eqx.partition(closure, eqx.is_array)
+    init_param_func = lambda state, model, params: params
+    dt_arr = jnp.asarray(dt)
+
+    def _param_adapter(state, param_aux, model, *args, **kwargs):
+        dq_increment, new_params = closure_combiner(
+            state,
+            param_aux,
+            closure_static,
+            q_mean=q_mean,
+            q_std=q_std,
+            dq_mean=dq_mean,
+            dq_std=dq_std,
+        )
+        # Closure network predicts a per-step increment dQ; the parameterization
+        # wrapper expects a tendency dQ/dt to add to model.get_updates(...).
+        dq_forcing = dq_increment / dt_arr
+        return dq_forcing, new_params
+
+    closure_func = parameterization(_param_adapter)
+
+    lr_stepper = AB3Stepper(dt=dt)
+    forced_model = SteppedModel(
+        model=ForcedModel(model=lr_model, closure=closure_func, init_param_aux_func=init_param_func),
+        stepper=lr_stepper,
+    )
+    
+    # Return preprocessing params for diagnostics
+    return forced_model, closure_params, closure_static, q_mean, q_std, dq_mean, dq_std
 
 def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save: bool = False, epoch: int = None, n_epochs: int = None, losses: dict = None):
     '''

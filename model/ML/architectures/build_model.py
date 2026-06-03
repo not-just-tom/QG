@@ -20,13 +20,38 @@ from model.ML.architectures.fno import FNO
 from model.ML.architectures.diffusion import Diffusion
 from model.ML.architectures.resnet import ResNet
 from model.ML.architectures.mlp import MLP
+from model.ML.utils.utils import module_to_single
 import equinox as eqx
 import numpy as np
 import jax
+import jax.numpy as jnp
 import logging
 logger = logging.getLogger(__name__)
-from model.ML.utils.utils import module_to_single
 
+def closure_combiner(
+    state,
+    closure_params,
+    static_closure_obj=None,
+    q_mean=None,
+    q_std=None,
+    dq_mean=None,
+    dq_std=None,
+):
+    """Evaluate closure and return per-step PV increment dQ plus params.
+    """
+    closure = eqx.combine(closure_params, static_closure_obj)
+    q = state.q
+    if q_mean is None or q_std is None:
+        q_in = q
+    else:
+        q_in = (q - q_mean) / (q_std + 1e-6)
+
+    dq_increment = closure(q_in.astype(jnp.float32)).astype(q.dtype)
+
+    if dq_mean is not None and dq_std is not None:
+        dq_increment = (dq_increment * dq_std) + dq_mean
+
+    return dq_increment.astype(q.dtype), closure_params
 
 
 def _normalize(name):
@@ -63,12 +88,6 @@ def _get_arch_params(cfg, arch_name):
 
     return {}
 
-
-def _resolve_arch_name(cfg):
-    # Prefer model_type, fallback to older model field
-    return getattr(cfg.ml, "model_type", getattr(cfg.ml, "model", None))
-
-
 def build_closure(cfg, loaded_leaves=None):
     registry = {
         "zero": ZeroModel,
@@ -80,9 +99,9 @@ def build_closure(cfg, loaded_leaves=None):
         'mlp': MLP,
     }
 
-    arch_name = _resolve_arch_name(cfg)
+    arch_name = cfg.ml.model_type
     cls = registry.get(_normalize(arch_name))
-    if cls is None:\
+    if cls is None:
         raise ValueError(
             f"Unknown ML closure '{arch_name}', available: {sorted(registry.keys())}"
         )
