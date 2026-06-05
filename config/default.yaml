@@ -23,28 +23,27 @@ params:
   hr_nx: 512
 
 plotting:
-  nsteps: 600
+  nsteps: 2000
   dt: 1000
   spinup: 200
   cadence: 10
-  plot: ['loss', 'mse', 'ke_spectrum', 'ke_spectrum_movie', 'zero', 'quad', 'sgs_spectrum', 'domain']
+  plot: ['loss', 'ke_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
   auto_dt: false
   njets: 3
   cfl: 0.5
 
 ml:
   enabled: true
-  model_type: fno
+  model_type: resnet
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
-  n_train: 8
+  n_train: 15
   n_test: 2
   start_days: 1        # initial window length in days
   end_days: 9         # final window length in days
   batch_size: 10 # number of samples in a training batch per update <--------------------------- is this used?
   prefetch: 3       # prefetch a few batches to aid efficiency
   use_float64: false
-  closure_scale: 0.2
 
 
 architectures:
@@ -55,11 +54,13 @@ architectures:
     width: 64
     kernel_size: 5
     activation: "relu" 
+    closure_scale: 0.2
   unet:
     learning_rate: 0.0005
     loss: mse
     base_channels: 32
     depth: 4
+    closure_scale: 0.2
   fno:
     learning_rate: 0.0001 #[0.0001, 0.0005, 0.001]
     loss: maddison
@@ -68,6 +69,7 @@ architectures:
     modes1: 16
     n_layers: 3
     zero_mean: true
+    closure_scale: 0.2
   diffusion:
     loss: mse
     cutoff: 16.0
@@ -79,6 +81,7 @@ architectures:
       beta: 0.2
       alpha_clip: 1.0
       min_q_mag: 1e-6
+    closure_scale: 0.2
   mlp:
     learning_rate: 0.0001
     loss: mse
@@ -86,13 +89,15 @@ architectures:
     kernel_size: 3
     width: 64
     activation: "tanh"
+    closure_scale: 0.2
   resnet:
     learning_rate: 0.0001
-    loss: mse
+    loss: maddison
     nlayers: 7
     width: 32
     kernel_size: 5
-    activation: "elu" 
+    activation: "elu"
+    closure_scale: 0.2 
   zero:
     loss: mse
 

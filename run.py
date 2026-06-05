@@ -68,6 +68,7 @@ import jax
 import jax.numpy as jnp
 import os
 import json
+import time
 import numpy as np
 import equinox as eqx
 import optax
@@ -368,11 +369,10 @@ def run(cfg):
             loaded_train = list(loaded_loss_history.get('train', []))
             loaded_test = list(loaded_loss_history.get('test', []))
             loaded_zero = list(loaded_loss_history.get('zero', []))
-            # Only accept loaded history if it matches the saved epoch length exactly.
             if len(loaded_train) == saved_epoch:
                 train_mean_losses = loaded_train
                 test_mean_losses = loaded_test
-                zero_mean_losses = loaded_zero if len(loaded_zero) == saved_epoch else []
+                zero_mean_losses = loaded_zero
                 logger.info(f"Loaded existing loss history: {len(train_mean_losses)} train entries, {len(test_mean_losses)} test entries, {len(zero_mean_losses)} zero entries")
             else:
                 logger.warning(
@@ -393,6 +393,7 @@ def run(cfg):
         zero_mean_losses.extend([float('nan')] * (epoch_counter - len(zero_mean_losses)))
 
     rng = jax.random.PRNGKey(seed + 1)
+    start_time = time.time()
 
     for day_idx, current_days in enumerate(window_days):
         current_batch_steps = current_days * steps_per_day
@@ -593,6 +594,16 @@ def run(cfg):
         if hasattr(jax, "clear_caches"):
             jax.clear_caches()
 
+    #log time taken to train in metadata
+    end_time = time.time()
+    elapsed = end_time - start_time
+    metadata_path = os.path.join(model_dir, "metadata.json")
+    with open(metadata_path, "r") as f:
+        meta = json.load(f)
+    meta["time_to_train_seconds"] = elapsed
+    with open(metadata_path, "w") as f:
+        json.dump(meta, f, indent=4)
+
 
     # === validation & diagnostics ===
     truth_traj = data_loader.get_trajectory(n_epochs)  # shape (time, layers, ny, nx)
@@ -648,6 +659,7 @@ def run(cfg):
         "train": train_mean_losses, 
         "test": test_mean_losses,
         "zero": zero_mean_losses,  # Per-epoch zero losses with curriculum progression
+        'n_epochs': n_epochs,
     }
     trajectories["grid"] = lr_model.get_grid()
     

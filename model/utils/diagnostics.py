@@ -32,6 +32,7 @@ class LossDiagnostic(Diagnostic):
         train = np.asarray(losses.get("train", []))
         test  = np.asarray(losses.get("test", []))
         zero = np.asarray(losses.get("zero", []))
+        n_epochs = losses['n_epochs']
 
         fig, ax = plt.subplots()
 
@@ -40,10 +41,10 @@ class LossDiagnostic(Diagnostic):
         if test.size:
             ax.plot(np.arange(1, len(test) + 1), test, label="test")
         if zero.size:
-            # plot average zero loss
-            ax.hlines(zero.mean(), 1, len(test), colors="C2", linestyles="--", label="zero model")
-            # one sd range for zero loss
-            ax.fill_between(np.arange(1, len(test) + 1), zero.mean() - zero.std(), zero.mean() + zero.std(), color="C2", alpha=0.08)
+            # plot average zero loss per curriculum stage
+            x = np.arange(0, len(zero)+1, n_epochs)
+            y = [np.mean(zero[i:i+n_epochs]) for i in x]
+            ax.step(x, y, label="zero model", linestyle="--", color="C2")
 
         ax.set_title("Training / Validation Loss")
         ax.set_xlabel("Epoch")
@@ -143,74 +144,6 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
 
         ani = FuncAnimation(fig, update, frames=len(frame_indices), interval=200)
         ani.save(out_path, writer=PillowWriter(fps=5))
-        plt.close(fig)
-
-
-
-# ============================================================
-# MSE
-# ============================================================
-
-class MSEDiagnostic(Diagnostic):
-    name = "mse"
-
-    def run(self, trajs, out_path, cadence):
-        # Prefer full-resolution data if available
-        pred = trajs.get("pred_frames")
-        truth = trajs.get("truth")
-
-        if pred is None or truth is None:
-            raise KeyError("mse diagnostic requires 'pred' and 'truth' in trajectories")
-
-        pred = np.asarray(pred)
-        truth = np.asarray(truth)
-
-        # ensure (nt, nz, ny, nx)
-        if pred.ndim == 3:
-            pred = pred[:, None, ...]
-            truth = truth[:, None, ...]
-
-        # Compute MSE averaged over spatial dimensions and layers
-        mse = np.mean((pred - truth) ** 2, axis=(-2, -1))  # (nt, nz)
-        mse = np.mean(mse, axis=1)                         # (nt,)
-
-        nt = mse.shape[0]
-        x = np.arange(nt)
-
-        fig, ax = plt.subplots()
-        ax.plot(x, mse, markersize=3, label="MSE")
-        ax.set_title("MSE per timestep (domain mean)")
-        ax.set_yscale("log")
-        ax.set_xlabel("Timestep")
-        ax.set_ylabel("MSE")
-        if nt > 0:
-            ax.set_xlim(0, max(0, nt - 1))
-        ax.grid(True)
-
-        # Plot zero-model baseline if provided. Accept scalar or per-timestep array.
-        zero_loss = trajs.get("loss_history", {}).get("zero", None)
-        if zero_loss is not None:
-            zl = np.asarray(zero_loss)
-            # Scalar baseline: draw horizontal dashed line
-            if zl.ndim == 0 or zl.size == 1:
-                val = float(zl.reshape(()))
-                if nt > 0:
-                    ax.hlines(val, 0, nt - 1, colors="C2", linestyles="--", label="zero model")
-                else:
-                    ax.axhline(val, color="C2", linestyle="--", label="zero model")
-            else:
-                # Per-timestep baseline: ensure length matches mse, truncate/pad with NaN if needed
-                if zl.shape[0] != mse.shape[0]:
-                    if zl.shape[0] > mse.shape[0]:
-                        zl = zl[: mse.shape[0]]
-                    else:
-                        zl = np.pad(zl, (0, mse.shape[0] - zl.shape[0]), constant_values=np.nan)
-                ax.plot(x, zl, "--", color="C2", label="zero model")
-
-        if ax.get_legend_handles_labels()[0]:
-            ax.legend()
-
-        fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
 
 
@@ -1098,7 +1031,6 @@ class SGSSpectralDiagnostic(Diagnostic):
 
 _REGISTRY = {
     "loss": LossDiagnostic,
-    "mse": MSEDiagnostic,
     "ke_spectrum": KESpectrumDiagnostic,
     "PV": VorticityDiagnostic,
     "quad": QuadGifDiagnostic,

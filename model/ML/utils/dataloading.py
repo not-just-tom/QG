@@ -176,7 +176,7 @@ def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save
                 lh_path = os.path.join(model_dir, "loss_history.json")
                 tmp_lh = lh_path + ".tmp"
                 with open(tmp_lh, "w") as f:
-                    json.dump({"train": list(losses.get("train", [])), "test": list(losses.get("test", []))}, f, indent=4)
+                    json.dump({"train": list(losses.get("train", [])), "test": list(losses.get("test", [])), 'zero': list(losses.get('zero', []))}, f, indent=4)
                 try:
                     os.replace(tmp_lh, lh_path)
                 except Exception:
