@@ -62,14 +62,14 @@ architectures:
     depth: 4
     closure_scale: 0.2
   fno:
-    learning_rate: [0.0001, 0.0005, 0.00001]
+    learning_rate: [0.0001, 0.0005]
     loss: ['mse', 'maddison']
     width: [16, 32, 64]
     modes2: [8, 16]
     modes1: [8, 16, 32]
-    n_layers: [2, 3, 4, 6]
+    n_layers: [2, 4, 6]
     zero_mean: true
-    closure_scale: [0.05, 0.1, 0.2, 0.4]
+    closure_scale: [0.1, 0.2, 0.4]
   diffusion:
     loss: mse
     cutoff: 16.0
@@ -91,12 +91,12 @@ architectures:
     activation: "tanh"
     closure_scale: 0.2
   resnet:
-    learning_rate: [0.0001, 0.0005, 0.00001]
+    learning_rate: [0.0001, 0.0005]
     loss: ['mse', 'maddison']
-    nlayers: [3, 5, 7, 9]
-    width: [32, 64, 96]
+    nlayers: [3, 5, 7]
+    width: [32, 64]
     kernel_size: [3, 5]
-    activation: ['relu', 'elu']
+    activation: 'elu'
     closure_scale: [0.05, 0.1, 0.2, 0.4] 
   zero:
     loss: mse
