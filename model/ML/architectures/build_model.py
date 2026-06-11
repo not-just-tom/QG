@@ -88,7 +88,18 @@ def _get_arch_params(cfg, arch_name):
 
     return {}
 
-def build_closure(cfg, loaded_leaves=None):
+def build_closure(cfg=None, loaded_leaves=None, model_type=None, arch_params=None):
+    """Build a closure model, optionally loading from saved parameters.
+    
+    Args:
+        cfg: Configuration object with ml.model_type and architectures section
+        loaded_leaves: List of numpy arrays (loaded parameters)
+        model_type: Model architecture name (e.g., 'resnet'). Used if cfg is None
+        arch_params: Dict of architecture parameters. Used if cfg is None
+    
+    Returns:
+        Closure model (equinox module)
+    """
     registry = {
         "zero": ZeroModel,
         "cnn": CNN,
@@ -99,17 +110,28 @@ def build_closure(cfg, loaded_leaves=None):
         'mlp': MLP,
     }
 
-    arch_name = cfg.ml.model_type
+    # Determine architecture name and parameters
+    if cfg is not None:
+        arch_name = cfg.ml.model_type
+        arch_params_to_use = _get_arch_params(cfg, arch_name)
+    elif model_type is not None:
+        arch_name = model_type
+        arch_params_to_use = arch_params or {}
+    else:
+        raise ValueError("Either cfg or model_type must be provided")
+    
+    # Get model class
     cls = registry.get(_normalize(arch_name))
     if cls is None:
         raise ValueError(
             f"Unknown ML closure '{arch_name}', available: {sorted(registry.keys())}"
         )
-
-    arch_params = _get_arch_params(cfg, arch_name)
-    logger.info("Building closure '%s' with arch params: %s", arch_name, arch_params)
-    closure_template = cls(**arch_params, cfg=cfg)
-    if 'loaded_leaves' in locals() and loaded_leaves is not None:
+    
+    logger.info("Building closure '%s' with arch params: %s", arch_name, arch_params_to_use)
+    closure_template = cls(**arch_params_to_use, cfg=cfg)
+    
+    # If loaded parameters provided, reconstruct model with them
+    if loaded_leaves is not None:
         try:
             template_params, template_static = eqx.partition(closure_template, eqx.is_array)
             tpl_leaves, tpl_treedef = jax.tree_util.tree_flatten(template_params)
@@ -137,8 +159,4 @@ def build_closure(cfg, loaded_leaves=None):
         closure_model = closure_template
 
     return module_to_single(closure_model)
-
-
-
-
         

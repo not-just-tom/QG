@@ -1,4 +1,81 @@
 import model.utils.pytree as Pytree 
+from types import SimpleNamespace
+
+
+def build_grid(Lx=None, Ly=None, nx=None, ny=None, cfg=None, params=None):
+    """
+    Build a grid information object from explicit parameters or from a config/params dict.
+    
+    This provides a flexible way to construct grid metadata for testing models on 
+    different grids than they were trained on, without requiring instantiation of 
+    plotting or other classes.
+    
+    Parameters
+    ----------
+    Lx : float, optional
+        Domain length in x direction. If None, extracted from cfg or params.
+    Ly : float, optional
+        Domain length in y direction. If None, defaults to Lx.
+    nx : int, optional
+        Number of grid points in x direction. If None, extracted from cfg or params.
+    ny : int, optional
+        Number of grid points in y direction. If None, defaults to nx.
+    cfg : Config or dict, optional
+        Configuration object with 'params' attribute containing grid parameters.
+    params : dict, optional
+        Parameter dictionary containing 'Lx', 'Ly', 'nx', etc.
+    
+    Returns
+    -------
+    SimpleNamespace
+        Object with attributes: Lx, Ly, nx, ny, dx, dy
+        
+    Examples
+    --------
+    >>> grid = build_grid(Lx=1.0, nx=64)
+    >>> grid = build_grid(cfg=cfg)  # Extract from config
+    >>> grid = build_grid(params={'Lx': 1.0, 'nx': 64})
+    >>> grid = build_grid(Lx=2.0, nx=128, cfg=cfg)  # Override config values
+    """
+    # Extract from config if provided
+    if cfg is not None:
+        cfg_params = getattr(cfg, 'params', cfg) if hasattr(cfg, 'params') else cfg
+        if Lx is None:
+            Lx = float(getattr(cfg_params, "Lx", 1.0) if hasattr(cfg_params, 'get') == False 
+                       else cfg_params.get("Lx", 1.0))
+        if nx is None:
+            nx = int(getattr(cfg_params, "nx", 64) if hasattr(cfg_params, 'get') == False 
+                     else cfg_params.get("nx", 64))
+        if Ly is None:
+            Ly = getattr(cfg_params, "Ly", None) if hasattr(cfg_params, 'get') == False else cfg_params.get("Ly", None)
+    
+    # Extract from params dict if provided
+    if params is not None:
+        if Lx is None:
+            Lx = float(params.get("Lx", 1.0))
+        if Ly is None and "Ly" in params:
+            Ly = float(params.get("Ly"))
+        if nx is None:
+            nx = int(params.get("nx", 64))
+        if ny is None and "ny" in params:
+            ny = int(params.get("ny"))
+    
+    # Set defaults
+    if Lx is None:
+        Lx = 1.0
+    if nx is None:
+        nx = 64
+    if Ly is None:
+        Ly = Lx
+    if ny is None:
+        ny = nx
+    
+    # Compute grid spacing
+    dx = Lx / nx
+    dy = Ly / ny
+    
+    return SimpleNamespace(Lx=Lx, Ly=Ly, nx=nx, ny=ny, dx=dx, dy=dy)
+
 
 @Pytree.register_pytree_class_attrs(
     children=[],

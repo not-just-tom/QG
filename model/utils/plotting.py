@@ -8,8 +8,11 @@ import json
 from types import SimpleNamespace
 import importlib
 import model.utils.diagnostics
+import model.core.grid
 importlib.reload(model.utils.diagnostics)
+importlib.reload(model.core.grid)
 from model.utils.diagnostics import build_diagnostic
+from model.core.grid import build_grid
 
 
 def metadata_matches(requested: dict, stored: dict) -> bool:
@@ -124,15 +127,8 @@ class Plotter:
                 print(f"{name} failed: {e}")
 
     def _make_grid(self):
-        Lx = float(getattr(self.cfg.params, "Lx", 1.0))
-        Ly = float(getattr(self.cfg.params, "Ly", Lx))
-        nx = int(getattr(self.cfg.params, "nx", 64))
-        ny = nx
-
-        dx = Lx / nx
-        dy = Ly / ny
-
-        return SimpleNamespace(Lx=Lx, Ly=Ly, dx=dx, dy=dy, nx=nx, ny=ny)
+        """Build grid information from config. Delegates to model.core.grid.build_grid."""
+        return build_grid(cfg=self.cfg)
 
 
     
