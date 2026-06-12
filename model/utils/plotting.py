@@ -25,7 +25,7 @@ def canonicalize(params: dict) -> dict:
 
     return round_floats(params)
 
-def find_output_dir(base_dir, params, timing_metadata, model_type, training_metadata):
+def find_output_dir(base_dir, params, model_type, timing_metadata=None, training_metadata=None, metadata=None, id=None):
     """
     Find or create an output directory with structure:
       base_dir/{model_type}_model/{model_type}_{hr}to{lr}/{idx:02d}
@@ -39,7 +39,25 @@ def find_output_dir(base_dir, params, timing_metadata, model_type, training_meta
     folder = f"{hr_nx}_to_{lr_nx}"
     model_base = os.path.join(base_dir, model_type, folder)
     os.makedirs(model_base, exist_ok=True)
+    if timing_metadata is None:
+        folder = f"{hr_nx}_to_{lr_nx}_"
+        run_base = os.path.join(base_dir, model_type, folder)
+        run_dir = os.path.join(run_base, id)
 
+        # find appropriate run
+        if os.path.exists(run_dir):
+            return run_dir, True
+        else: 
+            os.makedirs(run_dir, exist_ok=True)
+            meta_path = os.path.join(run_dir, "metadata.json")
+            try:
+                with open(meta_path, "w") as f:
+                    json.dump(metadata, f, indent=4)
+            except Exception:
+                pass
+            return run_dir, False
+        
+    # vvv just for the no-model run. probably can be shaped up a lil later. 
     candidates = []
 
     for name in os.listdir(model_base):        

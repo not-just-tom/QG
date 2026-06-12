@@ -82,7 +82,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     z_root = zarr.open_group(zarr_path, mode='a')
     z_root.attrs.update(metadata)
 
-    traj_group = z_root.create_group("trajectories")
+    traj_group = z_root.require_group("trajectories")
 
     # Zarr v3 codec
     compressor = BloscCodec(
@@ -94,7 +94,19 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
 
     rng = jax.random.PRNGKey(int(params.get("seed", 0)))
 
-    n_generated = 0
+    existing = list(traj_group.array_keys())
+    if existing:
+        n_generated = (
+            max(int(name.split("_")[1]) for name in existing)
+            + 1
+        )
+    else:
+        n_generated = 0
+
+    logger.info(
+        f"Found {len(existing)} existing trajectories. "
+        f"Starting from index {n_generated}"
+    )
 
     # If spinup>0, define a jitted routine to step the high-res model
     if spinup > 0:
@@ -120,9 +132,9 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     else:
         logger.info("Using default random initialisation for data generation")
 
-    while n_generated < n_total:
+    while n_generated < n_total+len(existing):
 
-        current_batch = min(batch_size, n_total - n_generated)
+        current_batch = min(batch_size, n_total+len(existing) - n_generated)
 
         rng, subkey = jax.random.split(rng)
         keys = jax.random.split(subkey, current_batch)
@@ -144,7 +156,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
 
         for i in range(current_batch):
 
-            logger.info(f"Processing trajectory {n_generated+i+1}/{n_total}")
+            logger.info(f"Processing trajectory {n_generated+i+1}/{n_total+len(existing)}")
             q_traj = traj_batch[i]
 
             if not np.all(np.isfinite(q_traj)):
@@ -159,7 +171,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
             )
 
         n_generated += current_batch
-        logger.info(f"Generated {n_generated}/{n_total} trajectories")
+        logger.info(f"Generated {n_generated}/{n_total+len(existing)} trajectories")
 
     logger.info("Finished generating all trajectories")
     logger.info(f"Saved to {zarr_path}")

@@ -91,13 +91,13 @@ architectures:
     activation: "tanh"
     closure_scale: 0.2
   resnet:
-    learning_rate: [0.0001, 0.0005]
-    loss: ['mse', 'maddison']
-    nlayers: [3, 5, 7]
-    width: [32, 64]
-    kernel_size: [3, 5]
+    learning_rate: 0.0001 #[0.0001, 0.0005]
+    loss: mse #['mse', 'maddison']
+    nlayers: 5 #[3, 5, 7]
+    width: 32 #[32, 64]
+    kernel_size: 5 #[3, 5]
     activation: 'elu'
-    closure_scale: [0.05, 0.1, 0.2, 0.4] 
+    closure_scale: 0.2 #[0.05, 0.1, 0.2, 0.4] 
   zero:
     loss: mse
 

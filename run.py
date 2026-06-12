@@ -53,7 +53,6 @@ importlib.reload(model.ML.train)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
 from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch, zero_validation, compute_zero_epoch_loss
-from model.ML.train import make_diffusion_train_epoch, make_diffusion_test_epoch
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import coarsen
 from model.ML.utils.loss import build_loss
@@ -190,14 +189,6 @@ def run(cfg):
         }
     }
 
-    # output dir 
-    outbase = os.path.join(cfg.filepaths.out_dir)
-    out_dir, found = find_output_dir(outbase, params, timing_metadata, model_type, training_metadata)
-    if found:
-        logger.info(f"Found existing output directory with matching parameters")
-    else:
-        os.makedirs(out_dir, exist_ok=True)
-
     run_dir, found = find_existing_data(DATA_DIR, params, timing_metadata)
     if found == True: 
         logger.info(f"Found existing data with matching parameters at {run_dir}, loading trajectories from there.")
@@ -291,7 +282,7 @@ def run(cfg):
         q_traj = np.stack(q_traj_list, axis=0)  # shape (n_frames, nz, ny, nx)
 
         outbase = os.path.join(cfg.filepaths.out_dir)
-        out_dir, found = find_output_dir(outbase, params, timing_metadata, model_type, training_metadata)
+        out_dir, found = find_output_dir(outbase, params, model_type, timing_metadata=timing_metadata,  training_metadata=training_metadata)
         if found:
             logger.info(f"Found existing output directory with matching parameters, replacing the original.")
         else:
@@ -314,7 +305,7 @@ def run(cfg):
 
     # === closure building === 
     # Build training/sweep metadata to avoid accidentally reusing closures from different sweeps
-    model_dir, found = find_existing_closure(MODEL_DIR, params, timing_metadata, model_type, training_metadata)
+    model_dir, found, id= find_existing_closure(MODEL_DIR, params, timing_metadata, model_type, training_metadata)
     start_epoch = 0
     if found:
         logger.info(f"Found existing {model_type} closure with matching parameters at {model_dir}, attempting to load checkpoint.")
@@ -369,19 +360,14 @@ def run(cfg):
         optim_state = template_optim_state
 
     # Build training and test functions (JIT retraces automatically when batch_steps changes shape)
-    if model_type == "diffusion":
-        train_epoch = make_diffusion_train_epoch(lr_model, low_res_dt, optim, cfl_limit=cfl_limit, closure_scale=closure_scale)
-        test_epoch = make_diffusion_test_epoch(lr_model, low_res_dt, cfl_limit=cfl_limit, closure_scale=closure_scale)
-    else:
-        train_epoch = make_train_epoch(lr_model, low_res_dt, optim, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
-        test_epoch = make_test_epoch(lr_model, low_res_dt, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
+    train_epoch = make_train_epoch(lr_model, low_res_dt, optim, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
+    test_epoch = make_test_epoch(lr_model, low_res_dt, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
 
     # Prepare trajectory indices
     all_traj_indices = list(range(len(data_loader)))
     if len(all_traj_indices) < n_epochs:
         logger.info(f"Not enough trajectories in dataset for requested train/test split. Generating more")
         fake_cfg = cfg.copy()
-        print('all_traj_indices: ', len(all_traj_indices), 'n_epochs: ', n_epochs)
         fake_cfg.ml.n_train = max(0, n_epochs - len(all_traj_indices))
         fake_cfg.ml.n_test = -1 # negative to remove the validation epoch added in generate_train_data:)
         generate_train_data(fake_cfg, params, timing_metadata, hr_model, lr_model, run_dir)
@@ -703,6 +689,15 @@ def run(cfg):
     
     if os.environ.get('HPC_RUN', '0') == '1':
         return print("hello you have skipped the plotting")
+    
+    # output dir 
+    outbase = os.path.join(cfg.filepaths.out_dir)
+    out_dir, found = find_output_dir(outbase, params, model_type, metadata=meta, id=id)
+    if found:
+        logger.info(f"Found existing output directory with matching parameters")
+    else:
+        os.makedirs(out_dir, exist_ok=True)
+
 
     Plotter(cfg, trajectories=trajectories, out_dir=out_dir, cadence=cadence).plot()
 
