@@ -270,7 +270,7 @@ def find_existing_closure(model_dir, params, timing_metadata, model_type, traini
                     break
 
             if params_match and training_match:
-                return run_dir, True
+                return run_dir, True, name[:2]
 
         # Keep the index as a candidate (even if metadata missing or mismatched)
         candidates.append(int(name))
@@ -279,7 +279,7 @@ def find_existing_closure(model_dir, params, timing_metadata, model_type, traini
     next_idx = max(candidates, default=0) + 1
     run_name = f"{next_idx:02d}"
     run_dir = os.path.join(model_base, run_name)
-    return run_dir, False
+    return run_dir, False, next_idx
 
 
 def find_existing_data(base_dir, params, timing_metadata):
