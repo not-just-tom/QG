@@ -1029,17 +1029,163 @@ class SGSSpectralDiagnostic(Diagnostic):
         plt.close(fig)
 
 
+class MultiModelComparisonDiagnostic(Diagnostic):
+    """Compare KE spectra across multiple models."""
+    name = "multi_model_comparison"
+    output = "png"
+
+    def run(self, trajs, out_path, cadence):
+        grid = trajs.get("grid")
+        model_names = trajs.get("model_names", [])
+        
+        if not model_names:
+            print("No models to compare")
+            return
+        
+        q_truth = trajs.get("truth")
+        if q_truth is None:
+            print("No truth trajectory provided")
+            return
+        
+        q_truth = np.asarray(q_truth)
+        
+        # Compute truth spectrum
+        def compute_avg_spectrum(q):
+            psi = invert_pv_to_psi(q, grid)
+            u, v = velocity_from_psi(psi, grid)
+            spec = isotropic_ke_spectrum(u, v, grid)
+            k = np.asarray(spec["k"]).ravel()
+            E = np.asarray(spec["E"]).ravel()
+            return k, E
+        
+        k, E_truth_avg = compute_avg_spectrum(q_truth)
+        
+        # Create plot
+        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+        
+        # Left plot: KE spectra
+        ax = axes[0]
+        ax.loglog(k[1:], E_truth_avg[1:], label="Truth", color="black", linewidth=2)
+        
+        colors = plt.cm.tab10(np.linspace(0, 1, len(model_names)))
+        
+        for i, model_name in enumerate(model_names):
+            pred_key = f"pred_{model_name}"
+            q_pred = trajs.get(pred_key)
+            
+            if q_pred is not None:
+                q_pred = np.asarray(q_pred)
+                _, E_pred_avg = compute_avg_spectrum(q_pred)
+                
+                ax.loglog(k[1:], E_pred_avg[1:], label=model_name, 
+                         color=colors[i], linestyle='--', alpha=0.8)
+        
+        ax.set_xlabel("Wavenumber k")
+        ax.set_ylabel("E(k)")
+        ax.set_title("KE Spectrum Comparison")
+        ax.grid(True, which="both", alpha=0.3)
+        ax.legend()
+        
+        # Right plot: Relative errors
+        ax = axes[1]
+        
+        for i, model_name in enumerate(model_names):
+            pred_key = f"pred_{model_name}"
+            q_pred = trajs.get(pred_key)
+            
+            if q_pred is not None:
+                q_pred = np.asarray(q_pred)
+                _, E_pred_avg = compute_avg_spectrum(q_pred)
+                
+                # Compute relative error
+                rel_error = np.abs(E_pred_avg - E_truth_avg) / (E_truth_avg + 1e-10)
+
+                ax.loglog(k[1:], rel_error[1:], label=model_name, 
+                         color=colors[i], alpha=0.8)
+        
+        ax.set_xlabel("Wavenumber k")
+        ax.set_ylabel("Relative Error")
+        ax.set_title("Relative Error in KE Spectrum")
+        ax.grid(True, which="both", alpha=0.3)
+        ax.legend()
+        
+        plt.tight_layout()
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+
+
+class MultiModelLossDiagnostic(Diagnostic):
+    """Compare training loss across multiple models."""
+    name = "multi_model_loss"
+    output = "png"
+
+    def run(self, trajs, out_path, cadence):
+        model_names = trajs.get("model_names", [])
+        
+        if not model_names:
+            print("No models to compare")
+            return
+        
+        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+        
+        colors = plt.cm.tab10(np.linspace(0, 1, len(model_names)))
+        
+        # Left plot: Training loss
+        ax = axes[0]
+        for i, model_name in enumerate(model_names):
+            loss_key = f"loss_history_{model_name}"
+            losses = trajs.get(loss_key, {})
+            
+            if losses:
+                train = np.asarray(losses.get("train", []))
+                if train.size:
+                    ax.plot(np.arange(1, len(train) + 1), train, 
+                           label=model_name, color=colors[i], alpha=0.8)
+        
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel("Training Loss")
+        ax.set_title("Training Loss Comparison")
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+        ax.set_yscale('log')
+        
+        # Right plot: Test loss
+        ax = axes[1]
+        for i, model_name in enumerate(model_names):
+            loss_key = f"loss_history_{model_name}"
+            losses = trajs.get(loss_key, {})
+            
+            if losses:
+                test = np.asarray(losses.get("test", []))
+                if test.size:
+                    ax.plot(np.arange(1, len(test) + 1), test, 
+                           label=model_name, color=colors[i], alpha=0.8)
+        
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel("Test Loss")
+        ax.set_title("Test Loss Comparison")
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+        ax.set_yscale('log')
+        
+        plt.tight_layout()
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+
+
 _REGISTRY = {
     "loss": LossDiagnostic,
     "ke_spectrum": KESpectrumDiagnostic,
-    "PV": VorticityDiagnostic,
-    "quad": QuadGifDiagnostic,
-    'zero': ZeroComparisonDiagnostic,
-    "energy": EnergyDiagnostic,
     "ke_spectrum_movie": KESpectrumAnimationDiagnostic,
+    'vorticity': VorticityDiagnostic,
+    'quad': QuadGifDiagnostic,
+    'zero': ZeroComparisonDiagnostic,
+    'energy': EnergyDiagnostic,
     'cfl': CFLDiagnostic,
     "domain": DomainDiagnostic,
     "sgs_spectrum": SGSSpectralDiagnostic,
+    "multi_model_comparison": MultiModelComparisonDiagnostic,
+    "multi_model_loss": MultiModelLossDiagnostic,
 }
 
 def build_diagnostic(name: str) -> Diagnostic:

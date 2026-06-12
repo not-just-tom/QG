@@ -1,4 +1,14 @@
-#!/usr/bin/env bash
+#!/bin/bash
+#SBATCH --account=rockhpc_mcposd
+#SBATCH --job-name=qg_cpu_array
+#SBATCH --output=logs/slurm-%A.out
+#SBATCH --error=logs/slurm-%A.err
+#SBATCH --partition=default_free
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=64G
+#SBATCH --time=24:00:00
 # Submit the array job using the sweep in a config, then submit an aggregator job dependent on the array.
 # Usage: ./submit_array_and_aggregate.sh [config.yaml] [concurrency]
 
