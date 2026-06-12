@@ -225,11 +225,9 @@ def metadata_matches(requested: dict, stored: dict) -> bool:
 
 def canonicalize(params: dict) -> dict:
     # Keys to ignore in metadata comparison
-    IGNORE_KEYS = {"auto_dt", "created_utc", "saved_utc", "dt (original)"}
+    IGNORE_KEYS = {"auto_dt", "created_utc", "saved_utc", "dt (original)", 'nsteps'}
     
     def round_floats(x):
-        if isinstance(x, float):
-            return round(x, 10)
         if isinstance(x, dict):
             return {k: round_floats(v) for k, v in sorted(x.items()) if k not in IGNORE_KEYS}
         if isinstance(x, list):
@@ -308,9 +306,22 @@ def find_existing_data(base_dir, params, timing_metadata):
         except Exception:
             continue
 
+        def timing_conditions(timing_metadata, stored_timing):
+            # Check nsteps condition
+            requested_nsteps = int(timing_metadata.get("nsteps", 0))
+            stored_nsteps = int(stored_timing.get("nsteps", 0))
+            if metadata_matches(timing_metadata, stored_timing):
+                return True, None
+            if stored_nsteps < requested_nsteps:
+                return False, 'nsteps'
+            else:
+                return False, None
+        timing_match, fail_reason = timing_conditions(timing_metadata, stored_meta.get("timing", {}))
         # Exact metadata match
-        if (metadata_matches(params, stored_meta["parameters"])) and (metadata_matches(timing_metadata, stored_meta['timing'])):
+        if (metadata_matches(params, stored_meta["parameters"])) and timing_match:
             return run_dir, True
+        if fail_reason == 'nsteps':
+            return run_dir, 'nsteps'
         candidates.append(int(m["idx"]))
 
     # No match found
@@ -425,6 +436,28 @@ class ZarrDataLoader:
             )
         
         return traj[start_time:end_time]
+    
+    def save_trajectory(self, traj_idx: int, traj_data: np.ndarray):
+        """Save a trajectory to the Zarr store.
+        
+        Parameters
+        ----------
+        traj_idx : int
+            Trajectory index
+        traj_data : np.ndarray
+            Trajectory data to save, shape (time_steps, layers, ny, nx)
+        """
+        traj_name = f"traj_{traj_idx:05d}"
+        if traj_name in self.traj_group:
+            raise ValueError(f"Trajectory {traj_name} already exists in Zarr store")
+        
+        self.traj_group.create_array(
+            traj_name,
+            data=traj_data.astype(self.dtype),
+            chunks=(traj_data.shape[0], traj_data.shape[1], traj_data.shape[2], traj_data.shape[3]),
+            compressor=self.traj_group.compressor,
+        )
+
     
     def sample_windows(self, n_samples, batch_steps, key, traj_indices):
         """Sample random time windows from trajectories.
