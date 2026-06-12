@@ -3,16 +3,11 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.gridspec as gridspec
 import os
-import re
 import json
-from types import SimpleNamespace
 import importlib
 import model.utils.diagnostics
-import model.core.grid
 importlib.reload(model.utils.diagnostics)
-importlib.reload(model.core.grid)
 from model.utils.diagnostics import build_diagnostic
-from model.core.grid import build_grid
 
 
 def metadata_matches(requested: dict, stored: dict) -> bool:
@@ -125,10 +120,6 @@ class Plotter:
                 print(f"Saved {out_path}")
             except Exception as e:
                 print(f"{name} failed: {e}")
-
-    def _make_grid(self):
-        """Build grid information from config. Delegates to model.core.grid.build_grid."""
-        return build_grid(cfg=self.cfg)
 
 
     

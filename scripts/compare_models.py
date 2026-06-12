@@ -327,7 +327,7 @@ def compare_models(model_dirs, validation_data_path, output_dir, n_trajs=5):
     cfg_dict = first_model["metadata"].copy()
     cfg_dict["plotting"] = {
         "cadence": 10,
-        "plot": ["multi_model_comparison", "multi_model_loss"],
+        "plot": ["pareto_validation", "multi_model_comparison", "multi_model_loss"],
     }
     cfg = Config(cfg_dict)
     

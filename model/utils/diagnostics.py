@@ -1028,6 +1028,9 @@ class SGSSpectralDiagnostic(Diagnostic):
         fig.savefig(out_path, dpi=150, bbox_inches='tight')
         plt.close(fig)
 
+# ============================================================
+# ========= Model Comparison Diagnostics =====================
+# ============================================================ 
 
 class MultiModelComparisonDiagnostic(Diagnostic):
     """Compare KE spectra across multiple models."""
@@ -1172,6 +1175,128 @@ class MultiModelLossDiagnostic(Diagnostic):
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
 
+class ParetoValidationDiagnostic(Diagnostic):
+    name = "pareto_validation"
+    output = "png"
+
+    def run(self, trajs, out_path, cadence):
+
+        results = trajs.get("model_results", {})
+
+        if not results:
+            print("No model results available")
+            return
+
+        fig, ax = plt.subplots(figsize=(8, 6))
+
+        xs = []
+        ys = []
+        labels = []
+
+        threshold_factor = 10.0
+
+        for model_name, result in results.items():
+
+            losses = result.get("loss_history", {})
+            test_loss = np.asarray(losses.get("test", []))
+
+            if test_loss.size == 0:
+                continue
+
+            mean_val_loss = np.mean(test_loss)
+
+            residuals = np.asarray(result["residuals"])
+
+            # shape:
+            # (n_traj, nt, nz, ny, nx)
+
+            mse_t = np.mean(
+                residuals ** 2,
+                axis=(-3, -2, -1)
+            )
+
+            mse_t = np.mean(
+                mse_t,
+                axis=0
+            )
+
+            baseline = max(mse_t[0], 1e-12)
+            threshold = threshold_factor * baseline
+
+            fail_idx = np.where(mse_t > threshold)[0]
+
+            if len(fail_idx):
+                survival_steps = fail_idx[0]
+            else:
+                survival_steps = len(mse_t)
+
+            xs.append(mean_val_loss)
+            ys.append(survival_steps)
+            labels.append(model_name)
+
+        xs = np.asarray(xs)
+        ys = np.asarray(ys)
+
+        scatter = ax.scatter(
+            xs,
+            ys,
+            s=80,
+            alpha=0.8,
+        )
+
+        for x, y, label in zip(xs, ys, labels):
+            ax.annotate(
+                label,
+                (x, y),
+                xytext=(5, 5),
+                textcoords="offset points",
+                fontsize=8,
+            )
+
+        #
+        # Pareto front
+        #
+        order = np.argsort(xs)
+
+        pareto_x = []
+        pareto_y = []
+
+        best_survival = -np.inf
+
+        for idx in order:
+
+            if ys[idx] > best_survival:
+                pareto_x.append(xs[idx])
+                pareto_y.append(ys[idx])
+                best_survival = ys[idx]
+
+        ax.plot(
+            pareto_x,
+            pareto_y,
+            "--",
+            linewidth=2,
+            label="Pareto Front",
+        )
+
+        ax.set_xscale("log")
+
+        ax.set_xlabel("Mean Validation Loss")
+        ax.set_ylabel("Rollout Survival Time (steps)")
+
+        ax.set_title(
+            "Pareto Comparison: Validation Loss vs Rollout Stability"
+        )
+
+        ax.grid(True, which="both", alpha=0.3)
+        ax.legend()
+
+        plt.tight_layout()
+        fig.savefig(
+            out_path,
+            dpi=150,
+            bbox_inches="tight",
+        )
+        plt.close(fig)
 
 _REGISTRY = {
     "loss": LossDiagnostic,
@@ -1186,6 +1311,7 @@ _REGISTRY = {
     "sgs_spectrum": SGSSpectralDiagnostic,
     "multi_model_comparison": MultiModelComparisonDiagnostic,
     "multi_model_loss": MultiModelLossDiagnostic,
+    "pareto_validation": ParetoValidationDiagnostic,
 }
 
 def build_diagnostic(name: str) -> Diagnostic:
