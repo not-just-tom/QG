@@ -79,7 +79,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     
     # zarr setup
     zarr_path = os.path.join(hr_dir, "trajectories.zarr")
-    z_root = zarr.open_group(zarr_path, mode="w")
+    z_root = zarr.open_group(zarr_path, mode='a')
     z_root.attrs.update(metadata)
 
     traj_group = z_root.create_group("trajectories")

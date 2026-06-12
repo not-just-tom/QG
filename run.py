@@ -53,6 +53,7 @@ importlib.reload(model.ML.train)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
 from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch, zero_validation, compute_zero_epoch_loss
+from model.ML.train import make_diffusion_train_epoch, make_diffusion_test_epoch
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import coarsen
 from model.ML.utils.loss import build_loss
@@ -198,19 +199,36 @@ def run(cfg):
         os.makedirs(out_dir, exist_ok=True)
 
     run_dir, found = find_existing_data(DATA_DIR, params, timing_metadata)
-    if found: 
+    if found == True: 
         logger.info(f"Found existing data with matching parameters at {run_dir}, loading trajectories from there.")
         data_loader = ZarrDataLoader(run_dir)
-    else:
+    elif found == False:
         if cfg.ml.enabled == True:
             logger.info(f"No existing data found, generating new dataset at {run_dir}")
             os.makedirs(run_dir, exist_ok=False)
             generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, run_dir)
             data_loader = ZarrDataLoader(run_dir)
+    else: # the case where nsteps too short so we load trajs and restart from end state to the desired number of steps
+        logger.info(f"Found existing data with matching parameters at {run_dir}, but it has insufficient length. Loading trajectories and generating additional steps to reach desired length.")
+        data_loader = ZarrDataLoader(run_dir)
+        for i in range(len(data_loader)):
+            traj = data_loader.get_trajectory(i)
+            last_state = jax.device_put(traj[-1])
+            extra_steps = nsteps - traj.shape[0]
+            if extra_steps > 0:
+                @functools.partial(jax.jit, static_argnames=["nsteps"])
+                def extend_trajectory(init_state, nsteps):
+                    def step(carry, _):
+                        next_state = hr_model.step_model(carry)
+                        return next_state, next_state.qh
 
-    if os.environ.get('GENERATE_ONLY') == '1':
-        logger.info("Generate-only flag set; exiting now.")
-        return
+                    _, traj_q = jax.lax.scan(step, init_state, None, length=nsteps)
+                    return traj_q
+
+                extra_traj_q = extend_trajectory(last_state, extra_steps)
+                extra_traj_q = jax.device_get(extra_traj_q)
+                full_traj_q = np.concatenate([traj, extra_traj_q], axis=0)
+                data_loader.save_trajectory(i, full_traj_q)
     
     if cfg.ml.enabled == False:
         # just run the model and plot
@@ -351,13 +369,27 @@ def run(cfg):
         optim_state = template_optim_state
 
     # Build training and test functions (JIT retraces automatically when batch_steps changes shape)
-    train_epoch = make_train_epoch(lr_model, low_res_dt, optim, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
-    test_epoch = make_test_epoch(lr_model, low_res_dt, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
+    if model_type == "diffusion":
+        train_epoch = make_diffusion_train_epoch(lr_model, low_res_dt, optim, cfl_limit=cfl_limit, closure_scale=closure_scale)
+        test_epoch = make_diffusion_test_epoch(lr_model, low_res_dt, cfl_limit=cfl_limit, closure_scale=closure_scale)
+    else:
+        train_epoch = make_train_epoch(lr_model, low_res_dt, optim, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
+        test_epoch = make_test_epoch(lr_model, low_res_dt, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
 
     # Prepare trajectory indices
     all_traj_indices = list(range(len(data_loader)))
     if len(all_traj_indices) < n_epochs:
-        raise ValueError(f"Not enough trajectories in dataset for requested train/test split.")
+        logger.info(f"Not enough trajectories in dataset for requested train/test split. Generating more")
+        fake_cfg = cfg.copy()
+        print('all_traj_indices: ', len(all_traj_indices), 'n_epochs: ', n_epochs)
+        fake_cfg.ml.n_train = max(0, n_epochs - len(all_traj_indices))
+        fake_cfg.ml.n_test = -1 # negative to remove the validation epoch added in generate_train_data:)
+        generate_train_data(fake_cfg, params, timing_metadata, hr_model, lr_model, run_dir)
+
+    if os.environ.get('GENERATE_ONLY') == '1':
+        logger.info("Generate-only flag set; exiting now.")
+        return
+    
 
     # initialise loss history; if we loaded a saved history, continue it
     train_mean_losses = []
@@ -465,7 +497,10 @@ def run(cfg):
                 windows = windows.astype(np.float32)
                 chunk = windows.reshape((1, windows.shape[0], current_batch_steps) + windows.shape[2:])
                 chunk = jax.device_put(chunk)
-                closure, optim_state, losses, discard_flags, max_cfls = train_epoch(chunk, closure, optim_state)
+                if model_type == "diffusion":
+                    closure, optim_state, losses, discard_flags, max_cfls = train_epoch(chunk, closure, optim_state, train_rng)
+                else:
+                    closure, optim_state, losses, discard_flags, max_cfls = train_epoch(chunk, closure, optim_state)
                 discard_flags = np.asarray(discard_flags).reshape(-1)
                 losses = np.asarray(losses).reshape(-1)
                 max_cfls = np.asarray(max_cfls).reshape(-1)
@@ -492,7 +527,10 @@ def run(cfg):
                 windows = windows.astype(np.float32)
                 chunk = windows.reshape((1, windows.shape[0], current_batch_steps) + windows.shape[2:])
                 chunk = jax.device_put(chunk)
-                closure, optim_state, losses, discard_flags, max_cfls = test_epoch(chunk, closure, optim_state)
+                if model_type == "diffusion":
+                    closure, optim_state, losses, discard_flags, max_cfls = test_epoch(chunk, closure, optim_state, test_rng)
+                else:
+                    closure, optim_state, losses, discard_flags, max_cfls = test_epoch(chunk, closure, optim_state)
                 discard_flags = np.asarray(discard_flags).reshape(-1)
                 losses = np.asarray(losses).reshape(-1)
                 max_cfls = np.asarray(max_cfls).reshape(-1)
