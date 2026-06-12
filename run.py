@@ -53,7 +53,6 @@ importlib.reload(model.ML.train)
 importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
 from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch, zero_validation, compute_zero_epoch_loss
-from model.ML.train import make_diffusion_train_epoch, make_diffusion_test_epoch
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import coarsen
 from model.ML.utils.loss import build_loss
@@ -369,12 +368,8 @@ def run(cfg):
         optim_state = template_optim_state
 
     # Build training and test functions (JIT retraces automatically when batch_steps changes shape)
-    if model_type == "diffusion":
-        train_epoch = make_diffusion_train_epoch(lr_model, low_res_dt, optim, cfl_limit=cfl_limit, closure_scale=closure_scale)
-        test_epoch = make_diffusion_test_epoch(lr_model, low_res_dt, cfl_limit=cfl_limit, closure_scale=closure_scale)
-    else:
-        train_epoch = make_train_epoch(lr_model, low_res_dt, optim, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
-        test_epoch = make_test_epoch(lr_model, low_res_dt, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
+    train_epoch = make_train_epoch(lr_model, low_res_dt, optim, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
+    test_epoch = make_test_epoch(lr_model, low_res_dt, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
 
     # Prepare trajectory indices
     all_traj_indices = list(range(len(data_loader)))

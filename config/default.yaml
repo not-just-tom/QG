@@ -21,6 +21,12 @@ params:
   U1: 0.025
   U2: 0.0
   hr_nx: 512
+  # Stochastic forcing parameters
+  forcing_type: 'band'  # 'band' or 'annulus'
+  forcing_center: 6.5   # Center wavenumber for annulus forcing
+  forcing_width: 2.0    # Width parameter for annulus forcing (Gaussian std)
+  forcing_amplitude: 0.0  # Amplitude of stochastic forcing (set to 0 to disable)
+  forcing_seed: 12345   # Seed for deterministic forcing generation
 
 plotting:
   nsteps: 2000
@@ -91,13 +97,13 @@ architectures:
     activation: "tanh"
     closure_scale: 0.2
   resnet:
-    learning_rate: [0.0001, 0.0005]
-    loss: ['mse', 'maddison']
-    nlayers: [3, 5, 7]
-    width: [32, 64]
-    kernel_size: [3, 5]
+    learning_rate: 0.0001 #[0.0001, 0.0005]
+    loss: mse #['mse', 'maddison']
+    nlayers: 7 #[3, 5, 7]
+    width: 64 #[32, 64]
+    kernel_size: 3  #[3, 5]
     activation: 'elu'
-    closure_scale: [0.05, 0.1, 0.2, 0.4] 
+    closure_scale: 0.4 #[0.05, 0.1, 0.2, 0.4] 
   zero:
     loss: mse
 

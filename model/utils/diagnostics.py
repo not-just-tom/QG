@@ -1232,7 +1232,7 @@ class ParetoValidationDiagnostic(Diagnostic):
 
             xs.append(mean_val_loss)
             ys.append(survival_steps)
-            labels.append(model_name)
+            labels.append(model_name[-2:])
 
         xs = np.asarray(xs)
         ys = np.asarray(ys)

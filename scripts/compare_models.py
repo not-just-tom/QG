@@ -261,7 +261,7 @@ def rollout_model(model_info, validation_trajs, n_trajs=5):
     }
 
 
-def compare_models(model_dirs, validation_data_path, output_dir, n_trajs=5):
+def compare_models(folder_dir, validation_data_path, output_dir, n_trajs=5):
     """Compare multiple models on validation data.
     
     Args:
@@ -271,7 +271,11 @@ def compare_models(model_dirs, validation_data_path, output_dir, n_trajs=5):
         n_trajs: Number of trajectories to evaluate
     """
     os.makedirs(output_dir, exist_ok=True)
-    
+    model_dirs = [
+        os.path.join(folder_dir, d)
+        for d in os.listdir(folder_dir)
+        if os.path.isdir(os.path.join(folder_dir, d))
+    ]
     # Load all models
     models = []
     for model_dir in model_dirs:
@@ -361,10 +365,9 @@ def compare_models(model_dirs, validation_data_path, output_dir, n_trajs=5):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Compare multiple trained models")
     parser.add_argument(
-        "--model_dirs",
-        nargs="+",
+        "--folder_dir",
         required=True,
-        help="Paths to saved closure directories (e.g., saved_closures/resnet/128_to_32/01)"
+        help="Directory containing model directories"
     )
     parser.add_argument(
         "--validation_data",
@@ -386,7 +389,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     compare_models(
-        args.model_dirs,
+        args.folder_dir,
         args.validation_data,
         args.output_dir,
         args.n_trajs

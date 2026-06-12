@@ -2,6 +2,7 @@
 
 import inspect
 import logging
+import jax
 import jax.numpy as jnp
 from model.core.kernel import Kernel
 import model.core.states as states
@@ -33,6 +34,11 @@ class QGM(Kernel):
         rek = params.get('rek')
         kmin = params.get('kmin')
         kmax = params.get('kmax')
+        forcing_type = params.get('forcing_type', 'band')
+        forcing_center = params.get('forcing_center', 6.5)
+        forcing_width = params.get('forcing_width', 2.0)
+        forcing_amplitude = params.get('forcing_amplitude', 0.0)
+        forcing_seed = params.get('forcing_seed', 0)
         self.beta = params.get('beta', 10.0)
         self.Lx = params.get('Lx', 6.28)
         self.Ly = params.get('Ly', self.Lx)
@@ -52,6 +58,11 @@ class QGM(Kernel):
             rek=rek,
             kmin=kmin,
             kmax=kmax,
+            forcing_type=forcing_type,
+            forcing_center=forcing_center,
+            forcing_width=forcing_width,
+            forcing_amplitude=forcing_amplitude,
+            forcing_seed=forcing_seed,
         )
 
         # Precompute spectral grids and dealias filter to avoid recomputation
@@ -62,7 +73,21 @@ class QGM(Kernel):
         self._ky = jnp.fft.fftfreq(self.ny, d=(grid.dy / (2 * jnp.pi)))
         self._KX, self._KY = jnp.meshgrid(self._kx, self._ky)
         self._Kmag = jnp.sqrt(self._KX ** 2 + self._KY ** 2)
-        self._K2 = self._Kmag ** 2
+        self._K2 = self._Kmag ** 2        
+        # Compute forcing mask based on forcing type
+        if forcing_type == "band":
+            # Original band-pass forcing between kmin and kmax
+            self.forcing_mask = (
+                (self.Kmag >= self.kmin)
+                & (self.Kmag <= self.kmax)
+            )
+        elif forcing_type == "annulus":
+            # Annulus forcing: Gaussian-like envelope centered at forcing_center
+            # with characteristic width forcing_width
+            k_diff = jnp.abs(self.Kmag - self.forcing_center)
+            self.forcing_mask = jnp.exp(-(k_diff / self.forcing_width) ** 2)
+        else:
+            raise ValueError(f"Unknown forcing_type: {forcing_type}. Must be 'band' or 'annulus'.")
         # Precompute two-layer elliptic inversion matrix A such that ph = A qh.
         # The (k,l)=(0,0) mode is singular and is explicitly set to zero.
         det = self._K2 * (self._K2 + self.F1 + self.F2)
@@ -88,7 +113,7 @@ class QGM(Kernel):
         n_jets=None,
         tune=False,
         pseudo=False,
-        verbose=False
+        verbose=False,
     ):
         """This still needs a lot of work - i need an auto replacing dt with the suggested dt from cfl, 
         and probably change to a energy level ? figure whether i should step the model/filter out some noise later
@@ -123,11 +148,8 @@ class QGM(Kernel):
         """Set the initial state from a given spectral PV array `qh`."""
         return states.State(qh=qh, _q_shape=_q_shape)
     
-    def get_full_state(self, state: states.State) -> states.FullState:
-        """Expand a partial state into a full state with all computed values.
-        """
-        full_state = super().get_full_state(state)
-        return full_state
+    def get_full_state(self, state, forcing_key=None):
+        return super().get_full_state(state, forcing_key=forcing_key)   
 
     def get_grid(self) -> Grid:
         """Retrieve the grid for this model."""

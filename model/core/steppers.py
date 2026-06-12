@@ -127,16 +127,28 @@ class SteppedModel:
         return self.stepper.initialize_stepper_state(state)
 
     def step_model(self, stepper_state, /):
+        # Generate forcing key from timestep counter if forcing is enabled
+        forcing_key = None
+        if hasattr(self.model, 'forcing_amplitude') and self.model.forcing_amplitude != 0:
+            # Create deterministic key from forcing_seed and timestep
+            base_key = jax.random.PRNGKey(self.model.forcing_seed)
+            forcing_key = jax.random.fold_in(base_key, stepper_state.tc)
+        
         new_stepper_state = self.stepper.apply_updates(
             stepper_state,
-            self.model.get_updates(stepper_state.state),
+            self.model.get_updates(stepper_state.state, forcing_key=forcing_key),
         )
         postprocessed_state = self.model.dealias(new_stepper_state.state)
         postprocessed_state = self.model.apply_exact_step_filter(postprocessed_state)
         return new_stepper_state.update(state=postprocessed_state)
 
-    def get_full_state(self, stepper_state, /):
-        return self.model.get_full_state(stepper_state.state)
+    def get_full_state(self, stepper_state, forcing_key):
+        # Generate forcing key for diagnostics if forcing is enabled
+        forcing_key = None
+        if hasattr(self.model, 'forcing_amplitude') and self.model.forcing_amplitude != 0:
+            base_key = jax.random.PRNGKey(self.model.forcing_seed)
+            forcing_key = jax.random.fold_in(base_key, stepper_state.tc)
+        return self.model.get_full_state(stepper_state.state, forcing_key=forcing_key)
 
 
 def _nostep_tree_map(func, tree, *rest):
