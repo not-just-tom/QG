@@ -125,11 +125,32 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
 
     # Prefer balanced, band-limited initial conditions when available.
     n_jets = getattr(cfg.plotting, "njets", None)
-    init_kwargs = {}
     if n_jets is not None:
-        init_kwargs = {"n_jets": int(n_jets), "pseudo": True, "tune": True}
+        # Perform the forcing tuning once on the host before the batched VMAP.
+        # This keeps the tuning logic out of the traced initialization path.
+        tune_key = jax.random.PRNGKey(int(params.get("seed", 0)))
+        _ = hr_model.initialise(
+            tune_key,
+            n_jets=int(n_jets),
+            pseudo=True,
+            tune=True,
+            verbose=False,
+        )
         logger.info("Using tuned jet initialisation for data generation (n_jets=%s)", n_jets)
+
+        def initialise_with_tuned_params(key):
+            return hr_model.initialise(
+                key,
+                n_jets=int(n_jets),
+                pseudo=True,
+                tune=False,
+                verbose=False,
+            )
+
     else:
+        def initialise_with_tuned_params(key):
+            return hr_model.initialise(key)
+
         logger.info("Using default random initialisation for data generation")
 
     while n_generated < n_total+len(existing):
@@ -139,7 +160,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
         rng, subkey = jax.random.split(rng)
         keys = jax.random.split(subkey, current_batch)
 
-        init_states = jax.vmap(functools.partial(hr_model.initialise, **init_kwargs))(keys)
+        init_states = jax.vmap(initialise_with_tuned_params)(keys)
         
         logger.info(f"Initialised batch of {current_batch} trajectories")
 

@@ -27,11 +27,7 @@ def canonicalize(params: dict) -> dict:
 
 def find_output_dir(base_dir, params, model_type, timing_metadata=None, training_metadata=None, metadata=None, id=None):
     """
-    Find or create an output directory with structure:
-      base_dir/{model_type}_model/{model_type}_{hr}to{lr}/{idx:02d}
-
-    Matches existing runs by exact `parameters` metadata stored in
-    the run's `metadata.json`.
+    Find or create an output directory for a model run based on parameters and metadata.
     """
     lr_nx = params["nx"]
     hr_nx = params['hr_nx']
@@ -40,7 +36,7 @@ def find_output_dir(base_dir, params, model_type, timing_metadata=None, training
     model_base = os.path.join(base_dir, model_type, folder)
     os.makedirs(model_base, exist_ok=True)
     if timing_metadata is None:
-        folder = f"{hr_nx}_to_{lr_nx}_"
+        folder = f"{hr_nx}_to_{lr_nx}" 
         run_base = os.path.join(base_dir, model_type, folder)
         run_dir = os.path.join(run_base, id)
 

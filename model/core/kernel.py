@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 @Pytree.register_pytree_class_attrs(
     children=["rek", "forcing_amplitude"],
-    static_attrs=["nz", "ny", "nx", "kmin", "kmax", "forcing_type", "forcing_center", "forcing_width", "forcing_seed"],
+    static_attrs=["nz", "ny", "nx", "kmin", "kmax", "forcing_center", "forcing_width", "seed"],
 )
 class Kernel(ABC):
     def __init__(
@@ -23,11 +23,10 @@ class Kernel(ABC):
         rek: float = 0,
         kmin: float = 3.0,
         kmax: float = 10,
-        forcing_type: str = "band",
         forcing_center: float = 6.5,
         forcing_width: float = 2.0,
         forcing_amplitude: float = 0.0,
-        forcing_seed: int = 0,
+        seed: int = 0,
     ):
         # Store small, fundamental properties (others will be computed on demand)
         self.nx = nx
@@ -36,11 +35,10 @@ class Kernel(ABC):
         self.rek = rek
         self.kmin = kmin
         self.kmax = kmax
-        self.forcing_type = forcing_type
         self.forcing_center = forcing_center
         self.forcing_width = forcing_width
         self.forcing_amplitude = forcing_amplitude
-        self.forcing_seed = forcing_seed
+        self.seed = seed
 
 
     def dealias(self, state: states.State) -> states.State:
@@ -280,7 +278,7 @@ class Kernel(ABC):
             State with forcing added to dqhdt
         """
         # Early return if no forcing
-        if self.forcing_amplitude == 0:
+        if self.forcing_amplitude is None:
             return state
         
         # Provide dummy key for JAX tracing if None
@@ -307,6 +305,9 @@ class Kernel(ABC):
             
             # Add forcing to tendency
             dqhdt_forced = state.dqhdt + forcing
+
+            # Store diagnostics in a way that survives JAX transformations
+            # (used in tune_forcing_parameters)
             return state.update(dqhdt=dqhdt_forced)
         
         def no_forcing(state_key_tuple):

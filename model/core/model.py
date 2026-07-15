@@ -8,6 +8,7 @@ from model.core.kernel import Kernel
 import model.core.states as states
 import model.utils.pytree as Pytree
 from model.core.grid import Grid
+from model.utils.forcing_diagnostics import tune_forcing_parameters
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +35,10 @@ class QGM(Kernel):
         rek = params.get('rek')
         kmin = params.get('kmin')
         kmax = params.get('kmax')
-        forcing_type = params.get('forcing_type', 'band')
         forcing_center = params.get('forcing_center', 6.5)
         forcing_width = params.get('forcing_width', 2.0)
         forcing_amplitude = params.get('forcing_amplitude', 0.0)
-        forcing_seed = params.get('forcing_seed', 0)
+        seed = params.get('seed', 0)
         self.beta = params.get('beta', 10.0)
         self.Lx = params.get('Lx', 6.28)
         self.Ly = params.get('Ly', self.Lx)
@@ -58,11 +58,10 @@ class QGM(Kernel):
             rek=rek,
             kmin=kmin,
             kmax=kmax,
-            forcing_type=forcing_type,
             forcing_center=forcing_center,
             forcing_width=forcing_width,
             forcing_amplitude=forcing_amplitude,
-            forcing_seed=forcing_seed,
+            seed=seed,
         )
 
         # Precompute spectral grids and dealias filter to avoid recomputation
@@ -75,19 +74,7 @@ class QGM(Kernel):
         self._Kmag = jnp.sqrt(self._KX ** 2 + self._KY ** 2)
         self._K2 = self._Kmag ** 2        
         # Compute forcing mask based on forcing type
-        if forcing_type == "band":
-            # Original band-pass forcing between kmin and kmax
-            self.forcing_mask = (
-                (self.Kmag >= self.kmin)
-                & (self.Kmag <= self.kmax)
-            )
-        elif forcing_type == "annulus":
-            # Annulus forcing: Gaussian-like envelope centered at forcing_center
-            # with characteristic width forcing_width
-            k_diff = jnp.abs(self.Kmag - self.forcing_center)
-            self.forcing_mask = jnp.exp(-(k_diff / self.forcing_width) ** 2)
-        else:
-            raise ValueError(f"Unknown forcing_type: {forcing_type}. Must be 'band' or 'annulus'.")
+        self._update_forcing_mask()
         # Precompute two-layer elliptic inversion matrix A such that ph = A qh.
         # The (k,l)=(0,0) mode is singular and is explicitly set to zero.
         det = self._K2 * (self._K2 + self.F1 + self.F2)
@@ -106,6 +93,15 @@ class QGM(Kernel):
         wvx = jnp.sqrt((self._KX * grid.dx) ** 2 + (self._KY * grid.dx) ** 2)
         exact_filter = jnp.exp(-self.filterfac * (wvx - cphi) ** 4)
         self._exact_step_filter = jnp.where(wvx <= cphi, 1.0, exact_filter)
+
+    def _update_forcing_mask(self):
+        """Recompute the spectral forcing mask from the current forcing parameters."""
+        k_diff = jnp.abs(self.Kmag - self.forcing_center)
+        self.forcing_mask = jnp.exp(-(k_diff / self.forcing_width) ** 2)
+
+    def _tune_forcing_parameters(self, state, n_jets, verbose=False):
+        """Choose forcing parameters that target the requested jet count while staying stable."""
+        return tune_forcing_parameters(self, state, n_jets, verbose=verbose)
 
     def initialise(
         self,
@@ -126,6 +122,8 @@ class QGM(Kernel):
         base_state = super().initialise(key, n_jets)
         if not tune:
             return base_state
+
+        self._tune_forcing_parameters(base_state, n_jets, verbose=verbose)
 
         U_target = self.beta * (self.Ly / (jnp.pi * n_jets))**2
         U_rms = self.rhines_length(base_state)[1] # i actually think im not using rhines here despite the name - just U_rms
@@ -337,6 +335,56 @@ class QGM(Kernel):
         # Return a JAX scalar so this function remains safe under jit/vmap.
         dt = jnp.asarray(cfl, dtype=U_rms.dtype) * jnp.asarray(self.dx, dtype=U_rms.dtype) / (jnp.abs(U_rms) + 1e-12)
         return dt
+
+    def compute_kinetic_energy(self, state: states.State) -> jnp.ndarray:
+        """Compute total domain-averaged kinetic energy.
+        
+        Returns a JAX scalar representing the mean KE = 0.5 * (u^2 + v^2)
+        """
+        full = self.get_full_state(state)
+        u = full.u
+        v = full.v
+        ke = jnp.mean(0.5 * (u ** 2 + v ** 2))
+        return ke
+
+    def compute_energy_spectrum(self, state: states.State) -> jnp.ndarray:
+        """Compute kinetic energy spectrum E(k) in spectral space.
+        
+        Returns shape (nz, ny, nx//2+1) with energy per wavenumber mode.
+        E(k) = 0.5 * (|uh|^2 + |vh|^2)
+        """
+        full = self.get_full_state(state)
+        uh = full.uh
+        vh = full.vh
+        energy_spectrum = 0.5 * (jnp.abs(uh) ** 2 + jnp.abs(vh) ** 2)
+        return energy_spectrum
+
+    def get_forcing_scale_factor(self, state: states.State, target_energy_fraction: float = 0.1) -> jnp.ndarray:
+        """Compute a normalization factor for forcing to maintain energy balance.
+        
+        This returns a scale factor such that the forcing amplitude is proportional to
+        the system's initial kinetic energy. This prevents forcing from overwhelming
+        or being negligible for different resolutions and initial conditions.
+        
+        Parameters
+        ----------
+        state : states.State
+            Current state of the system
+        target_energy_fraction : float
+            Target fraction of initial energy to be added per step by forcing.
+            Smaller values = weaker forcing. Default 0.1 (10% per step is aggressive).
+            
+        Returns
+        -------
+        scale_factor : jax.Array
+            Scalar in [0, inf) used to multiply forcing_amplitude
+        """
+        ke = self.compute_kinetic_energy(state)
+        # Avoid division by zero: if KE is very small, use a minimum scale
+        safe_ke = jnp.where(ke > 1e-12, ke, 1e-12)
+        # Scale factor: larger KE → larger scale factor (forcing scales with energy)
+        scale_factor = jnp.sqrt(safe_ke) / jnp.sqrt(target_energy_fraction + 1e-12)
+        return scale_factor
 
     @classmethod
     def from_params(cls, params):

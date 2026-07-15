@@ -197,7 +197,14 @@ def run(cfg):
         if cfg.ml.enabled == True:
             logger.info(f"No existing data found, generating new dataset at {run_dir}")
             os.makedirs(run_dir, exist_ok=False)
-            generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, run_dir)
+            try:
+                generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, run_dir)
+            except Exception:
+                logger.exception("Failed to generate training data; cleaning up and exiting.")
+                if os.path.exists(run_dir):
+                    import shutil
+                    shutil.rmtree(run_dir)
+                raise
             data_loader = ZarrDataLoader(run_dir)
     else: # the case where nsteps too short so we load trajs and restart from end state to the desired number of steps
         logger.info(f"Found existing data with matching parameters at {run_dir}, but it has insufficient length. Loading trajectories and generating additional steps to reach desired length.")

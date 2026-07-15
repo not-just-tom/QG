@@ -8,7 +8,7 @@ filepaths:
 params: 
   seed: 42
   nx: 32
-  Lx: 1000000 
+  Lx: 1000000
   beta: 0.00000000001
   kmin: 4.0 
   kmax: 10.0
@@ -22,11 +22,9 @@ params:
   U2: 0.0
   hr_nx: 512
   # Stochastic forcing parameters
-  forcing_type: 'band'  # 'band' or 'annulus'
   forcing_center: 6.5   # Center wavenumber for annulus forcing
   forcing_width: 2.0    # Width parameter for annulus forcing (Gaussian std)
-  forcing_amplitude: 0.0  # Amplitude of stochastic forcing (set to 0 to disable)
-  forcing_seed: 12345   # Seed for deterministic forcing generation
+  forcing_amplitude: 0.0001 # None for nothing 
 
 plotting:
   nsteps: 2000
@@ -43,10 +41,10 @@ ml:
   model_type: resnet
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
-  n_train: 15
+  n_train: 3
   n_test: 2
   start_days: 1        # initial window length in days
-  end_days: 20         # final window length in days
+  end_days: 1         # final window length in days
   batch_size: 10 # number of samples in a training batch per update <--------------------------- is this used?
   prefetch: 3       # prefetch a few batches to aid efficiency
   use_float64: false

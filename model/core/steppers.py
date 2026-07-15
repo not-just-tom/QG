@@ -127,26 +127,96 @@ class SteppedModel:
         return self.stepper.initialize_stepper_state(state)
 
     def step_model(self, stepper_state, /):
+        import logging
+        import numpy as np
+        
+        logger = logging.getLogger(__name__)
+        
         # Generate forcing key from timestep counter if forcing is enabled
         forcing_key = None
-        if hasattr(self.model, 'forcing_amplitude') and self.model.forcing_amplitude != 0:
-            # Create deterministic key from forcing_seed and timestep
-            base_key = jax.random.PRNGKey(self.model.forcing_seed)
+        has_forcing = hasattr(self.model, 'forcing_amplitude') and self.model.forcing_amplitude is not None
+        if has_forcing:
+            # Create deterministic key from seed and timestep
+            base_key = jax.random.PRNGKey(self.model.seed)
             forcing_key = jax.random.fold_in(base_key, stepper_state.tc)
         
+        # Pre-step diagnostics
+        state_before = stepper_state.state
+        ke_before = None
+        has_nan_before = False
+        
+        # Check state validity before stepping (non-JAX for diagnostics)
+        try:
+            qh_before = np.asarray(state_before.qh)
+            has_nan_before = np.any(np.isnan(qh_before)) or np.any(np.isinf(qh_before))
+            max_qh_before = float(np.max(np.abs(qh_before)))
+            
+            # Compute kinetic energy if method exists
+            if hasattr(self.model, 'compute_kinetic_energy'):
+                ke_before = float(self.model.compute_kinetic_energy(state_before))
+        except Exception as e:
+            logger.debug(f"Pre-step diagnostics error: {e}")
+        
+        # Apply model step
         new_stepper_state = self.stepper.apply_updates(
             stepper_state,
             self.model.get_updates(stepper_state.state, forcing_key=forcing_key),
         )
         postprocessed_state = self.model.dealias(new_stepper_state.state)
         postprocessed_state = self.model.apply_exact_step_filter(postprocessed_state)
-        return new_stepper_state.update(state=postprocessed_state)
+        new_stepper_state = new_stepper_state.update(state=postprocessed_state)
+        
+        # Post-step diagnostics
+        state_after = new_stepper_state.state
+        has_nan_after = False
+        ke_after = None
+        
+        try:
+            qh_after = np.asarray(state_after.qh)
+            has_nan_after = np.any(np.isnan(qh_after)) or np.any(np.isinf(qh_after))
+            max_qh_after = float(np.max(np.abs(qh_after)))
+            
+            # Compute kinetic energy after step
+            if hasattr(self.model, 'compute_kinetic_energy'):
+                ke_after = float(self.model.compute_kinetic_energy(state_after))
+            
+            # Log diagnostics periodically
+            log_period = 100
+            if int(stepper_state.tc) % log_period == 0:
+                log_str = f"[Step {int(stepper_state.tc):05d}] KE: "
+                if ke_before is not None and ke_after is not None:
+                    ke_change = (ke_after - ke_before) / (abs(ke_before) + 1e-12) * 100
+                    log_str += f"before={ke_before:.3e}, after={ke_after:.3e}, Δ%={ke_change:.1f}%"
+                    if has_forcing:
+                        log_str += f" [FORCING ACTIVE]"
+                else:
+                    log_str += f"after={ke_after:.3e}" if ke_after else "unable to compute"
+                logger.info(log_str)
+            
+            # Alert if NaN appears
+            if has_nan_after and not has_nan_before:
+                logger.error(
+                    f"[ALERT: NaN DETECTED AT STEP {int(stepper_state.tc)}]\n"
+                    f"  max(|qh|) before: {max_qh_before:.3e}\n"
+                    f"  max(|qh|) after: {max_qh_after:.3e}\n"
+                    f"  KE before: {ke_before:.3e}, after: {ke_after:.3e}\n"
+                    f"  Forcing enabled: {has_forcing}\n"
+                    f"  Forcing amplitude: {self.model.forcing_amplitude}\n"
+                    f"  Grid: nx={self.model.nx}, ny={self.model.ny}"
+                )
+            elif has_nan_before and has_nan_after:
+                logger.warning(f"[Step {int(stepper_state.tc)}] NaN already present, continuing...")
+                
+        except Exception as e:
+            logger.debug(f"Post-step diagnostics error: {e}")
+        
+        return new_stepper_state
 
     def get_full_state(self, stepper_state, forcing_key):
         # Generate forcing key for diagnostics if forcing is enabled
         forcing_key = None
-        if hasattr(self.model, 'forcing_amplitude') and self.model.forcing_amplitude != 0:
-            base_key = jax.random.PRNGKey(self.model.forcing_seed)
+        if hasattr(self.model, 'forcing_amplitude') and self.model.forcing_amplitude is not None:
+            base_key = jax.random.PRNGKey(self.model.seed)
             forcing_key = jax.random.fold_in(base_key, stepper_state.tc)
         return self.model.get_full_state(stepper_state.state, forcing_key=forcing_key)
 
