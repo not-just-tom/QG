@@ -16,7 +16,7 @@ def rollout_traj_errors(target_traj, forced_model, template_state, closure_param
 
     init_qh = jnp.fft.rfftn(target_traj[0], axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
     base_state = template_state.update(qh=init_qh)
-    init_state = forced_model.initialize_stepper_state(
+    init_state = forced_model.initialise_stepper_state(
         forced_model.model.initialise_param_state(base_state, closure_params)
     )
 
@@ -200,7 +200,7 @@ def make_validation_epoch(lr_model, dt, loss_fn, closure_scale=0.1):
 
         base_state = template_state.update(qh=init_qh)
 
-        init_stepper_state = forced_model.initialize_stepper_state(
+        init_stepper_state = forced_model.initialise_stepper_state(
             forced_model.model.initialise_param_state(
                 base_state,
                 closure_params
@@ -276,7 +276,7 @@ def make_validation_epoch(lr_model, dt, loss_fn, closure_scale=0.1):
         def step_physics_from_truth(q_truth):
             qh = jnp.fft.rfftn(q_truth, axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
             state = template_state.update(qh=qh)
-            init = physics_only_model.initialize_stepper_state(
+            init = physics_only_model.initialise_stepper_state(
                 physics_only_model.model.initialise_param_state(state, physics_params)
             )
             next_state = physics_only_model.step_model(init)
@@ -368,7 +368,7 @@ def zero_validation(lr_model, dt, truth_traj, cfg, loss_fn):
     
     base_state = template_state.update(qh=init_qh)
     
-    init_zero_state = zero_model.initialize_stepper_state(
+    init_zero_state = zero_model.initialise_stepper_state(
         zero_model.model.initialise_param_state(
             base_state,
             zero_params
@@ -467,7 +467,7 @@ def compute_zero_epoch_loss(lr_model, dt, test_trajs, loss_fn, batch_steps, clos
     def rollout_zero(traj):
         init_qh = jnp.fft.rfftn(traj[0], axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
         base_state = template_state.update(qh=init_qh)
-        init_state = zero_model.initialize_stepper_state(
+        init_state = zero_model.initialise_stepper_state(
             zero_model.model.initialise_param_state(base_state, zero_params)
         )
         

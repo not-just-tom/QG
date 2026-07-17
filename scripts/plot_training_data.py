@@ -80,7 +80,7 @@ def simulate_lr_rollout(q_truth: np.ndarray, meta: dict) -> tuple[np.ndarray, fl
     q0 = jnp.asarray(q_truth[0], dtype=jnp.float32)
     q0h = jnp.fft.rfftn(q0, axes=(-2, -1), norm="ortho")
     lr_state0 = lr_model.set_initial(qh=q0h, _q_shape=q0.shape[-2:])
-    step_state = stepped_lr.initialize_stepper_state(lr_state0)
+    step_state = stepped_lr.initialise_stepper_state(lr_state0)
 
     q_pred[0] = np.asarray(lr_state0.q, dtype=np.float32)
     for i in range(1, nsteps):

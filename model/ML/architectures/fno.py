@@ -32,7 +32,7 @@ class SpectralConv2d(eqx.Module):
         k1, k2, k3, k4 = jax.random.split(key, 4)
         scale = (1.0 / (in_channels * out_channels))
         
-        # Initialize two sets of complex weights
+        # initialise two sets of complex weights
         real1 = jax.random.normal(k1, (in_channels, out_channels, modes1, modes2), dtype=jnp.float32) * scale
         imag1 = jax.random.normal(k2, (in_channels, out_channels, modes1, modes2), dtype=jnp.float32) * scale
         self.weights1 = real1 + 1j * imag1

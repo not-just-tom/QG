@@ -50,7 +50,7 @@ class ForcedModel:
         """
         return self.model.get_full_state(state.model_state)
 
-    def get_updates(self, state):
+    def get_updates(self, state, forcing_key=None, dt=None, tc=None): # this forcing key here might hide an error 
         """Get updates for time-stepping `state`.
         """
         param_updates, new_param_aux = self.closure(

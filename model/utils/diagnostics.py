@@ -11,6 +11,59 @@ from model.utils.physics_ops import (
     isotropic_ke_spectrum,
 )
 
+
+def _sanitize_numeric_array(values):
+    """Replace non-finite values with zeros so plotting diagnostics stay robust."""
+    if values is None:
+        return None
+    arr = np.asarray(values)
+    if arr.dtype.kind in {"U", "S", "O"}:
+        return arr
+    try:
+        return np.nan_to_num(arr, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+    except Exception:
+        return arr
+
+
+def _get_traj_array(trajs, *keys, default=None):
+    """Return the first available trajectory array from a list of legacy/new keys."""
+    for key in keys:
+        if key in trajs and trajs.get(key) is not None:
+            return trajs.get(key)
+    return default
+
+
+def _prepare_array(values):
+    """Normalize assorted trajectory arrays into a form the diagnostics can plot."""
+    arr = _sanitize_numeric_array(values)
+    if arr is None:
+        return None
+    arr = np.asarray(arr)
+    if arr.ndim == 0:
+        return arr.reshape(1, 1, 1, 1)
+    if arr.ndim == 1:
+        return arr.reshape(-1, 1, 1, 1)
+    if arr.ndim == 2:
+        return arr[None, ...]
+    return arr
+
+
+def _pick_frame(arr, idx, layer=0):
+    """Extract a frame from a prediction/truth array, handling 2D/3D/4D layouts."""
+    if arr is None:
+        return None
+    arr = np.asarray(arr)
+    if arr.ndim == 4:
+        return arr[idx, layer]
+    if arr.ndim == 3:
+        if arr.shape[0] > 1 and idx < arr.shape[0]:
+            return arr[idx]
+        return arr[layer] if layer < arr.shape[0] else arr[0]
+    if arr.ndim == 2:
+        return arr
+    return arr[idx] if arr.shape[0] > 1 else arr[0]
+
+
 # ============================================================
 # Base class
 # ============================================================
@@ -27,12 +80,16 @@ class LossDiagnostic(Diagnostic):
     name = "loss"
 
     def run(self, trajs, out_path, cadence):
-        losses = trajs.get("loss_history", {})
+        losses = trajs.get("loss_history") or {}
+        if not isinstance(losses, dict):
+            losses = {}
 
-        train = np.asarray(losses.get("train", []))
-        test  = np.asarray(losses.get("test", []))
-        zero = np.asarray(losses.get("zero", []))
-        n_epochs = losses['n_epochs']
+        train = np.asarray(losses.get("train", []), dtype=float)
+        test = np.asarray(losses.get("test", []), dtype=float)
+        zero = np.asarray(losses.get("zero", []), dtype=float)
+        n_epochs = losses.get("n_epochs", 1)
+        if n_epochs is None or n_epochs <= 0:
+            n_epochs = 1
 
         fig, ax = plt.subplots()
 
@@ -42,8 +99,8 @@ class LossDiagnostic(Diagnostic):
             ax.plot(np.arange(1, len(test) + 1), test, label="test")
         if zero.size:
             # plot average zero loss per curriculum stage
-            x = np.arange(0, len(zero)+1, n_epochs)
-            y = [np.mean(zero[i:i+n_epochs]) for i in x]
+            x = np.arange(0, len(zero) + 1, max(1, int(n_epochs)))
+            y = [np.mean(zero[i:i + max(1, int(n_epochs))]) for i in x]
             ax.step(x, y, label="zero model", linestyle="--", color="C2")
 
         ax.set_title("Training / Validation Loss")
@@ -71,9 +128,9 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
             raise KeyError("ke_spectrum_movie requires 'grid' in trajectories")
 
         # prefer physical predicted frames produced by validation; fallback to 'pred'
-        q_truth = trajs.get("truth")
-        q_pred = trajs.get("pred_frames")
-        zero = trajs.get("zero_frames")
+        q_truth = _sanitize_numeric_array(trajs.get("truth"))
+        q_pred = _sanitize_numeric_array(trajs.get("pred_frames"))
+        zero = _sanitize_numeric_array(trajs.get("zero_frames"))
         q_truth = np.asarray(q_truth[10:]) # im trying out skipping first few frames to avoid 0s ?
         q_pred = np.asarray(q_pred[10:])
         zero = np.asarray(zero[10:])
@@ -84,7 +141,8 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
                 frames = []
                 nt = q.shape[0]
                 for t in range(nt):
-                    psi_t = invert_pv_to_psi(q[t], grid)
+                    q_t = _sanitize_numeric_array(q[t])
+                    psi_t = invert_pv_to_psi(q_t, grid)
                     u_t, v_t = velocity_from_psi(psi_t, grid) # shape (nz, ny, nx)
                     spec_t = isotropic_ke_spectrum(u_t, v_t, grid)
                     Et = spec_t["E"]
@@ -157,9 +215,9 @@ class KESpectrumDiagnostic(Diagnostic):
     def run(self, trajs, out_path, cadence):
         # --- get stuff ---
         grid = trajs.get("grid")
-        q_truth = trajs.get("truth")
-        q_pred  = trajs.get("pred_frames")
-        zero = trajs.get("zero_frames")
+        q_truth = _sanitize_numeric_array(trajs.get("truth"))
+        q_pred  = _sanitize_numeric_array(trajs.get("pred_frames"))
+        zero = _sanitize_numeric_array(trajs.get("zero_frames"))
         q_truth = np.asarray(q_truth)
         q_pred  = np.asarray(q_pred)
         zero = np.asarray(zero)
@@ -183,7 +241,8 @@ class KESpectrumDiagnostic(Diagnostic):
             try:
                 frames = []
                 for t in range(q.shape[0]):
-                    psi_t = invert_pv_to_psi(q[t], grid)
+                    q_t = _sanitize_numeric_array(q[t])
+                    psi_t = invert_pv_to_psi(q_t, grid)
                     u_t, v_t = velocity_from_psi(psi_t, grid)
                     spec_t = isotropic_ke_spectrum(u_t, v_t, grid)
                     Et = np.asarray(spec_t["E"]).ravel()
@@ -235,13 +294,10 @@ class VorticityDiagnostic(Diagnostic): # this might need cadence adding to it tb
     output = "gif"
 
     def run(self, trajs, out_path, cadence):
-        if "q" in trajs and trajs["q"] is not None:
-            truth = np.asarray(trajs["q"])
-        elif "truth" in trajs and trajs["truth"] is not None:
-            truth = np.asarray(trajs["truth"])
-        else:
+        truth = _prepare_array(_get_traj_array(trajs, "truth", "q"))
+        if truth is None:
             raise KeyError("PV diagnostic requires 'q' or 'truth' in trajectories")
-        ml = trajs.get("pred")
+        ml = _prepare_array(_get_traj_array(trajs, "pred_frames", "pred"))
 
         # Auto-determine number of layers from data shape
         # Expected shape: (nt, nz, ny, nx)
@@ -253,8 +309,8 @@ class VorticityDiagnostic(Diagnostic): # this might need cadence adding to it tb
                                  figsize=(4 * cols, 3 * nz))
 
         # fixed color scale (important)
-        vmin = truth.min()
-        vmax = truth.max()
+        vmin = np.nanmin(truth)
+        vmax = np.nanmax(truth)
 
         ims = []
 
@@ -311,9 +367,9 @@ class QuadGifDiagnostic(Diagnostic):
         - Text annotations with statistics
         """
         # Extract data
-        pred = trajs.get("pred_frames")
-        truth = trajs.get("truth")
-        zero = trajs.get("zero_frames")
+        pred = _prepare_array(_get_traj_array(trajs, "pred_frames", "pred"))
+        truth = _prepare_array(_get_traj_array(trajs, "truth", "q"))
+        zero = _prepare_array(_get_traj_array(trajs, "zero_frames", "zero"))
         grid = trajs.get("grid")
         
         pred_np = np.asarray(pred)
@@ -356,12 +412,8 @@ class QuadGifDiagnostic(Diagnostic):
             raise ValueError("No frames selected for quad diagnostic (check cadence)")
 
         def pick(arr, idx):
-            """Extract single frame, handling 3D and 4D arrays"""
-            if arr is None:
-                return None
-            if arr.ndim == 4:
-                return arr[idx, 0]
-            return arr[idx]
+            """Extract single frame, handling 2D/3D/4D arrays."""
+            return _pick_frame(arr, idx)
 
         # Robust percentiles for color scaling
         def pct(a, q):
@@ -402,7 +454,7 @@ class QuadGifDiagnostic(Diagnostic):
         ax_teacher_sgs = fig.add_subplot(gs[1, 2])
         ax_sgs_analysis = fig.add_subplot(gs[1, 3])
 
-        # ==== Initialize PV plots (Row 1) ====
+        # ==== initialise PV plots (Row 1) ====
         im_truth = ax_truth.imshow(pick(truth_np, indices[0]), origin="lower", 
                                    cmap="RdBu_r", vmin=vmin_pv, vmax=vmax_pv)
         ax_truth.set_title("Truth PV", fontsize=11, fontweight='bold')
@@ -425,7 +477,7 @@ class QuadGifDiagnostic(Diagnostic):
                                      cmap="viridis", vmin=-vmax_err, vmax=vmax_err)
         ax_pv_err.set_title("PV Error\n(ML - Truth)", fontsize=11, fontweight='bold')
 
-        # ==== Initialize SGS plots (Row 2) ====
+        # ==== initialise SGS plots (Row 2) ====
         im_target_sgs = ax_target_sgs.imshow(pick(sgs_target_np, indices[0]), 
                                             origin="lower", cmap="seismic", 
                                             vmin=vmin_sgs, vmax=vmax_sgs)
@@ -564,9 +616,9 @@ class ZeroComparisonDiagnostic(Diagnostic):
     output = "gif"
 
     def run(self, trajs, out_path, cadence):
-        pred = trajs.get("pred_frames")
-        truth = trajs.get("truth")
-        zero = trajs.get("zero_frames")
+        pred = _prepare_array(_get_traj_array(trajs, "pred_frames", "pred"))
+        truth = _prepare_array(_get_traj_array(trajs, "truth", "q"))
+        zero = _prepare_array(_get_traj_array(trajs, "zero_frames", "zero"))
         pred_np = np.asarray(pred)
         truth_np = np.asarray(truth)
         zero_np = np.asarray(zero) if zero is not None else np.zeros_like(truth_np)
@@ -598,9 +650,7 @@ class ZeroComparisonDiagnostic(Diagnostic):
             raise ValueError("No frames selected for quad diagnostic (check cadence)")
 
         def pick(arr, idx):
-            if arr.ndim == 4:
-                return arr[idx, 0]
-            return arr[idx]
+            return _pick_frame(arr, idx)
 
         # robust percentiles
         def pct(a, q):
@@ -661,11 +711,8 @@ class EnergyDiagnostic(Diagnostic):
     name = "energy"
 
     def run(self, trajs, out_path):
-        if "q" in trajs and trajs["q"] is not None:
-            q = np.asarray(trajs["q"])
-        elif "truth" in trajs and trajs["truth"] is not None:
-            q = np.asarray(trajs["truth"])
-        else:
+        q = _prepare_array(_get_traj_array(trajs, "truth", "q"))
+        if q is None:
             raise KeyError("KE spectrum diagnostic requires 'q' or 'truth' in trajectories")
         grid = trajs["grid"]
 
@@ -744,21 +791,13 @@ class DomainDiagnostic(Diagnostic):
             raise KeyError("domain diagnostic requires 'grid' in trajectories")
 
         # Get truth data
-        if "q" in trajs and trajs["q"] is not None:
-            q_truth = np.asarray(trajs["q"])
-        elif "truth" in trajs and trajs["truth"] is not None:
-            q_truth = np.asarray(trajs["truth"])
-        else:
+        q_truth = _prepare_array(_get_traj_array(trajs, "truth", "q"))
+        if q_truth is None:
             raise KeyError("domain diagnostic requires 'q' or 'truth' in trajectories")
 
         # Get predicted and zero model data if available
-        q_pred = trajs.get("pred_frames")
-        q_zero = trajs.get("zero_frames")
-        
-        if q_pred is not None:
-            q_pred = np.asarray(q_pred)
-        if q_zero is not None:
-            q_zero = np.asarray(q_zero)
+        q_pred = _prepare_array(_get_traj_array(trajs, "pred_frames", "pred"))
+        q_zero = _prepare_array(_get_traj_array(trajs, "zero_frames", "zero"))
 
         # Compute energy and enstrophy over time for truth
         def compute_timeseries(q):

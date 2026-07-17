@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 @Pytree.register_pytree_class_attrs(
     children=["rek", "forcing_amplitude"],
-    static_attrs=["nz", "ny", "nx", "kmin", "kmax", "forcing_center", "forcing_width", "seed"],
+    static_attrs=["nz", "ny", "nx", "kmin", "kmax", "seed"],
 )
 class Kernel(ABC):
     def __init__(
@@ -23,10 +23,9 @@ class Kernel(ABC):
         rek: float = 0,
         kmin: float = 3.0,
         kmax: float = 10,
-        forcing_center: float = 6.5,
-        forcing_width: float = 2.0,
         forcing_amplitude: float = 0.0,
         seed: int = 0,
+        dt: float = 1.0,
     ):
         # Store small, fundamental properties (others will be computed on demand)
         self.nx = nx
@@ -35,10 +34,9 @@ class Kernel(ABC):
         self.rek = rek
         self.kmin = kmin
         self.kmax = kmax
-        self.forcing_center = forcing_center
-        self.forcing_width = forcing_width
         self.forcing_amplitude = forcing_amplitude
         self.seed = seed
+        self.dt = dt
 
 
     def dealias(self, state: states.State) -> states.State:
@@ -52,7 +50,7 @@ class Kernel(ABC):
         """
         return state
 
-    def get_full_state(self, state: states.State, forcing_key: jax.Array = None) -> states.FullState:
+    def get_full_state(self, state: states.State, forcing_key: jax.Array = None, dt: float = None, tc: jax.Array = None) -> states.FullState:
         """Compute full state with all tendencies.
         
         Parameters
@@ -84,9 +82,10 @@ class Kernel(ABC):
         full_state = self._do_advection(full_state)
         full_state = self._do_friction(full_state)
         full_state = self._do_stochastic_forcing(full_state, forcing_key)
+        full_state = self._do_wind_forcing(full_state)
         return full_state
 
-    def get_updates(self, state: states.State, forcing_key: jax.Array = None) -> states.State:
+    def get_updates(self, state: states.State, forcing_key: jax.Array = None, dt: float = None, tc: jax.Array = None) -> states.State:
         """Get tendency updates for time-stepping.
         
         Parameters
@@ -96,7 +95,7 @@ class Kernel(ABC):
         forcing_key : jax.Array, optional
             PRNG key for stochastic forcing. If None, no forcing applied.
         """
-        full_state = self.get_full_state(state, forcing_key=forcing_key)
+        full_state = self.get_full_state(state, forcing_key=forcing_key, dt=dt, tc=tc)
         return states.State(
             qh=full_state.dqhdt,
             _q_shape=self.get_grid().real_state_shape[-2:],
@@ -258,68 +257,62 @@ class Kernel(ABC):
             state,
         )
 
-    def _do_stochastic_forcing(self, state: states.FullState, key: jax.Array = None) -> states.FullState:
+    def _do_stochastic_forcing(self, state: states.FullState, forcing_key: jax.Array = None) -> states.FullState:
         """Apply stochastic forcing to the PV tendency.
-        
-        This method adds random forcing in spectral space weighted by the forcing_mask.
-        For annulus forcing, the mask is a Gaussian envelope centered at forcing_center.
-        For band forcing, it's a binary mask between kmin and kmax.
-        
+
+        Annulus with inner radius kmin and outer radius kmax, with amplitude scaled to forcing_amplitude.
+        If no PRNG key is supplied, the forcing is skipped so diagnostics and initialisation
+        calls can safely inspect the state without triggering random-number generation.
+                
         Parameters
         ----------
         state : states.FullState
             The current full state
         key : jax.Array, optional
-            PRNG key for generating random forcing. If None, no forcing is applied.
+            PRNG key for generating random forcing.
             
         Returns
         -------
         states.FullState
             State with forcing added to dqhdt
         """
-        # Early return if no forcing
-        if self.forcing_amplitude is None:
+        if self.forcing_amplitude == 0.0:
             return state
-        
-        # Provide dummy key for JAX tracing if None
-        if key is None:
-            key = jax.random.PRNGKey(0)
-            should_force = False
-        else:
-            should_force = True
-        
-        def apply_forcing(state_key_tuple):
-            state, key = state_key_tuple
-            # Generate complex white noise in spectral space
-            key_real, key_imag = jax.random.split(key)
-            noise_real = jax.random.normal(key_real, state.dqhdt.shape)
-            noise_imag = jax.random.normal(key_imag, state.dqhdt.shape)
-            noise = noise_real + 1j * noise_imag
-            
-            # Make k=0 mode real-valued (required for real-space output)
-            noise = noise.at[..., :, 0].set(jnp.real(noise[..., :, 0]))
-            
-            # Apply forcing mask (broadcasts over layers)
-            forcing_mask_broadcasted = jnp.expand_dims(self.forcing_mask, 0)
-            forcing = self.forcing_amplitude * forcing_mask_broadcasted * noise
-            
-            # Add forcing to tendency
-            dqhdt_forced = state.dqhdt + forcing
 
-            # Store diagnostics in a way that survives JAX transformations
-            # (used in tune_forcing_parameters)
-            return state.update(dqhdt=dqhdt_forced)
-        
-        def no_forcing(state_key_tuple):
-            state, _ = state_key_tuple
-            return state
-        
-        return jax.lax.cond(
-            should_force,
-            apply_forcing,
-            no_forcing,
-            (state, key),
-        )
+        if forcing_key is None:
+            raise ValueError("PRNG key must be provided for stochastic forcing.")
+
+        mask = jnp.ones_like(self.Kmag)
+        mask = jnp.where((self.Kmag >= self.kmin) & (self.Kmag <= self.kmax), 1.0, 0.0)
+        mask = jnp.expand_dims(mask, 0)  # broadcast to layers
+
+        ring_h = jax.random.normal(forcing_key, state.dqhdt.shape) * mask
+        ring = jnp.fft.irfft2(ring_h, s=state.dqhdt.shape[-2:])
+        ring = ring - jnp.mean(ring, axis=(-2, -1), keepdims=True)  # zero-mean
+        ring = ring / jnp.std(ring, axis=(-2, -1), keepdims=True)  # unit std
+
+        dq = self.forcing_amplitude * ring
+        dqhdt = state.dqhdt + dq
+        return state.update(dqhdt=dqhdt)
+    
+    def _do_wind_forcing(self, state: states.FullState):
+        """Apply wind forcing to the PV tendency.
+
+        Parameters
+        ----------
+        state : states.FullState
+            The current full state
+            
+        Returns
+        -------
+        states.FullState
+            State with forcing added to dqhdt
+        """
+        # Compute wind forcing based on model parameters
+        wind_forcing = 0 # ill do this later 
+        dqhdt = state.dqhdt + wind_forcing
+        return state.update(dqhdt=dqhdt)
+    
 
     @abstractmethod
     def _apply_a_ph(self, state: states.FullState) -> jax.Array:

@@ -8,7 +8,6 @@ from model.core.kernel import Kernel
 import model.core.states as states
 import model.utils.pytree as Pytree
 from model.core.grid import Grid
-from model.utils.forcing_diagnostics import tune_forcing_parameters
 
 logger = logging.getLogger(__name__)
 
@@ -35,15 +34,14 @@ class QGM(Kernel):
         rek = params.get('rek')
         kmin = params.get('kmin')
         kmax = params.get('kmax')
-        forcing_center = params.get('forcing_center', 6.5)
-        forcing_width = params.get('forcing_width', 2.0)
         forcing_amplitude = params.get('forcing_amplitude', 0.0)
-        seed = params.get('seed', 0)
+        self.seed = seed = params.get('seed', 0)
         self.beta = params.get('beta', 10.0)
         self.Lx = params.get('Lx', 6.28)
         self.Ly = params.get('Ly', self.Lx)
         self._Lz = params.get('Lz', 500)
         self.filterfac = params.get('filterfac', 23.6)
+        dt = params.get('dt', 1.0)
         self.g = params.get('g', 9.81)
         self.f = params.get('f', None)
         self.rd = params.get('rd', 15.0)
@@ -58,10 +56,9 @@ class QGM(Kernel):
             rek=rek,
             kmin=kmin,
             kmax=kmax,
-            forcing_center=forcing_center,
-            forcing_width=forcing_width,
             forcing_amplitude=forcing_amplitude,
             seed=seed,
+            dt=dt,
         )
 
         # Precompute spectral grids and dealias filter to avoid recomputation
@@ -73,10 +70,8 @@ class QGM(Kernel):
         self._KX, self._KY = jnp.meshgrid(self._kx, self._ky)
         self._Kmag = jnp.sqrt(self._KX ** 2 + self._KY ** 2)
         self._K2 = self._Kmag ** 2        
-        # Compute forcing mask based on forcing type
-        self._update_forcing_mask()
+        # I removed an update from the forcing mask here 
         # Precompute two-layer elliptic inversion matrix A such that ph = A qh.
-        # The (k,l)=(0,0) mode is singular and is explicitly set to zero.
         det = self._K2 * (self._K2 + self.F1 + self.F2)
         det_inv = jnp.where(det != 0, 1.0 / det, 0.0)
         det_inv = det_inv.at[0, 0].set(0.0)
@@ -93,15 +88,6 @@ class QGM(Kernel):
         wvx = jnp.sqrt((self._KX * grid.dx) ** 2 + (self._KY * grid.dx) ** 2)
         exact_filter = jnp.exp(-self.filterfac * (wvx - cphi) ** 4)
         self._exact_step_filter = jnp.where(wvx <= cphi, 1.0, exact_filter)
-
-    def _update_forcing_mask(self):
-        """Recompute the spectral forcing mask from the current forcing parameters."""
-        k_diff = jnp.abs(self.Kmag - self.forcing_center)
-        self.forcing_mask = jnp.exp(-(k_diff / self.forcing_width) ** 2)
-
-    def _tune_forcing_parameters(self, state, n_jets, verbose=False):
-        """Choose forcing parameters that target the requested jet count while staying stable."""
-        return tune_forcing_parameters(self, state, n_jets, verbose=verbose)
 
     def initialise(
         self,
@@ -123,11 +109,8 @@ class QGM(Kernel):
         if not tune:
             return base_state
 
-        self._tune_forcing_parameters(base_state, n_jets, verbose=verbose)
-
         U_target = self.beta * (self.Ly / (jnp.pi * n_jets))**2
         U_rms = self.rhines_length(base_state)[1] # i actually think im not using rhines here despite the name - just U_rms
-
 
         scaler = U_target / (U_rms + 1e-12)
         qh = base_state.qh * scaler
@@ -139,15 +122,23 @@ class QGM(Kernel):
         if verbose:
             suggest_dt = self.estimate_cfl_dt(scaled_state)
             logger.info(f"Suggested initial dt for stability: {float(suggest_dt):.3f}")
-
         return scaled_state
     
     def set_initial(self, qh, _q_shape=None):
         """Set the initial state from a given spectral PV array `qh`."""
         return states.State(qh=qh, _q_shape=_q_shape)
     
-    def get_full_state(self, state, forcing_key=None):
-        return super().get_full_state(state, forcing_key=forcing_key)   
+    def get_full_state(self, state, forcing_key=None, dt=None, tc=None):
+        if forcing_key is None and tc is not None:
+            base_key = jax.random.PRNGKey(self.seed)
+            forcing_key = jax.random.fold_in(base_key, tc)
+        return super().get_full_state(state, forcing_key=forcing_key, dt=dt, tc=tc)
+
+    def get_updates(self, state, forcing_key=None, dt=None, tc=None):
+        if forcing_key is None and tc is not None:
+            base_key = jax.random.PRNGKey(self.seed)
+            forcing_key = jax.random.fold_in(base_key, tc)
+        return super().get_updates(state, forcing_key=forcing_key, dt=dt, tc=tc)
 
     def get_grid(self) -> Grid:
         """Retrieve the grid for this model."""
@@ -162,7 +153,7 @@ class QGM(Kernel):
     def _get_dealias_filter(self, alpha=36, p=8):
         """Apply a precomputed dealias mask from the grid if available.
         """
-        # fall back to precomputed mask when using default params
+        # fall back to precomputed dealias mask when using default params
         if alpha == 36 and p == 8:
             return self._dealias_mask
         return jnp.exp(-alpha * (self.Kmag / jnp.max(self.Kmag)) ** p)

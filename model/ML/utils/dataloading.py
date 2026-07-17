@@ -351,7 +351,7 @@ class ZarrDataLoader:
     """
     
     def __init__(self, run_dir: str):
-        """Initialize the data loader.
+        """initialise the data loader.
         
         Parameters
         ----------

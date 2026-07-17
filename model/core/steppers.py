@@ -73,11 +73,11 @@ class StepperState(typing.Generic[P]):
 class Stepper(abc.ABC):
     dt: float
 
-    def initialize_stepper_state(self, state):
+    def initialise_stepper_state(self, state):
         """Wrap an existing `state` from a model in a
         :class:`StepperState` to prepare it for time stepping.
 
-        This initializes a new :class:`StepperState` from a time of
+        This initialises a new :class:`StepperState` from a time of
         :pycode:`0`.
 
         Parameters
@@ -121,10 +121,10 @@ class SteppedModel:
 
     def initialise(self, key, *args, **kwargs):
         model_state = self.model.initialise(key, *args, **kwargs)
-        return self.initialize_stepper_state(model_state)
+        return self.initialise_stepper_state(model_state)
 
-    def initialize_stepper_state(self, state, /):
-        return self.stepper.initialize_stepper_state(state)
+    def initialise_stepper_state(self, state, /):
+        return self.stepper.initialise_stepper_state(state)
 
     def step_model(self, stepper_state, /):
         import logging
@@ -134,91 +134,34 @@ class SteppedModel:
         
         # Generate forcing key from timestep counter if forcing is enabled
         forcing_key = None
-        has_forcing = hasattr(self.model, 'forcing_amplitude') and self.model.forcing_amplitude is not None
+        has_forcing = hasattr(self.model, 'forcing_amplitude') and self.model.forcing_amplitude != 0.0
         if has_forcing:
             # Create deterministic key from seed and timestep
             base_key = jax.random.PRNGKey(self.model.seed)
             forcing_key = jax.random.fold_in(base_key, stepper_state.tc)
-        
-        # Pre-step diagnostics
-        state_before = stepper_state.state
-        ke_before = None
-        has_nan_before = False
-        
-        # Check state validity before stepping (non-JAX for diagnostics)
-        try:
-            qh_before = np.asarray(state_before.qh)
-            has_nan_before = np.any(np.isnan(qh_before)) or np.any(np.isinf(qh_before))
-            max_qh_before = float(np.max(np.abs(qh_before)))
-            
-            # Compute kinetic energy if method exists
-            if hasattr(self.model, 'compute_kinetic_energy'):
-                ke_before = float(self.model.compute_kinetic_energy(state_before))
-        except Exception as e:
-            logger.debug(f"Pre-step diagnostics error: {e}")
-        
+
         # Apply model step
         new_stepper_state = self.stepper.apply_updates(
             stepper_state,
-            self.model.get_updates(stepper_state.state, forcing_key=forcing_key),
+            self.model.get_updates(
+                stepper_state.state,
+                forcing_key=forcing_key,
+                dt=self.stepper.dt,
+                tc=stepper_state.tc,
+            ),
         )
         postprocessed_state = self.model.dealias(new_stepper_state.state)
         postprocessed_state = self.model.apply_exact_step_filter(postprocessed_state)
         new_stepper_state = new_stepper_state.update(state=postprocessed_state)
-        
-        # Post-step diagnostics
-        state_after = new_stepper_state.state
-        has_nan_after = False
-        ke_after = None
-        
-        try:
-            qh_after = np.asarray(state_after.qh)
-            has_nan_after = np.any(np.isnan(qh_after)) or np.any(np.isinf(qh_after))
-            max_qh_after = float(np.max(np.abs(qh_after)))
-            
-            # Compute kinetic energy after step
-            if hasattr(self.model, 'compute_kinetic_energy'):
-                ke_after = float(self.model.compute_kinetic_energy(state_after))
-            
-            # Log diagnostics periodically
-            log_period = 100
-            if int(stepper_state.tc) % log_period == 0:
-                log_str = f"[Step {int(stepper_state.tc):05d}] KE: "
-                if ke_before is not None and ke_after is not None:
-                    ke_change = (ke_after - ke_before) / (abs(ke_before) + 1e-12) * 100
-                    log_str += f"before={ke_before:.3e}, after={ke_after:.3e}, Δ%={ke_change:.1f}%"
-                    if has_forcing:
-                        log_str += f" [FORCING ACTIVE]"
-                else:
-                    log_str += f"after={ke_after:.3e}" if ke_after else "unable to compute"
-                logger.info(log_str)
-            
-            # Alert if NaN appears
-            if has_nan_after and not has_nan_before:
-                logger.error(
-                    f"[ALERT: NaN DETECTED AT STEP {int(stepper_state.tc)}]\n"
-                    f"  max(|qh|) before: {max_qh_before:.3e}\n"
-                    f"  max(|qh|) after: {max_qh_after:.3e}\n"
-                    f"  KE before: {ke_before:.3e}, after: {ke_after:.3e}\n"
-                    f"  Forcing enabled: {has_forcing}\n"
-                    f"  Forcing amplitude: {self.model.forcing_amplitude}\n"
-                    f"  Grid: nx={self.model.nx}, ny={self.model.ny}"
-                )
-            elif has_nan_before and has_nan_after:
-                logger.warning(f"[Step {int(stepper_state.tc)}] NaN already present, continuing...")
                 
-        except Exception as e:
-            logger.debug(f"Post-step diagnostics error: {e}")
-        
         return new_stepper_state
 
-    def get_full_state(self, stepper_state, forcing_key):
-        # Generate forcing key for diagnostics if forcing is enabled
-        forcing_key = None
-        if hasattr(self.model, 'forcing_amplitude') and self.model.forcing_amplitude is not None:
-            base_key = jax.random.PRNGKey(self.model.seed)
-            forcing_key = jax.random.fold_in(base_key, stepper_state.tc)
-        return self.model.get_full_state(stepper_state.state, forcing_key=forcing_key)
+    def get_full_state(self, stepper_state):
+        return self.model.get_full_state(
+            stepper_state.state,
+            dt=self.stepper.dt,
+            tc=stepper_state.tc,
+        )
 
 
 def _nostep_tree_map(func, tree, *rest):
@@ -284,11 +227,11 @@ class AB3Stepper(Stepper):
         Numerical time step
     """
 
-    def initialize_stepper_state(self, state: P) -> AB3State[P]:
+    def initialise_stepper_state(self, state: P) -> AB3State[P]:
         """Wrap an existing `state` from a model in a
         :class:`StepperState` to prepare it for time stepping.
 
-        This initializes a new :class:`StepperState` from a time of
+        This initialises a new :class:`StepperState` from a time of
         :pycode:`0`.
 
         Parameters
@@ -302,7 +245,7 @@ class AB3Stepper(Stepper):
             The wrapped state. Note this will be a subclass of
             :class:`StepperState` appropriate for this time stepper.
         """
-        base_state = super().initialize_stepper_state(state)
+        base_state = super().initialise_stepper_state(state)
         dummy_update: P = _dummy_step_init(state)
         return AB3State(
             state=base_state.state,
@@ -397,8 +340,8 @@ class CNABStepper(Stepper):
       and JAX-friendly without extra model hooks.
     """
 
-    def initialize_stepper_state(self, state: P) -> AB3State[P]:
-        base_state = super().initialize_stepper_state(state)
+    def initialise_stepper_state(self, state: P) -> AB3State[P]:
+        base_state = super().initialise_stepper_state(state)
         dummy_update: P = _dummy_step_init(state)
         return AB3State(
             state=base_state.state,

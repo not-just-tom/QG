@@ -10,8 +10,6 @@ params:
   nx: 32
   Lx: 1000000
   beta: 0.00000000001
-  kmin: 4.0 
-  kmax: 10.0
   nz: 1
   # multi-layer model parameters (only used if nz>1)
   Lz: 500
@@ -22,9 +20,9 @@ params:
   U2: 0.0
   hr_nx: 512
   # Stochastic forcing parameters
-  forcing_center: 6.5   # Center wavenumber for annulus forcing
-  forcing_width: 2.0    # Width parameter for annulus forcing (Gaussian std)
-  forcing_amplitude: 0.0001 # None for nothing 
+  kmin: 4.0   # inner ring forcing 
+  kmax: 10.0   # outer ring forcing 
+  forcing_amplitude: 0.0 # 0.0 for no stochastic forcing 
 
 plotting:
   nsteps: 2000

@@ -5,9 +5,10 @@ import matplotlib.gridspec as gridspec
 import os
 import json
 import importlib
+import traceback
 import model.utils.diagnostics
 importlib.reload(model.utils.diagnostics)
-from model.utils.diagnostics import build_diagnostic
+from model.utils.diagnostics import build_diagnostic, QuadGifDiagnostic
 
 
 def metadata_matches(requested: dict, stored: dict) -> bool:
@@ -123,6 +124,9 @@ class Plotter:
         if "grid" not in self.trajs:
             self.trajs["grid"] = self._make_grid()
 
+    def _make_grid(self):
+        return None
+
     def plot(self):
         os.makedirs(self.out_dir, exist_ok=True)
 
@@ -134,12 +138,28 @@ class Plotter:
                 print(f"Saved {out_path}")
             except Exception as e:
                 print(f"{name} failed: {e}")
+                traceback.print_exc()
 
 
     
 # =====================================================================
 # This was legacy code and idk if it works or not but it stays for now
 # =====================================================================
+def make_quad_gif(truth, pred, sgs_q=None, zero=None, out_file='quad.gif', cadence=10,
+                  target_sgs=None, teacher_forced_sgs=None):
+    """Compatibility wrapper for the newer diagnostic-based quad GIF plot."""
+    trajs = {
+        "truth": truth,
+        "pred_frames": pred,
+        "sgs": sgs_q,
+        "zero_frames": zero,
+        "target_sgs": target_sgs,
+        "teacher_forced_sgs": teacher_forced_sgs,
+    }
+    QuadGifDiagnostic().run(trajs, out_file, cadence)
+    return out_file
+
+
 def gif_that(q_state, out_file='plotting.gif', cadence=100):
     'just a simple plotting'
     q_state = q_state[::cadence] 

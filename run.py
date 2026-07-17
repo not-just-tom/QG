@@ -302,10 +302,7 @@ def run(cfg):
             'grid': hr_model.model.get_grid()
         }
         
-        # Override config to plot only PV
         cfg_plot = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
-        cfg_plot.plotting.plot = ['PV']
-        
         Plotter(cfg_plot, trajectories=trajectories, out_dir=out_dir, cadence=cadence).plot()
         return
 
@@ -340,7 +337,7 @@ def run(cfg):
     else:
         raise ValueError(f"Unsupported optimiser: {cfg.ml.optimiser}. Supported options are 'Adam' and 'AdamW'.")
     
-    # Initialize optimiser state from template and, if available, map saved optimiser leaves into it
+    # Initialise optimiser state from template and, if available, map saved optimiser leaves into it
     template_optim_state = optim.init(eqx.filter(closure, eqx.is_array))
     if 'loaded_optim' in locals() and loaded_optim is not None:
         try:
@@ -699,7 +696,7 @@ def run(cfg):
     
     # output dir 
     outbase = os.path.join(cfg.filepaths.out_dir)
-    out_dir, found = find_output_dir(outbase, params, model_type, metadata=meta, id=id)
+    out_dir, found = find_output_dir(outbase, params, model_type, metadata=meta, id=str(id))
     if found:
         logger.info(f"Found existing output directory with matching parameters")
     else:
