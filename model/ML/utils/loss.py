@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+import re
 import logging
 logger = logging.getLogger(__name__)
 
@@ -7,7 +8,7 @@ logger = logging.getLogger(__name__)
 def build_loss(loss):
     """Build loss function from config string or list of strings.
     
-    If loss is a list, returns a combined loss that sums individual losses.
+    If loss is a weighted combo, check the elements are valid then combine.
     """
     registry = {
         "mse": MSELoss,
@@ -18,15 +19,12 @@ def build_loss(loss):
         "maddison": maddison_loss,
     }
 
-    # Handle list of losses (combined loss)
-    if isinstance(loss, list):
-        loss_fns = [registry.get(l) for l in loss]
-        if any(fn is None for fn in loss_fns):
-            invalid = [l for l, fn in zip(loss, loss_fns) if fn is None]
-            raise ValueError(
-                f"Unknown loss choice(s) {invalid}, available: {sorted(registry.keys())}"
-            )
-        logger.info(f"Using combined loss functions: {loss}")
+    # Combination losses 
+    extracted_elements = re.findall(r"[a-zA-Z]+", loss)
+    all_valid = all(elem in registry for elem in extracted_elements)
+    if all_valid:
+        loss_fns = [registry[elem] for elem in extracted_elements]
+        logger.info(f"Using combined loss functions: {extracted_elements}")
         
         def combined_loss(residual_q, lr_model):
             """Combine multiple loss functions."""
@@ -36,17 +34,10 @@ def build_loss(loss):
             return total_loss
         
         return combined_loss
-    
-    # Handle single loss string
-    cls = registry.get(loss)
-    if cls is None:
+    else:
         raise ValueError(
-            f"Unknown loss choice '{loss}', available: {sorted(registry.keys())}"
+            f"Unknown loss choice(s) {extracted_elements}, available: {sorted(registry.keys())}"
         )
-    logger.info(f"Using loss function: {loss}")
-
-    return cls
-
 
 def MSELoss(residual_q, lr_model=None):
     """MSE loss: mean squared distance between predicted and target states.
@@ -79,8 +70,6 @@ def SpectralEnergyLoss(residual_q, lr_model):
     Returns:
         Per-sample loss if batch dimension present, otherwise scalar.
     """
-    # Store original shape for batch handling
-    is_batched = residual_q.ndim == 5
     
     # Convert residual to spectral space
     # rfftn automatically handles multi-dimensional inputs

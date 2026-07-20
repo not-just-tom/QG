@@ -94,12 +94,12 @@ architectures:
     closure_scale: 0.2
   resnet:
     learning_rate: 0.0001 #[0.0001, 0.0005]
-    loss: mse #['mse', 'maddison']
+    loss: ['mse', 'mae', 'spectral', 'strain', 'multistep', 'maddison']
     nlayers: 7 #[3, 5, 7]
     width: 64 #[32, 64]
     kernel_size: 3  #[3, 5]
     activation: 'elu'
-    closure_scale: 0.4 #[0.05, 0.1, 0.2, 0.4] 
+    closure_scale: 0.2 #[0.05, 0.1, 0.2, 0.4] 
   zero:
     loss: mse
 
