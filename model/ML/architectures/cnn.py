@@ -6,6 +6,7 @@ import equinox as eqx
 class CNN(eqx.Module):
     """Configurable CNN closure."""
     layers: list
+    ml = True
 
     def __init__(
         self,

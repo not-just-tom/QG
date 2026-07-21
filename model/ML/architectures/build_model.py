@@ -6,6 +6,7 @@ import model.ML.architectures.fno
 import model.ML.architectures.diffusion
 import model.ML.architectures.resnet
 import model.ML.architectures.mlp
+import model.ML.architectures.leith
 importlib.reload(model.ML.architectures.zero)
 importlib.reload(model.ML.architectures.cnn)
 importlib.reload(model.ML.architectures.unet)
@@ -13,6 +14,7 @@ importlib.reload(model.ML.architectures.fno)
 importlib.reload(model.ML.architectures.diffusion)
 importlib.reload(model.ML.architectures.resnet)
 importlib.reload(model.ML.architectures.mlp)
+importlib.reload(model.ML.architectures.leith)
 from model.ML.architectures.cnn import CNN
 from model.ML.architectures.zero import ZeroModel
 from model.ML.architectures.unet import UNet
@@ -20,6 +22,7 @@ from model.ML.architectures.fno import FNO
 from model.ML.architectures.diffusion import Diffusion
 from model.ML.architectures.resnet import ResNet
 from model.ML.architectures.mlp import MLP
+from model.ML.architectures.leith import LeithClosure
 from model.ML.utils.utils import module_to_single
 import equinox as eqx
 import numpy as np
@@ -27,6 +30,9 @@ import jax
 import jax.numpy as jnp
 import logging
 logger = logging.getLogger(__name__)
+
+def _normalize(name):
+    return str(name).strip().lower()
 
 def closure_combiner(
     state,
@@ -41,23 +47,23 @@ def closure_combiner(
     """
     closure = eqx.combine(closure_params, static_closure_obj)
     q = state.q
-    if q_mean is None or q_std is None:
-        q_in = q
+
+    if getattr(closure, 'ml', True):
+        # ML closure: normalize input and output if mean/std provided
+        if q_mean is None or q_std is None:
+            q_in = q
+        else:
+            q_in = (q - q_mean) / (q_std + 1e-6)
+
+        dq_increment = closure(q_in.astype(jnp.float32)).astype(q.dtype)
+
+        if dq_mean is not None and dq_std is not None:
+            dq_increment = (dq_increment * dq_std) + dq_mean
     else:
-        q_in = (q - q_mean) / (q_std + 1e-6)
+        dq_increment = closure(state).astype(q.dtype)
+    return dq_increment, closure_params
 
-    dq_increment = closure(q_in.astype(jnp.float32)).astype(q.dtype)
-
-    if dq_mean is not None and dq_std is not None:
-        dq_increment = (dq_increment * dq_std) + dq_mean
-
-    return dq_increment.astype(q.dtype), closure_params
-
-
-def _normalize(name):
-    return str(name).strip().lower()
-
-
+    
 def _get_arch_params(cfg, arch_name):
     # Support multiple cfg shapes: dict-like, attribute-style, or OmegaConf
     arch_cfg = {}
@@ -88,7 +94,7 @@ def _get_arch_params(cfg, arch_name):
 
     return {}
 
-def build_closure(cfg=None, loaded_leaves=None, model_type=None, arch_params=None):
+def build_closure(cfg=None, loaded_leaves=None):
     """Build a closure model, optionally loading from saved parameters.
     
     Args:
@@ -108,17 +114,11 @@ def build_closure(cfg=None, loaded_leaves=None, model_type=None, arch_params=Non
         'diffusion': Diffusion,
         'resnet': ResNet,
         'mlp': MLP,
+        'leith': LeithClosure,
     }
 
-    # Determine architecture name and parameters
-    if cfg is not None:
-        arch_name = cfg.ml.model_type
-        arch_params_to_use = _get_arch_params(cfg, arch_name)
-    elif model_type is not None:
-        arch_name = model_type
-        arch_params_to_use = arch_params or {}
-    else:
-        raise ValueError("Either cfg or model_type must be provided")
+    arch_name = cfg.ml.model_type
+    arch_params_to_use = _get_arch_params(cfg, arch_name)
     
     # Get model class
     cls = registry.get(_normalize(arch_name))

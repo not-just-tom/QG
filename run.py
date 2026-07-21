@@ -635,7 +635,7 @@ def run(cfg):
 
     # === validation & diagnostics ===
     truth_traj = data_loader.get_trajectory(n_epochs)  # shape (time, layers, ny, nx)
-    available_rollout_steps = int(truth_traj.shape[0]) - 1
+    available_rollout_steps = int(truth_traj.shape[0])
     available_rollout_days = available_rollout_steps * low_res_dt / (24.0 * 3600.0)
     effective_rollout_steps = min(nsteps, available_rollout_steps)
     effective_rollout_days = effective_rollout_steps * low_res_dt / (24.0 * 3600.0)

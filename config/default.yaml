@@ -36,7 +36,7 @@ plotting:
 
 ml:
   enabled: true
-  model_type: resnet
+  model_type: leith
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 3
@@ -100,6 +100,9 @@ architectures:
     kernel_size: 3  #[3, 5]
     activation: 'elu'
     closure_scale: 0.2 #[0.05, 0.1, 0.2, 0.4] 
+  leith:
+    leith_coeff: 0.1
+    loss: mse
   zero:
     loss: mse
 

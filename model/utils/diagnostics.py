@@ -99,7 +99,7 @@ class LossDiagnostic(Diagnostic):
             ax.plot(np.arange(1, len(test) + 1), test, label="test")
         if zero.size:
             # plot average zero loss per curriculum stage
-            x = np.arange(0, len(zero) + 1, max(1, int(n_epochs)))
+            x = np.arange(1, len(zero) + 1, max(1, int(n_epochs)))
             y = [np.mean(zero[i:i + max(1, int(n_epochs))]) for i in x]
             ax.step(x, y, label="zero model", linestyle="--", color="C2")
 

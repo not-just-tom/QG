@@ -16,7 +16,7 @@ def _generic_irfftn(a, shape):
 @Pytree.register_pytree_dataclass
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class State:
-    """Holds the evolving state of the QG model for JAX-functional stepping."""
+    """Holds the evolving state of the QG model for JAX-functional stepping.""" # i think this first bit should be updated
     qh: jnp.ndarray
     _q_shape: tuple[int, int] = dataclasses.field(
         metadata={"pyqg_jax": {"static": True}}

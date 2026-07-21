@@ -327,56 +327,6 @@ class QGM(Kernel):
         dt = jnp.asarray(cfl, dtype=U_rms.dtype) * jnp.asarray(self.dx, dtype=U_rms.dtype) / (jnp.abs(U_rms) + 1e-12)
         return dt
 
-    def compute_kinetic_energy(self, state: states.State) -> jnp.ndarray:
-        """Compute total domain-averaged kinetic energy.
-        
-        Returns a JAX scalar representing the mean KE = 0.5 * (u^2 + v^2)
-        """
-        full = self.get_full_state(state)
-        u = full.u
-        v = full.v
-        ke = jnp.mean(0.5 * (u ** 2 + v ** 2))
-        return ke
-
-    def compute_energy_spectrum(self, state: states.State) -> jnp.ndarray:
-        """Compute kinetic energy spectrum E(k) in spectral space.
-        
-        Returns shape (nz, ny, nx//2+1) with energy per wavenumber mode.
-        E(k) = 0.5 * (|uh|^2 + |vh|^2)
-        """
-        full = self.get_full_state(state)
-        uh = full.uh
-        vh = full.vh
-        energy_spectrum = 0.5 * (jnp.abs(uh) ** 2 + jnp.abs(vh) ** 2)
-        return energy_spectrum
-
-    def get_forcing_scale_factor(self, state: states.State, target_energy_fraction: float = 0.1) -> jnp.ndarray:
-        """Compute a normalization factor for forcing to maintain energy balance.
-        
-        This returns a scale factor such that the forcing amplitude is proportional to
-        the system's initial kinetic energy. This prevents forcing from overwhelming
-        or being negligible for different resolutions and initial conditions.
-        
-        Parameters
-        ----------
-        state : states.State
-            Current state of the system
-        target_energy_fraction : float
-            Target fraction of initial energy to be added per step by forcing.
-            Smaller values = weaker forcing. Default 0.1 (10% per step is aggressive).
-            
-        Returns
-        -------
-        scale_factor : jax.Array
-            Scalar in [0, inf) used to multiply forcing_amplitude
-        """
-        ke = self.compute_kinetic_energy(state)
-        # Avoid division by zero: if KE is very small, use a minimum scale
-        safe_ke = jnp.where(ke > 1e-12, ke, 1e-12)
-        # Scale factor: larger KE → larger scale factor (forcing scales with energy)
-        scale_factor = jnp.sqrt(safe_ke) / jnp.sqrt(target_energy_fraction + 1e-12)
-        return scale_factor
-
     @classmethod
     def from_params(cls, params):
         """Factory method to create `QGM` from a params dict.

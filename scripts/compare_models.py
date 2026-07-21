@@ -72,7 +72,7 @@ def load_model_from_closure_dir(closure_dir):
     arch_params = metadata.get("training", {}).get("model_arch", {})
     
     # Build closure with loaded parameters
-    closure = build_closure(
+    closure = build_closure( # i made this redundant by removing the model_type and arch_params inputs. 
         cfg=None,
         loaded_leaves=loaded_params_leaves,
         model_type=model_type,
