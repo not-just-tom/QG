@@ -77,6 +77,8 @@ def load_forced_model(
             q_std=q_std,
             dq_mean=dq_mean,
             dq_std=dq_std,
+            dt=dt_arr,
+            model=model,
         )
         # Closure network predicts a per-step increment dQ; the parameterization
         # wrapper expects a tendency dQ/dt to add to model.get_updates(...).

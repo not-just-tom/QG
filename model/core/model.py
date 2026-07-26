@@ -121,7 +121,9 @@ class QGM(Kernel):
         scaled_state = base_state.update(qh=qh)
         if verbose:
             suggest_dt = self.estimate_cfl_dt(scaled_state)
+            suggest_dx = self.estimate_kolmogorov_length(scaled_state)
             logger.info(f"Suggested initial dt for stability: {float(suggest_dt):.3f}")
+            logger.info(f'Suggested initial lengthscale for DNS simulation {float(suggest_dx):.3f}')
         return scaled_state
     
     def set_initial(self, qh, _q_shape=None):
@@ -326,6 +328,24 @@ class QGM(Kernel):
         # Return a JAX scalar so this function remains safe under jit/vmap.
         dt = jnp.asarray(cfl, dtype=U_rms.dtype) * jnp.asarray(self.dx, dtype=U_rms.dtype) / (jnp.abs(U_rms) + 1e-12)
         return dt
+
+    def estimate_kolmogorov_length(self, state: states.State):
+        """Estimate a Kolmogorov lengthscale from a `State` by computing the enstrophy dissipation rate.
+
+        Returns Lk as a JAX scalar (trace-safe under jit/vmap).
+        """
+        full = self.get_full_state(state)
+        u = full.u
+        v = full.v
+        q = full.q
+        # Compute enstrophy dissipation rate: epsilon = nu * <|grad q|^2>
+        grad_qx = jnp.gradient(q, axis=-1) / self.dx
+        grad_qy = jnp.gradient(q, axis=-2) / self.dy
+        grad_q_sq = grad_qx ** 2 + grad_qy ** 2
+        epsilon = self.rek * jnp.mean(grad_q_sq)
+        # Estimate Kolmogorov lengthscale: Lk ~ (nu^3 / epsilon)^(1/4)
+        Lk = (self.rek ** 3 / (epsilon + 1e-12)) ** 0.25
+        return Lk
 
     @classmethod
     def from_params(cls, params):

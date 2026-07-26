@@ -220,6 +220,8 @@ def make_validation_epoch(lr_model, dt, loss_fn, closure_scale=0.1):
                 q_std=q_std,
                 dq_mean=dq_mean,
                 dq_std=dq_std,
+                dt=dt,
+                model=lr_model,
             )
 
             next_state = forced_model.step_model(carry)
@@ -302,6 +304,8 @@ def make_validation_epoch(lr_model, dt, loss_fn, closure_scale=0.1):
                 state, closure_params, closure_static,
                 q_mean=q_mean, q_std=q_std,
                 dq_mean=dq_mean, dq_std=dq_std,
+                dt=dt,
+                model=lr_model,
             )
             return dq_pred
         

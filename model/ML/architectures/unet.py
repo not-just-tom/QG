@@ -2,7 +2,6 @@ import jax
 import jax.numpy as jnp
 import equinox as eqx
 
-
 class ConvBlock(eqx.Module):
     conv1: eqx.nn.Conv2d
     conv2: eqx.nn.Conv2d

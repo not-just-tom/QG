@@ -7,6 +7,7 @@ warnings.filterwarnings(
 )
 import importlib 
 import os
+import sys
 from omegaconf import OmegaConf
 
 # Base repo paths
@@ -305,7 +306,6 @@ def run(cfg):
         cfg_plot = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
         Plotter(cfg_plot, trajectories=trajectories, out_dir=out_dir, cadence=cadence).plot()
         return
-
 
     # === closure building === 
     # Build training/sweep metadata to avoid accidentally reusing closures from different sweeps

@@ -43,6 +43,31 @@ class Kernel(ABC):
         # describe this 
         return state.update(qh=self._dealias*state.qh)
 
+    def spectral_to_real(self, field_h: jax.Array) -> jax.Array:
+        """Transform a spectral field using this model's physical grid."""
+        return states._generic_irfftn(
+            field_h, shape=self.get_grid().real_state_shape
+        )
+
+    def real_to_spectral(self, field: jax.Array) -> jax.Array:
+        """Transform a physical field using the model's FFT convention."""
+        return states._generic_rfftn(field)
+
+    def dealias_spectral(self, field_h: jax.Array) -> jax.Array:
+        """Filter a spectral field after a nonlinear physical-space product.
+
+        The leading dimensions may be layer and/or batch dimensions; the
+        model's two-dimensional mask is broadcast over all of them.
+        """
+        mask = self._dealias.reshape(
+            (1,) * (field_h.ndim - self._dealias.ndim) + self._dealias.shape
+        )
+        return field_h * mask
+
+    def dealiased_product(self, field: jax.Array) -> jax.Array:
+        """Transform and de-alias a nonlinear physical-space product."""
+        return self.dealias_spectral(self.real_to_spectral(field))
+
     def apply_exact_step_filter(self, state: states.State) -> states.State:
         """Apply optional exact post-step spectral damping.
 
@@ -84,6 +109,24 @@ class Kernel(ABC):
         full_state = self._do_stochastic_forcing(full_state, forcing_key)
         full_state = self._do_wind_forcing(full_state)
         return full_state
+
+    def invert_pv(self, state: states.State) -> jax.Array:
+        """Return streamfunction obtained from the model's PV inversion.
+
+        This is intentionally narrower than :meth:`get_full_state`: closures
+        that need only streamfunction do not need to also evaluate advection,
+        friction, or stochastic forcing.
+        """
+        self._state_shape_check(state)
+        real_dtype = jnp.real(state.qh).dtype
+        full_state = states.FullState(
+            state=state,
+            ph=jnp.zeros_like(state.qh),
+            u=jnp.zeros(self.get_grid().real_state_shape, dtype=real_dtype),
+            v=jnp.zeros(self.get_grid().real_state_shape, dtype=real_dtype),
+            dqhdt=jnp.zeros_like(state.qh),
+        )
+        return self._invert(full_state).ph
 
     def get_updates(self, state: states.State, forcing_key: jax.Array = None, dt: float = None, tc: jax.Array = None) -> states.State:
         """Get tendency updates for time-stepping.

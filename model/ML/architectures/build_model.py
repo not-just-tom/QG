@@ -7,6 +7,7 @@ import model.ML.architectures.diffusion
 import model.ML.architectures.resnet
 import model.ML.architectures.mlp
 import model.ML.architectures.leith
+import model.ML.architectures.biharmonic
 importlib.reload(model.ML.architectures.zero)
 importlib.reload(model.ML.architectures.cnn)
 importlib.reload(model.ML.architectures.unet)
@@ -15,6 +16,7 @@ importlib.reload(model.ML.architectures.diffusion)
 importlib.reload(model.ML.architectures.resnet)
 importlib.reload(model.ML.architectures.mlp)
 importlib.reload(model.ML.architectures.leith)
+importlib.reload(model.ML.architectures.biharmonic)
 from model.ML.architectures.cnn import CNN
 from model.ML.architectures.zero import ZeroModel
 from model.ML.architectures.unet import UNet
@@ -23,6 +25,7 @@ from model.ML.architectures.diffusion import Diffusion
 from model.ML.architectures.resnet import ResNet
 from model.ML.architectures.mlp import MLP
 from model.ML.architectures.leith import LeithClosure
+from model.ML.architectures.biharmonic import BiharmonicClosure
 from model.ML.utils.utils import module_to_single
 import equinox as eqx
 import numpy as np
@@ -42,6 +45,8 @@ def closure_combiner(
     q_std=None,
     dq_mean=None,
     dq_std=None,
+    dt=None,
+    model=None,
 ):
     """Evaluate closure and return per-step PV increment dQ plus params.
     """
@@ -60,7 +65,10 @@ def closure_combiner(
         if dq_mean is not None and dq_std is not None:
             dq_increment = (dq_increment * dq_std) + dq_mean
     else:
-        dq_increment = closure(state).astype(q.dtype)
+        # Analytical closures derive any required diagnostic fields directly
+        # from the model state.  They return a per-step increment, matching
+        # the convention used by the ML closures above.
+        dq_increment = closure(state, model=model, dt=dt).astype(q.dtype)
     return dq_increment, closure_params
 
     
@@ -115,6 +123,7 @@ def build_closure(cfg=None, loaded_leaves=None):
         'resnet': ResNet,
         'mlp': MLP,
         'leith': LeithClosure,
+        'biharmonic': BiharmonicClosure,
     }
 
     arch_name = cfg.ml.model_type
@@ -159,4 +168,3 @@ def build_closure(cfg=None, loaded_leaves=None):
         closure_model = closure_template
 
     return module_to_single(closure_model)
-        
