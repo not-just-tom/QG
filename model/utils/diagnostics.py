@@ -236,6 +236,11 @@ class KESpectrumDiagnostic(Diagnostic):
         _, E_pred_avg = compute_avg_spectrum(q_pred)
         _, E_zero_avg = compute_avg_spectrum(zero)
 
+        # compute key wavelength values 
+        #k_forcing = 
+        #k_beta = 
+        #k_Rhines = 
+
         # --- compute per-frame spectra ---
         def compute_frame_spectra(q):
             try:
@@ -253,13 +258,11 @@ class KESpectrumDiagnostic(Diagnostic):
 
         E_truth_frames = compute_frame_spectra(q_truth)
         E_pred_frames = compute_frame_spectra(q_pred)
-        E_zero_frames = compute_frame_spectra(zero)
         E_truth_std = E_truth_frames.std(axis=0)
         E_pred_std = E_pred_frames.std(axis=0)
 
         # --- plot ---
         fig, ax = plt.subplots()
-
         ax.loglog(k[1:], E_truth_avg[1:], label="Truth", color="k")
         if E_pred_avg is not None:
             ax.loglog(k[1:], E_pred_avg[1:], label="ML", linestyle="--", color="C1")

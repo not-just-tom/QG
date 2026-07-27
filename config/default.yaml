@@ -8,9 +8,9 @@ filepaths:
 params: 
   seed: 42
   nx: 32
-  Lx: 1000
+  Lx: 1000000
   beta: 0.00000000001
-  nz: 1
+  nz: 2
   # multi-layer model parameters (only used if nz>1)
   Lz: 500
   rek: 7.0e-8 # gamma
@@ -22,7 +22,7 @@ params:
   # Stochastic forcing parameters
   kmin: 4.0   # inner ring forcing 
   kmax: 10.0   # outer ring forcing 
-  forcing_amplitude: 0.0 # 0.0 for no stochastic forcing 
+  forcing_amplitude: 0.00001 # 0.0 for no stochastic forcing 
 
 plotting:
   nsteps: 2000
@@ -30,7 +30,7 @@ plotting:
   spinup: 200
   cadence: 10
   plot: ['loss', 'ke_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
-  auto_dt: true
+  auto_dt: false
   njets: 3
   cfl: 0.5
 

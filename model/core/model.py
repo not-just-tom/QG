@@ -89,14 +89,14 @@ class QGM(Kernel):
         exact_filter = jnp.exp(-self.filterfac * (wvx - cphi) ** 4)
         self._exact_step_filter = jnp.where(wvx <= cphi, 1.0, exact_filter)
 
-    def initialise(
+    def initialise( 
         self,
         key,
         n_jets=None,
         tune=False,
         pseudo=False,
         verbose=False,
-    ):
+    ) -> states.State: 
         """This still needs a lot of work - i need an auto replacing dt with the suggested dt from cfl, 
         and probably change to a energy level ? figure whether i should step the model/filter out some noise later
         """
@@ -126,21 +126,15 @@ class QGM(Kernel):
             logger.info(f'Suggested initial lengthscale for DNS simulation {float(suggest_dx):.3f}')
         return scaled_state
     
-    def set_initial(self, qh, _q_shape=None):
+    def set_initial(self, qh, _q_shape=None) -> states.State: 
         """Set the initial state from a given spectral PV array `qh`."""
         return states.State(qh=qh, _q_shape=_q_shape)
     
-    def get_full_state(self, state, forcing_key=None, dt=None, tc=None):
-        if forcing_key is None and tc is not None:
-            base_key = jax.random.PRNGKey(self.seed)
-            forcing_key = jax.random.fold_in(base_key, tc)
-        return super().get_full_state(state, forcing_key=forcing_key, dt=dt, tc=tc)
+    def get_full_state(self, state: states.State) -> states.FullState:
+        return super().get_full_state(state)
 
-    def get_updates(self, state, forcing_key=None, dt=None, tc=None):
-        if forcing_key is None and tc is not None:
-            base_key = jax.random.PRNGKey(self.seed)
-            forcing_key = jax.random.fold_in(base_key, tc)
-        return super().get_updates(state, forcing_key=forcing_key, dt=dt, tc=tc)
+    def get_updates(self, state: states.State) -> states.State:
+        return super().get_updates(state)
 
     def get_grid(self) -> Grid:
         """Retrieve the grid for this model."""
@@ -152,7 +146,7 @@ class QGM(Kernel):
             Ly=self.Ly,
         )
     
-    def _get_dealias_filter(self, alpha=36, p=8):
+    def _get_dealias_filter(self, alpha=36, p=8) -> jnp.ndarray:
         """Apply a precomputed dealias mask from the grid if available.
         """
         # fall back to precomputed dealias mask when using default params
@@ -287,7 +281,7 @@ class QGM(Kernel):
     def del2(self):
         return (self.delta + 1) ** -1
 
-    def _apply_a_ph(self, state):
+    def _apply_a_ph(self, state: states.State) -> jnp.ndarray:
         qh = state.qh
 
         # find layer axis (size == self.nz)

@@ -131,23 +131,12 @@ class SteppedModel:
         import numpy as np
         
         logger = logging.getLogger(__name__)
-        
-        # Generate forcing key from timestep counter if forcing is enabled
-        forcing_key = None
-        has_forcing = hasattr(self.model, 'forcing_amplitude') and self.model.forcing_amplitude != 0.0
-        if has_forcing:
-            # Create deterministic key from seed and timestep
-            base_key = jax.random.PRNGKey(self.model.seed)
-            forcing_key = jax.random.fold_in(base_key, stepper_state.tc)
 
         # Apply model step
         new_stepper_state = self.stepper.apply_updates(
             stepper_state,
             self.model.get_updates(
                 stepper_state.state,
-                forcing_key=forcing_key,
-                dt=self.stepper.dt,
-                tc=stepper_state.tc,
             ),
         )
         postprocessed_state = self.model.dealias(new_stepper_state.state)
@@ -158,9 +147,7 @@ class SteppedModel:
 
     def get_full_state(self, stepper_state):
         return self.model.get_full_state(
-            stepper_state.state,
-            dt=self.stepper.dt,
-            tc=stepper_state.tc,
+            stepper_state.state
         )
 
 

@@ -207,7 +207,7 @@ def run(cfg):
                     shutil.rmtree(run_dir)
                 raise
             data_loader = ZarrDataLoader(run_dir)
-    else: # the case where nsteps too short so we load trajs and restart from end state to the desired number of steps
+    else: # the case where nsteps too short so we load s and restart from end state to the desired number of steps
         logger.info(f"Found existing data with matching parameters at {run_dir}, but it has insufficient length. Loading trajectories and generating additional steps to reach desired length.")
         data_loader = ZarrDataLoader(run_dir)
         for i in range(len(data_loader)):

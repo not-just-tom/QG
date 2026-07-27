@@ -75,15 +75,13 @@ class Kernel(ABC):
         """
         return state
 
-    def get_full_state(self, state: states.State, forcing_key: jax.Array = None, dt: float = None, tc: jax.Array = None) -> states.FullState:
+    def get_full_state(self, state: states.State) -> states.FullState:
         """Compute full state with all tendencies.
         
         Parameters
         ----------
         state : states.State
             The model state
-        forcing_key : jax.Array, optional
-            PRNG key for stochastic forcing. If None, no forcing applied.
         """
         def _empty_real():
             return jnp.zeros(
@@ -103,6 +101,7 @@ class Kernel(ABC):
             v=_empty_real(),
             dqhdt=_empty_com(),
         )
+        forcing_key = jax.random.fold_in(jax.random.PRNGKey(self.seed), 1/state.qh.sum().astype(int)) # WARNING: this is for small numbers where small numbers ensure 0 every time. For large numbers, this would work the same and lead to forcing the same shape EVERY TIME
         full_state = self._invert(full_state)
         full_state = self._do_advection(full_state)
         full_state = self._do_friction(full_state)
@@ -128,17 +127,15 @@ class Kernel(ABC):
         )
         return self._invert(full_state).ph
 
-    def get_updates(self, state: states.State, forcing_key: jax.Array = None, dt: float = None, tc: jax.Array = None) -> states.State:
+    def get_updates(self, state: states.State) -> states.State:
         """Get tendency updates for time-stepping.
         
         Parameters
         ----------
         state : states.State
             The model state
-        forcing_key : jax.Array, optional
-            PRNG key for stochastic forcing. If None, no forcing applied.
         """
-        full_state = self.get_full_state(state, forcing_key=forcing_key, dt=dt, tc=tc)
+        full_state = self.get_full_state(state)
         return states.State(
             qh=full_state.dqhdt,
             _q_shape=self.get_grid().real_state_shape[-2:],
