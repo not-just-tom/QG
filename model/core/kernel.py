@@ -32,8 +32,8 @@ class Kernel(ABC):
         self.ny = ny
         self.nz = nz
         self.rek = rek
-        self.kmin = kmin
-        self.kmax = kmax
+        self.kmin = kmin*2*jnp.pi/nx
+        self.kmax = kmax*2*jnp.pi/nx
         self.forcing_amplitude = forcing_amplitude
         self.seed = seed
         self.dt = dt
@@ -75,7 +75,9 @@ class Kernel(ABC):
         """
         return state
 
-    def get_full_state(self, state: states.State) -> states.FullState:
+    def get_full_state(
+        self, state: states.State, *, forcing_key: jax.Array | None = None
+    ) -> states.FullState:
         """Compute full state with all tendencies.
         
         Parameters
@@ -101,7 +103,6 @@ class Kernel(ABC):
             v=_empty_real(),
             dqhdt=_empty_com(),
         )
-        forcing_key = jax.random.fold_in(jax.random.PRNGKey(self.seed), 1/state.qh.sum().astype(int)) # WARNING: this is for small numbers where small numbers ensure 0 every time. For large numbers, this would work the same and lead to forcing the same shape EVERY TIME
         full_state = self._invert(full_state)
         full_state = self._do_advection(full_state)
         full_state = self._do_friction(full_state)
@@ -127,7 +128,9 @@ class Kernel(ABC):
         )
         return self._invert(full_state).ph
 
-    def get_updates(self, state: states.State) -> states.State:
+    def get_updates(
+        self, state: states.State, *, forcing_key: jax.Array | None = None
+    ) -> states.State:
         """Get tendency updates for time-stepping.
         
         Parameters
@@ -135,7 +138,7 @@ class Kernel(ABC):
         state : states.State
             The model state
         """
-        full_state = self.get_full_state(state)
+        full_state = self.get_full_state(state, forcing_key=forcing_key)
         return states.State(
             qh=full_state.dqhdt,
             _q_shape=self.get_grid().real_state_shape[-2:],
@@ -319,20 +322,28 @@ class Kernel(ABC):
         if self.forcing_amplitude == 0.0:
             return state
 
+        # A full-state diagnostic has no stochastic sample associated with it.
+        # Time stepping always supplies a key; leaving this as a no-op keeps
+        # diagnostics deterministic and avoids silently reusing a fixed sample.
         if forcing_key is None:
-            raise ValueError("PRNG key must be provided for stochastic forcing.")
+            return state
 
-        mask = jnp.ones_like(self.Kmag)
-        mask = jnp.where((self.Kmag >= self.kmin) & (self.Kmag <= self.kmax), 1.0, 0.0)
-        mask = jnp.expand_dims(mask, 0)  # broadcast to layers
-
-        ring_h = jax.random.normal(forcing_key, state.dqhdt.shape) * mask
-        ring = jnp.fft.irfft2(ring_h, s=state.dqhdt.shape[-2:])
+        mask = (self.Kmag >= self.kmin) & (self.Kmag <= self.kmax)
+        # Generate real white noise on the physical grid, then band-limit it
+        # in spectral space.  This guarantees that the forcing is real and
+        # that its shape is the model's (ny, nx), not its rFFT shape.
+        noise = jax.random.normal(forcing_key, self.get_grid().real_state_shape)
+        ring = self.spectral_to_real(self.real_to_spectral(noise) * mask)
         ring = ring - jnp.mean(ring, axis=(-2, -1), keepdims=True)  # zero-mean
-        ring = ring / jnp.std(ring, axis=(-2, -1), keepdims=True)  # unit std
+        std = jnp.std(ring, axis=(-2, -1), keepdims=True)
+        # An empty annulus has zero variance.  Produce zero forcing in that
+        # case rather than introducing NaNs; the configuration can then be
+        # corrected without destabilising a run.
+        ring = ring / jnp.maximum(std, jnp.finfo(ring.dtype).eps)
 
-        dq = self.forcing_amplitude * ring
-        dqhdt = state.dqhdt + dq
+        # dqhdt is spectral.  Transform the normalized real-space forcing
+        # back before adding it, preserving the rFFT representation.
+        dqhdt = state.dqhdt + self.real_to_spectral(self.forcing_amplitude * ring)
         return state.update(dqhdt=dqhdt)
     
     def _do_wind_forcing(self, state: states.FullState):

@@ -667,7 +667,7 @@ class ZeroComparisonDiagnostic(Diagnostic):
 
 
         # Layout: top row - Truth  | Zero Model
-        # bottom row - ML adjusted | Pred SGS
+        # bottom row - closure adjusted | Pred SGS
         fig, axes = plt.subplots(1, 3, figsize=(12, 8))
         ax_truth = axes[0]
         ax_ml = axes[1]
@@ -676,7 +676,7 @@ class ZeroComparisonDiagnostic(Diagnostic):
         im_truth = ax_truth.imshow(pick(truth_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_truth, vmax=vmax_truth)
         ax_truth.set_title("Truth")
         im_ml = ax_ml.imshow(pick(pred_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_truth, vmax=vmax_truth)
-        ax_ml.set_title("ML adjusted")
+        ax_ml.set_title("closure adjusted")
         im_zero = ax_zero.imshow(pick(zero_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_truth, vmax=vmax_truth)
         ax_zero.set_title("Without closure")
 

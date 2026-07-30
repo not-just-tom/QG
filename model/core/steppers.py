@@ -30,6 +30,7 @@ class StepperState(typing.Generic[P]):
     state: P
     t: jax.Array
     tc: jax.Array
+    rng_key: jax.Array
 
     def update(self, **kwargs):
         """Replace values stored in this state.
@@ -37,7 +38,7 @@ class StepperState(typing.Generic[P]):
         This function produces a *new* state object, containing the
         replacement values.
 
-        The keyword arguments may be any of `state`, `t`, or `tc`.
+        The keyword arguments may be any of `state`, `t`, `tc`, or `rng_key`.
 
         The object this method is called on is not modified.
 
@@ -59,10 +60,10 @@ class StepperState(typing.Generic[P]):
             A copy of this object with the specified values replaced.
         """
         # Check that only valid updates are applied
-        if extra_attrs := (kwargs.keys() - {"state", "t", "tc"}):
+        if extra_attrs := (kwargs.keys() - {"state", "t", "tc", "rng_key"}):
             extra_attr_str = ", ".join(extra_attrs)
             raise ValueError(
-                "invalid state updates, can only update state, t, and tc "
+            "invalid state updates, can only update state, t, tc, and rng_key "
                 f"(not {extra_attr_str})"
             )
         # Perform the update
@@ -73,7 +74,7 @@ class StepperState(typing.Generic[P]):
 class Stepper(abc.ABC):
     dt: float
 
-    def initialise_stepper_state(self, state):
+    def initialise_stepper_state(self, state, *, rng_key=None):
         """Wrap an existing `state` from a model in a
         :class:`StepperState` to prepare it for time stepping.
 
@@ -91,10 +92,13 @@ class Stepper(abc.ABC):
             The wrapped state. Note this will be a subclass of
             :class:`StepperState` appropriate for this time stepper.
         """
+        if rng_key is None:
+            rng_key = jax.random.PRNGKey(0)
         return StepperState(
             state=state,
             t=jnp.float32(0),
             tc=jnp.uint32(0),
+            rng_key=rng_key,
         )
 
     @abc.abstractmethod
@@ -121,10 +125,12 @@ class SteppedModel:
 
     def initialise(self, key, *args, **kwargs):
         model_state = self.model.initialise(key, *args, **kwargs)
-        return self.initialise_stepper_state(model_state)
+        return self.initialise_stepper_state(
+            model_state, rng_key=jax.random.fold_in(key, 1)
+        )
 
-    def initialise_stepper_state(self, state, /):
-        return self.stepper.initialise_stepper_state(state)
+    def initialise_stepper_state(self, state, /, *, rng_key=None):
+        return self.stepper.initialise_stepper_state(state, rng_key=rng_key)
 
     def step_model(self, stepper_state, /):
         import logging
@@ -133,15 +139,19 @@ class SteppedModel:
         logger = logging.getLogger(__name__)
 
         # Apply model step
+        forcing_key, next_rng_key = jax.random.split(stepper_state.rng_key)
         new_stepper_state = self.stepper.apply_updates(
             stepper_state,
             self.model.get_updates(
                 stepper_state.state,
+                forcing_key=forcing_key,
             ),
         )
         postprocessed_state = self.model.dealias(new_stepper_state.state)
         postprocessed_state = self.model.apply_exact_step_filter(postprocessed_state)
-        new_stepper_state = new_stepper_state.update(state=postprocessed_state)
+        new_stepper_state = new_stepper_state.update(
+            state=postprocessed_state, rng_key=next_rng_key
+        )
                 
         return new_stepper_state
 
@@ -214,7 +224,7 @@ class AB3Stepper(Stepper):
         Numerical time step
     """
 
-    def initialise_stepper_state(self, state: P) -> AB3State[P]:
+    def initialise_stepper_state(self, state: P, *, rng_key=None) -> AB3State[P]:
         """Wrap an existing `state` from a model in a
         :class:`StepperState` to prepare it for time stepping.
 
@@ -232,12 +242,13 @@ class AB3Stepper(Stepper):
             The wrapped state. Note this will be a subclass of
             :class:`StepperState` appropriate for this time stepper.
         """
-        base_state = super().initialise_stepper_state(state)
+        base_state = super().initialise_stepper_state(state, rng_key=rng_key)
         dummy_update: P = _dummy_step_init(state)
         return AB3State(
             state=base_state.state,
             t=base_state.t,
             tc=base_state.tc,
+            rng_key=base_state.rng_key,
             _ablevel=jnp.uint8(0),
             _updates=(dummy_update, dummy_update),
         )
@@ -300,6 +311,7 @@ class AB3Stepper(Stepper):
             state=new_state,
             t=new_t,
             tc=new_tc,
+            rng_key=stepper_state.rng_key,
             _ablevel=new_ablevel,
             _updates=new_updates,
         )
@@ -327,13 +339,14 @@ class CNABStepper(Stepper):
       and JAX-friendly without extra model hooks.
     """
 
-    def initialise_stepper_state(self, state: P) -> AB3State[P]:
-        base_state = super().initialise_stepper_state(state)
+    def initialise_stepper_state(self, state: P, *, rng_key=None) -> AB3State[P]:
+        base_state = super().initialise_stepper_state(state, rng_key=rng_key)
         dummy_update: P = _dummy_step_init(state)
         return AB3State(
             state=base_state.state,
             t=base_state.t,
             tc=base_state.tc,
+            rng_key=base_state.rng_key,
             _ablevel=jnp.uint8(0),
             _updates=(dummy_update, dummy_update),
         )
@@ -382,6 +395,7 @@ class CNABStepper(Stepper):
             state=new_state,
             t=new_t,
             tc=new_tc,
+            rng_key=stepper_state.rng_key,
             _ablevel=new_ablevel,
             _updates=new_updates,
         )

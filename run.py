@@ -306,8 +306,11 @@ def run(cfg):
         cfg_plot = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
         Plotter(cfg_plot, trajectories=trajectories, out_dir=out_dir, cadence=cadence).plot()
         return
+    
+    # ================================================================
+    # === closure building ===========================================
+    # ================================================================
 
-    # === closure building === 
     # Build training/sweep metadata to avoid accidentally reusing closures from different sweeps
     model_dir, found, id= find_existing_closure(MODEL_DIR, params, timing_metadata, model_type, training_metadata)
     start_epoch = 0

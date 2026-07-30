@@ -22,7 +22,7 @@ params:
   # Stochastic forcing parameters
   kmin: 4.0   # inner ring forcing 
   kmax: 10.0   # outer ring forcing 
-  forcing_amplitude: 0.00001 # 0.0 for no stochastic forcing 
+  forcing_amplitude: 0.0001 # 0.0 for no stochastic forcing 
 
 plotting:
   nsteps: 2000
@@ -36,7 +36,7 @@ plotting:
 
 ml:
   enabled: true
-  model_type: biharmonic
+  model_type: fno
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 3
@@ -65,12 +65,12 @@ architectures:
     closure_scale: 0.2
   fno:
     learning_rate: [0.0001, 0.0005]
-    loss: ['mse', 'maddison']
+    loss: ['mse', 'spectral', 'strain', 'multistep', 'maddison']
     width: [16, 32, 64]
     modes2: [8, 16]
     modes1: [8, 16, 32]
     n_layers: [2, 4, 6]
-    zero_mean: true
+    zero_mean: [true, false]
     closure_scale: [0.1, 0.2, 0.4]
   diffusion:
     loss: mse
@@ -92,6 +92,10 @@ architectures:
     width: 64
     activation: "tanh"
     closure_scale: 0.2
+  gru:
+    learning_rate: 0.0001
+    loss: mse
+    hidden_layers: 2
   resnet:
     learning_rate: 0.0001 #[0.0001, 0.0005]
     loss: ['mse', 'mae', 'spectral', 'strain', 'multistep', 'maddison']

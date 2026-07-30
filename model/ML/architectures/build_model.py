@@ -34,7 +34,7 @@ import jax.numpy as jnp
 import logging
 logger = logging.getLogger(__name__)
 
-def _normalize(name):
+def _standardise(name):
     return str(name).strip().lower()
 
 def closure_combiner(
@@ -95,9 +95,8 @@ def _get_arch_params(cfg, arch_name):
     if not isinstance(arch_cfg, dict):
         return {}
 
-    # Find matching normalized arch name and return its params
     for key, value in arch_cfg.items():
-        if _normalize(key) == _normalize(arch_name) and isinstance(value, dict):
+        if _standardise(key) == _standardise(arch_name) and isinstance(value, dict):
             return dict(value)
 
     return {}
@@ -130,7 +129,7 @@ def build_closure(cfg=None, loaded_leaves=None):
     arch_params_to_use = _get_arch_params(cfg, arch_name)
     
     # Get model class
-    cls = registry.get(_normalize(arch_name))
+    cls = registry.get(_standardise(arch_name))
     if cls is None:
         raise ValueError(
             f"Unknown ML closure '{arch_name}', available: {sorted(registry.keys())}"

@@ -138,9 +138,9 @@ def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save
                 except Exception:
                     # if replace fails, attempt move
                     os.rename(src, dst)
-            # Save only the flat leaves for the optimizer — no pickle treedef,
-            # so this survives JAX/equinox version changes.  Reconstruction
-            # uses the template treedef built from a freshly-initialised optim.
+            # Save only the flat leaves for the optimizer so it survives JAX/equinox 
+            # version changes. Reconstruction uses the template treedef built from 
+            # a freshly-initialised optim.
             optim_leaves, _ = jax.tree_util.tree_flatten(optim_state)
             optim_leaves_np = [np.asarray(x) for x in optim_leaves]
             np.savez_compressed(tmp_optim_base + ".npz", *optim_leaves_np)

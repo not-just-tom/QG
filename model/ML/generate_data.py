@@ -19,7 +19,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
 
     # Timing parameters
     n_total = cfg.ml.n_train + cfg.ml.n_test + 1 # one for validation
-    batch_size = 11 # hardcoded bc it was confusing me. It's just the trajs generated in batches of 5 rn
+    batch_size = 11 # hardcoded bc it was confusing me. It's just the trajs generated in batches
     spinup = int(cfg.plotting.spinup * 24 * 3600 // hr_model.stepper.dt)
     # Prepare low-resolution template and ratio for coarsening
     dummy_key = jax.random.PRNGKey(0)
@@ -118,7 +118,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
             final_state, _ = jax.lax.scan(_step, init_state, None, length=spinup)
             return final_state
 
-        # Vectorize the spinup across the batch; `_spinup_state` already
+        # Vectorise the spinup across the batch; `_spinup_state` already
         # has `spinup` as a static arg via `static_argnames`, so a plain
         # `vmap` over the batch axis is sufficient.
         _spinup_batched = jax.vmap(_spinup_state, in_axes=(0, None))
