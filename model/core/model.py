@@ -4,6 +4,9 @@ import inspect
 import logging
 import jax
 import jax.numpy as jnp
+import importlib
+import model.core.kernel 
+importlib.reload(model.core.kernel)
 from model.core.kernel import Kernel
 import model.core.states as states
 import model.utils.pytree as Pytree
@@ -129,11 +132,11 @@ class QGM(Kernel):
         """Set the initial state from a given spectral PV array `qh`."""
         return states.State(qh=qh, _q_shape=_q_shape)
     
-    def get_full_state(self, state: states.State) -> states.FullState:
-        return super().get_full_state(state)
+    def get_full_state(self, state: states.State, forcing_key: jax.Array | None = None) -> states.FullState:
+        return super().get_full_state(state, forcing_key)
 
-    def get_updates(self, state: states.State) -> states.State:
-        return super().get_updates(state)
+    def get_updates(self, state: states.State, forcing_key: jax.Array | None = None) -> states.State:
+        return super().get_updates(state, forcing_key)
 
     def get_grid(self) -> Grid:
         """Retrieve the grid for this model."""

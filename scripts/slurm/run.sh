@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account=rockhpc_mcposd
-#SBATCH --job-name=qg_cpu_array
+#SBATCH --job-name=check_fno
 #SBATCH --output=logs/slurm-%A.out
 #SBATCH --error=logs/slurm-%A.err
 #SBATCH --partition=default_free

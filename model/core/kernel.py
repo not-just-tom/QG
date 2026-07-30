@@ -76,7 +76,7 @@ class Kernel(ABC):
         return state
 
     def get_full_state(
-        self, state: states.State, *, forcing_key: jax.Array | None = None
+        self, state: states.State, forcing_key: jax.Array | None = None
     ) -> states.FullState:
         """Compute full state with all tendencies.
         
@@ -129,7 +129,7 @@ class Kernel(ABC):
         return self._invert(full_state).ph
 
     def get_updates(
-        self, state: states.State, *, forcing_key: jax.Array | None = None
+        self, state: states.State, forcing_key: jax.Array | None = None
     ) -> states.State:
         """Get tendency updates for time-stepping.
         
@@ -322,27 +322,18 @@ class Kernel(ABC):
         if self.forcing_amplitude == 0.0:
             return state
 
-        # A full-state diagnostic has no stochastic sample associated with it.
-        # Time stepping always supplies a key; leaving this as a no-op keeps
-        # diagnostics deterministic and avoids silently reusing a fixed sample.
+        # Not sure about this
         if forcing_key is None:
             return state
 
         mask = (self.Kmag >= self.kmin) & (self.Kmag <= self.kmax)
-        # Generate real white noise on the physical grid, then band-limit it
-        # in spectral space.  This guarantees that the forcing is real and
-        # that its shape is the model's (ny, nx), not its rFFT shape.
         noise = jax.random.normal(forcing_key, self.get_grid().real_state_shape)
         ring = self.spectral_to_real(self.real_to_spectral(noise) * mask)
         ring = ring - jnp.mean(ring, axis=(-2, -1), keepdims=True)  # zero-mean
         std = jnp.std(ring, axis=(-2, -1), keepdims=True)
-        # An empty annulus has zero variance.  Produce zero forcing in that
-        # case rather than introducing NaNs; the configuration can then be
-        # corrected without destabilising a run.
-        ring = ring / jnp.maximum(std, jnp.finfo(ring.dtype).eps)
 
-        # dqhdt is spectral.  Transform the normalized real-space forcing
-        # back before adding it, preserving the rFFT representation.
+        # zero forcing in case of empty annulus 
+        ring = ring / jnp.maximum(std, jnp.finfo(ring.dtype).eps)
         dqhdt = state.dqhdt + self.real_to_spectral(self.forcing_amplitude * ring)
         return state.update(dqhdt=dqhdt)
     

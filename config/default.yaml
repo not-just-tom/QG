@@ -36,7 +36,7 @@ plotting:
 
 ml:
   enabled: true
-  model_type: fno
+  model_type: mlp
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 3
@@ -70,7 +70,7 @@ architectures:
     modes2: [8, 16]
     modes1: [8, 16, 32]
     n_layers: [2, 4, 6]
-    zero_mean: [true, false]
+    zero_mean: true
     closure_scale: [0.1, 0.2, 0.4]
   diffusion:
     loss: mse
