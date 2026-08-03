@@ -22,7 +22,7 @@ def grid(nx, ny, Lx, Ly):
     return x, y
 
 @Pytree.register_pytree_class_attrs(
-    children=["beta", "rd", "delta", "U1", "U2", "H1"],
+    children=["beta", "Ld", "delta", "U1", "U2", "H1"],
     static_attrs=["params"],
 )
 class QGM(Kernel):
@@ -30,7 +30,7 @@ class QGM(Kernel):
     """
     def __init__(self, params):
         self.params = params
-        # Use safe dict lookups so missing keys (e.g. 'ny') don't raise KeyError
+        # Use safe dict lookups so missing keys 
         nx = params.get('nx')
         ny = params.get('ny', nx)
         nz = params.get('nz', 1)
@@ -40,14 +40,14 @@ class QGM(Kernel):
         forcing_amplitude = params.get('forcing_amplitude', 0.0)
         self.seed = seed = params.get('seed', 0)
         self.beta = params.get('beta', 10.0)
-        self.Lx = params.get('Lx', 6.28)
-        self.Ly = params.get('Ly', self.Lx)
+        self.Lx = Lx = params.get('Lx', 6.28)
+        self.Ly = Ly = params.get('Ly', self.Lx)
         self._Lz = params.get('Lz', 500)
         self.filterfac = params.get('filterfac', 23.6)
         dt = params.get('dt', 1.0)
         self.g = params.get('g', 9.81)
         self.f = params.get('f', None)
-        self.rd = params.get('rd', 15.0)
+        self.Ld = params.get('Ld', 15.0)
         self.delta = params.get('delta', 0.25)
         self.U1 = params.get('U1', 0.0)
         self.U2 = params.get('U2', 0.0)
@@ -56,6 +56,8 @@ class QGM(Kernel):
             nx=nx,
             ny=ny,
             nz=nz,
+            Lx=Lx,
+            Ly=Ly,
             rek=rek,
             kmin=kmin,
             kmax=kmax,
@@ -71,7 +73,7 @@ class QGM(Kernel):
         self._kx = jnp.fft.rfftfreq(self.nx, d=(grid.dx / (2 * jnp.pi)))
         self._ky = jnp.fft.fftfreq(self.ny, d=(grid.dy / (2 * jnp.pi)))
         self._KX, self._KY = jnp.meshgrid(self._kx, self._ky)
-        self._Kmag = jnp.sqrt(self._KX ** 2 + self._KY ** 2)
+        self._Kmag = jnp.sqrt(self._KX ** 2 + self._KY ** 2) # dimensional, remember. all of it is. *dx if u want dimless
         self._K2 = self._Kmag ** 2        
         # I removed an update from the forcing mask here 
         # Precompute two-layer elliptic inversion matrix A such that ph = A qh.
@@ -86,7 +88,7 @@ class QGM(Kernel):
         self._A = A * det_inv
         # Use the same default dealiasing form as before (alpha=36, p=8)
         self._dealias_mask = jnp.exp(-36 * (self._Kmag / jnp.max(self._Kmag)) ** 8)
-        # Optional exact post-step spectral damping (qg_closure-style)
+        # Exact post-step spectral damping
         cphi = 0.65 * jnp.pi
         wvx = jnp.sqrt((self._KX * grid.dx) ** 2 + (self._KY * grid.dx) ** 2)
         exact_filter = jnp.exp(-self.filterfac * (wvx - cphi) ** 4)
@@ -241,7 +243,7 @@ class QGM(Kernel):
 
     @property
     def F1(self):
-        return self.rd**-2 / (1 + self.delta)
+        return self.Ld**-2 / (1 + self.delta)
 
     @property
     def F2(self):

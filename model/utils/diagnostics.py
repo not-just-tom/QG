@@ -9,6 +9,7 @@ from model.utils.physics_ops import (
     invert_pv_to_psi,
     velocity_from_psi,
     isotropic_ke_spectrum,
+    isotropic_scalar_spectrum,
 )
 
 
@@ -131,9 +132,26 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
         q_truth = _sanitize_numeric_array(trajs.get("truth"))
         q_pred = _sanitize_numeric_array(trajs.get("pred_frames"))
         zero = _sanitize_numeric_array(trajs.get("zero_frames"))
-        q_truth = np.asarray(q_truth[10:]) # im trying out skipping first few frames to avoid 0s ?
-        q_pred = np.asarray(q_pred[10:])
-        zero = np.asarray(zero[10:])
+        q_truth = q_truth[10:] # im trying out skipping first few frames to avoid 0s ?
+        zero = zero[10:]
+        if q_pred is not None:
+            q_pred = q_pred[10:]
+
+        # stuff for wavelength calcs
+        beta = trajs['params'].get('beta', None)
+        kmin = trajs['params'].get('kmin', None)
+        kmax = trajs['params'].get('kmax', None)
+        Lx = trajs['params'].get('Lx', None)
+        Ld = trajs['params'].get('Ld', None)
+
+        # compute key wavelength values 
+        u, v = velocity_from_psi(invert_pv_to_psi(q_truth, grid), grid)
+        U_rms = np.sqrt(np.mean(u**2 + v**2))
+
+        k_min = 2*kmin*np.pi/Lx
+        k_max = 2*kmax*np.pi/Lx
+        k_Rhines = np.sqrt(beta / U_rms)
+        k_deformation = 1 / Ld
 
         # compute per-frame spectra helper
         def compute_frame_spectra(q):
@@ -153,14 +171,16 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
                 return None, None
 
         E_truth_frames, k = compute_frame_spectra(q_truth)
-        E_pred_frames, _ = compute_frame_spectra(q_pred) 
         E_zero_frames, _ = compute_frame_spectra(zero)
+        if q_pred is not None:
+            E_pred_frames, _ = compute_frame_spectra(q_pred) 
 
         # averages and stds
         E_truth_avg = E_truth_frames.mean(axis=0)
-        E_pred_avg = E_pred_frames.mean(axis=0)
-        E_pred_std = E_pred_frames.std(axis=0)
-        E_zero_avg = E_zero_frames.mean(axis=0)
+        if q_pred is not None:
+            E_pred_avg = E_pred_frames.mean(axis=0)
+            E_pred_std = E_pred_frames.std(axis=0)
+
 
         # select frames for animation using cadence
         nt = E_truth_frames.shape[0]
@@ -172,15 +192,21 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
 
         try:
             ax.fill_between(k[1:], (E_pred_avg - E_pred_std)[1:], (E_pred_avg + E_pred_std)[1:], color="C1", alpha=0.08)
+            Ep0 = E_pred_frames[frame_indices[0]]
+            ln_pred, = ax.loglog(k[1:], Ep0[1:], label="ML", color="C3", linestyle="--")
         except Exception:
             pass
 
         # instantaneous lines
-        Ep0 = E_pred_frames[frame_indices[0]]
         Ez0 = E_zero_frames[frame_indices[0]]
-        ln_pred, = ax.loglog(k[1:], Ep0[1:], label="ML", color="C3", linestyle="--")
         ln_zero, = ax.loglog(k[1:], Ez0[1:], label="Zero", color="C2", linestyle="--")
-
+        ax.text(k_deformation,1e-14,'k_deformation',rotation=270, color='k')
+        ax.axvline(k_Rhines, ymin=0, ymax=1, color='red', linestyle="--")
+        ax.text(k_Rhines,1e-14,'k_Rhines',rotation=270, color='k')
+        ax.axvline(k_min, ymin=0, ymax=1, color='red', linestyle="--")
+        ax.text(k_min,1e-14,'k_min',rotation=270, color='k')
+        ax.axvline(k_max, ymin=0, ymax=1, color='red', linestyle="--")
+        ax.text(k_max,1e-14,'k_max',rotation=270, color='k')
         ax.set_xlabel("k")
         ax.set_ylabel("E(k)")
         ax.set_title(f"KE spectrum (t={frame_indices[0]})")
@@ -189,16 +215,17 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
 
         def update(i):
             idx = frame_indices[i]
-            if ln_pred is not None:
-                Ep = E_pred_frames[idx]
-                ln_pred.set_data(k[1:], Ep[1:])
-            if ln_zero is not None:
-                Ez = E_zero_frames[idx]
-                ln_zero.set_data(k[1:], Ez[1:])
             ax.relim()
             ax.autoscale_view()
             ax.set_title(f"KE spectrum (t={idx})")
-            return (ln_pred, ln_zero)
+            Ez = E_zero_frames[idx]
+            ln_zero.set_data(k[1:], Ez[1:])
+            if q_pred is not None:
+                Ep = E_pred_frames[idx]
+                ln_pred.set_data(k[1:], Ep[1:])
+                return (ln_pred, ln_zero)
+            else: 
+                return (None, ln_zero)
 
         ani = FuncAnimation(fig, update, frames=len(frame_indices), interval=200)
         ani.save(out_path, writer=PillowWriter(fps=5))
@@ -218,12 +245,18 @@ class KESpectrumDiagnostic(Diagnostic):
         q_truth = _sanitize_numeric_array(trajs.get("truth"))
         q_pred  = _sanitize_numeric_array(trajs.get("pred_frames"))
         zero = _sanitize_numeric_array(trajs.get("zero_frames"))
-        q_truth = np.asarray(q_truth)
-        q_pred  = np.asarray(q_pred)
-        zero = np.asarray(zero)
+
+        # stuff for wavelength calcs
+        beta = trajs['params'].get('beta', None)
+        kmin = trajs['params'].get('kmin', None)
+        kmax = trajs['params'].get('kmax', None)
+        Lx = trajs['params'].get('Lx', None)
+        Ld = trajs['params'].get('Ld', None)
 
         # --- helper: compute spectrum from PV (time-averaged) ---
         def compute_avg_spectrum(q):
+            if q is None:
+                return None, None
             psi = invert_pv_to_psi(q, grid)
             u, v = velocity_from_psi(psi, grid)
             spec = isotropic_ke_spectrum(u, v, grid)
@@ -233,13 +266,20 @@ class KESpectrumDiagnostic(Diagnostic):
 
         # compute averaged spectra
         k, E_truth_avg = compute_avg_spectrum(q_truth)
-        _, E_pred_avg = compute_avg_spectrum(q_pred)
         _, E_zero_avg = compute_avg_spectrum(zero)
+        if q_pred is not None:
+            _, E_pred_avg = compute_avg_spectrum(q_pred)
+        else: 
+            E_pred_avg = None
 
         # compute key wavelength values 
-        #k_forcing = 
-        #k_beta = 
-        #k_Rhines = 
+        u, v = velocity_from_psi(invert_pv_to_psi(q_truth, grid), grid)
+        U_rms = np.sqrt(np.mean(u**2 + v**2))
+
+        k_min = 2*kmin*np.pi/Lx
+        k_max = 2*kmax*np.pi/Lx
+        k_Rhines = np.sqrt(beta / U_rms)
+        k_deformation = 1 / Ld
 
         # --- compute per-frame spectra ---
         def compute_frame_spectra(q):
@@ -257,17 +297,18 @@ class KESpectrumDiagnostic(Diagnostic):
                 return None
 
         E_truth_frames = compute_frame_spectra(q_truth)
-        E_pred_frames = compute_frame_spectra(q_pred)
         E_truth_std = E_truth_frames.std(axis=0)
-        E_pred_std = E_pred_frames.std(axis=0)
+        if q_pred is not None:
+            E_pred_frames = compute_frame_spectra(q_pred)
+            E_pred_std = E_pred_frames.std(axis=0)
 
         # --- plot ---
         fig, ax = plt.subplots()
         ax.loglog(k[1:], E_truth_avg[1:], label="Truth", color="k")
         if E_pred_avg is not None:
-            ax.loglog(k[1:], E_pred_avg[1:], label="ML", linestyle="--", color="C1")
+            ax.loglog(k[1:], E_pred_avg[1:], label="Parameterisation", color="C1")
         if E_zero_avg is not None:
-            ax.loglog(k[1:], E_zero_avg[1:], label="Zero", linestyle="--", color="C2")
+            ax.loglog(k[1:], E_zero_avg[1:], label="Zero", color="C2")
 
 
         # Shade ±1σ around the mean if available
@@ -279,6 +320,14 @@ class KESpectrumDiagnostic(Diagnostic):
         except Exception:
             pass
 
+        ax.axvline(k_deformation, ymin=0, ymax=1, color='red', linestyle="--")
+        ax.text(k_deformation,1e-14,'k_deformation',rotation=270, color='k')
+        ax.axvline(k_Rhines, ymin=0, ymax=1, color='red', linestyle="--")
+        ax.text(k_Rhines,1e-14,'k_Rhines',rotation=270, color='k')
+        ax.axvline(k_min, ymin=0, ymax=1, color='red', linestyle="--")
+        ax.text(k_min,1e-14,'k_min',rotation=270, color='k')
+        ax.axvline(k_max, ymin=0, ymax=1, color='red', linestyle="--")
+        ax.text(k_max,1e-14,'k_max',rotation=270, color='k')
         ax.set_xlabel("k")
         ax.set_ylabel("E(k)")
         ax.set_title("Time-averaged KE spectrum")
@@ -351,6 +400,61 @@ class VorticityDiagnostic(Diagnostic): # this might need cadence adding to it tb
 
         anim = FuncAnimation(fig, update, frames=nt, interval=200)
         anim.save(out_path, writer=PillowWriter(fps=10))
+        plt.close(fig)
+
+
+class PVSpectrumDiagnostic(Diagnostic):
+    name = "pv_spectrum"
+
+    def run(self, trajs, out_path, cadence):
+
+        grid = trajs.get("grid")
+        q_truth = _sanitize_numeric_array(trajs.get("truth"))
+        q_pred  = _sanitize_numeric_array(trajs.get("pred_frames"))
+        q_zero  = _sanitize_numeric_array(trajs.get("zero_frames"))
+
+
+        def compute_avg_spectrum(q):
+            if q is None:
+                return None, None
+
+            spec = isotropic_scalar_spectrum(q, grid)
+
+            return (
+                np.asarray(spec["k"]).ravel(),
+                np.asarray(spec["E"]).ravel(),
+            )
+
+        k, E_truth = compute_avg_spectrum(q_truth)
+        _, E_zero  = compute_avg_spectrum(q_zero)
+
+        if q_pred is not None:
+            _, E_pred = compute_avg_spectrum(q_pred)
+        else:
+            E_pred = None
+
+        fig, ax = plt.subplots()
+
+        ax.loglog(k[1:], E_truth[1:], "k", label="Truth")
+
+        if E_pred is not None:
+            ax.loglog(k[1:], E_pred[1:], color="C1",
+                      label="Parameterisation")
+
+        if E_zero is not None:
+            ax.loglog(k[1:], E_zero[1:], color="C2",
+                      label="Zero")
+
+        ax.set_xlabel("k")
+        ax.set_ylabel(r"$Q(k)$")
+        ax.set_title("Time-averaged PV spectrum")
+        ax.grid(True, which="both")
+        ax.legend()
+
+        fig.savefig(out_path,
+                    dpi=150,
+                    bbox_inches="tight")
+
         plt.close(fig)
 
 
@@ -615,26 +719,35 @@ class QuadGifDiagnostic(Diagnostic):
 # ============================================================
 
 class ZeroComparisonDiagnostic(Diagnostic):
-    name = "quad"
+    name = "zero"
     output = "gif"
 
     def run(self, trajs, out_path, cadence):
-        pred = _prepare_array(_get_traj_array(trajs, "pred_frames", "pred"))
         truth = _prepare_array(_get_traj_array(trajs, "truth", "q"))
         zero = _prepare_array(_get_traj_array(trajs, "zero_frames", "zero"))
-        pred_np = np.asarray(pred)
+
         truth_np = np.asarray(truth)
-        zero_np = np.asarray(zero) if zero is not None else np.zeros_like(truth_np)
+        zero_np = np.asarray(zero)
+        
+        if "pred" in trajs:
+            pred = _prepare_array(_get_traj_array(trajs, "pred_frames", "pred"))
+            pred_np = np.asarray(pred)
+        else: 
+            pred_np = None
 
-        # Get predicted/applied SGS
-        sgs_pred = trajs.get("sgs")
-        sgs_pred_np = np.asarray(sgs_pred)
+        # Get predicted/applied SGS (if present)
+        if "sgs" in trajs:
+            sgs_pred = trajs.get("sgs")
+            sgs_pred_np = np.asarray(sgs_pred)
+        else:
+            sgs_pred_np = None
 
-        nt = pred_np.shape[0]
+        # Determine number of timesteps from available prediction/truth
+        nt = pred_np.shape[0] if pred_np is not None else truth_np.shape[0]
 
         def pad_to_frames(arr):
             if arr is None:
-                return np.zeros_like(pred_np)
+                return None
             if arr.shape[0] == nt:
                 return arr
             if arr.shape[0] == nt - 1:
@@ -645,17 +758,17 @@ class ZeroComparisonDiagnostic(Diagnostic):
                 return np.concatenate([pad, arr], axis=0)
             return arr[:nt]
 
+        # Only prediction-related arrays may need padding
         sgs_pred_np = pad_to_frames(sgs_pred_np)
-        zero_np = pad_to_frames(zero_np)
 
         indices = np.arange(0, nt, max(1, int(cadence)))
         if indices.size == 0:
-            raise ValueError("No frames selected for quad diagnostic (check cadence)")
+            raise ValueError("No frames selected for diagnostic (check cadence)")
 
         def pick(arr, idx):
             return _pick_frame(arr, idx)
 
-        # robust percentiles
+        # Robust colour limits
         def pct(a, q):
             try:
                 return np.nanpercentile(a, q)
@@ -665,38 +778,60 @@ class ZeroComparisonDiagnostic(Diagnostic):
         vmin_truth = pct(truth_np, 1)
         vmax_truth = pct(truth_np, 99)
 
+        # ------------------------------------------------------------------
+        # Build panels dynamically
+        # ------------------------------------------------------------------
+        panels = [
+            ("Truth", truth_np),
+            ("Without closure", zero_np),
+        ]
 
-        # Layout: top row - Truth  | Zero Model
-        # bottom row - closure adjusted | Pred SGS
-        fig, axes = plt.subplots(1, 3, figsize=(12, 8))
-        ax_truth = axes[0]
-        ax_ml = axes[1]
-        ax_zero = axes[2]
+        if pred_np is not None:
+            panels.insert(1, ("Closure adjusted", pred_np))
 
-        im_truth = ax_truth.imshow(pick(truth_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_truth, vmax=vmax_truth)
-        ax_truth.set_title("Truth")
-        im_ml = ax_ml.imshow(pick(pred_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_truth, vmax=vmax_truth)
-        ax_ml.set_title("closure adjusted")
-        im_zero = ax_zero.imshow(pick(zero_np, indices[0]), origin="lower", cmap="RdBu_r", vmin=vmin_truth, vmax=vmax_truth)
-        ax_zero.set_title("Without closure")
+        nplots = len(panels)
 
+        fig, axes = plt.subplots(1, nplots, figsize=(4 * nplots, 4))
 
-        for ax in axes.ravel():
+        # Ensure axes is iterable
+        if nplots == 1:
+            axes = [axes]
+        else:
+            axes = np.atleast_1d(axes)
+
+        images = []
+
+        for ax, (title, data) in zip(axes, panels):
+            im = ax.imshow(
+                pick(data, indices[0]),
+                origin="lower",
+                cmap="RdBu_r",
+                vmin=vmin_truth,
+                vmax=vmax_truth,
+            )
+            ax.set_title(title)
             ax.set_xticks([])
             ax.set_yticks([])
+            images.append(im)
 
-        fig.colorbar(im_truth, ax=[ax_truth, ax_ml, ax_zero], shrink=0.6)
-
+        fig.colorbar(images[0], ax=axes, shrink=0.6)
 
         def update(i):
             idx = indices[i]
-            im_truth.set_data(pick(truth_np, idx))
-            im_ml.set_data(pick(pred_np, idx))
-            im_zero.set_data(pick(zero_np, idx))
-            fig.suptitle(f"timestep {idx}")
-            return im_truth, im_ml, im_zero
 
-        anim = FuncAnimation(fig, update, frames=len(indices), interval=100, blit=False)
+            for im, (_, data) in zip(images, panels):
+                im.set_data(pick(data, idx))
+
+            fig.suptitle(f"timestep {idx}")
+            return images
+
+        anim = FuncAnimation(
+            fig,
+            update,
+            frames=len(indices),
+            interval=100,
+            blit=False,
+        )
 
         try:
             writer = PillowWriter(fps=10)
@@ -1345,6 +1480,7 @@ _REGISTRY = {
     "ke_spectrum": KESpectrumDiagnostic,
     "ke_spectrum_movie": KESpectrumAnimationDiagnostic,
     'vorticity': VorticityDiagnostic,
+    'pv_spectrum': PVSpectrumDiagnostic,
     'quad': QuadGifDiagnostic,
     'zero': ZeroComparisonDiagnostic,
     'energy': EnergyDiagnostic,

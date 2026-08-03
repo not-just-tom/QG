@@ -117,6 +117,67 @@ def isotropic_ke_spectrum(u: np.ndarray, v: np.ndarray, grid) -> dict:
 
     return {"k": k, "E": E}
 
+def isotropic_scalar_spectrum(q: np.ndarray, grid) -> dict:
+    """Compute the isotropic spectrum of a scalar field.
+
+    Parameters
+    ----------
+    q : ndarray
+        Scalar field of shape (..., ny, nx). Any leading dimensions are
+        averaged over (e.g. QG layers or time).
+
+    grid : Grid
+        Grid object providing dx and dy.
+
+    Returns
+    -------
+    dict
+        {"k": k, "E": E}
+    """
+    q = np.asarray(q, dtype=float)
+    ny, nx = q.shape[-2], q.shape[-1]
+
+    kx = np.fft.rfftfreq(nx, d=grid.dx) * 2.0 * np.pi
+    ky = np.fft.fftfreq(ny, d=grid.dy) * 2.0 * np.pi
+    kx2, ky2 = np.meshgrid(kx, ky, indexing="xy")
+    kmag = np.sqrt(kx2**2 + ky2**2)
+
+    qh = np.fft.rfftn(q, axes=(-2, -1))
+
+    # scalar spectral density
+    spec = 0.5 * np.abs(qh)**2
+
+    positive_steps = []
+    if kx.size > 1:
+        positive_steps.append(float(kx[1] - kx[0]))
+    if ky.size > 1:
+        positive_steps.append(float(np.abs(ky[1] - ky[0])))
+
+    dk = min(step for step in positive_steps if step > 0.0)
+
+    kmax = float(kmag.max())
+    nbins = int(np.floor(kmax / dk)) + 1
+    k = np.arange(nbins, dtype=float) * dk
+
+    lead_shape = q.shape[:-2]
+    E = np.zeros((*lead_shape, nbins))
+
+    kmag_flat = kmag.ravel()
+    spec_flat = spec.reshape(*lead_shape, -1)
+
+    bin_idx = np.floor(kmag_flat / dk).astype(int)
+    bin_idx = np.clip(bin_idx, 0, nbins - 1)
+
+    for i in range(nbins):
+        mask = bin_idx == i
+        if mask.any():
+            E[..., i] = spec_flat[..., mask].sum(axis=-1)
+
+    if E.ndim > 1:
+        E = E.mean(axis=tuple(range(E.ndim - 1)))
+
+    return {"k": k, "E": E}
+
 
 # ---------------------------------------------------------------------------
 # Scalar energy / enstrophy integrals

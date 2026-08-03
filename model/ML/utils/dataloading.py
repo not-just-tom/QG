@@ -2,6 +2,7 @@ import os
 import jax
 import json
 import re
+import time
 import zarr
 import numpy as np
 import jax.numpy as jnp
@@ -133,11 +134,14 @@ def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save
             for ext in (".npz", ".treedef"):
                 src = tmp_closure_base + ext
                 dst = closure_base + ext
-                try:
-                    os.replace(src, dst)
-                except Exception:
-                    # if replace fails, attempt move
-                    os.rename(src, dst)
+                for attempt in range(3):
+                    try:
+                        os.replace(src, dst)
+                        break
+                    except PermissionError:
+                        if attempt == 2:
+                            raise
+                        time.sleep(0.1)
             # Save only the flat leaves for the optimizer so it survives JAX/equinox 
             # version changes. Reconstruction uses the template treedef built from 
             # a freshly-initialised optim.
@@ -146,10 +150,14 @@ def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save
             np.savez_compressed(tmp_optim_base + ".npz", *optim_leaves_np)
             src = tmp_optim_base + ".npz"
             dst = optim_base + ".npz"
-            try:
-                os.replace(src, dst)
-            except Exception:
-                os.rename(src, dst)
+            for attempt in range(3):
+                try:
+                    os.replace(src, dst)
+                    break
+                except PermissionError:
+                    if attempt == 2:
+                        raise
+                    time.sleep(0.1)
         except Exception:
             logger.exception("Failed to save closure or optimizer checkpoint")
             raise
@@ -166,10 +174,14 @@ def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save
             tmp_meta = meta_path + ".tmp"
             with open(tmp_meta, "w") as f:
                 json.dump(meta, f, indent=4)
-            try:
-                os.replace(tmp_meta, meta_path)
-            except Exception:
-                os.rename(tmp_meta, meta_path)
+            for attempt in range(3):
+                try:
+                    os.replace(tmp_meta, meta_path)
+                    break
+                except PermissionError:
+                    if attempt == 2:
+                        raise
+                    time.sleep(0.1)
         except Exception:
             logger.exception("Failed to write checkpoint meta file")
         # Optionally save loss history as JSON
@@ -179,10 +191,14 @@ def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save
                 tmp_lh = lh_path + ".tmp"
                 with open(tmp_lh, "w") as f:
                     json.dump({"train": list(losses.get("train", [])), "test": list(losses.get("test", [])), 'zero': list(losses.get('zero', []))}, f, indent=4)
-                try:
-                    os.replace(tmp_lh, lh_path)
-                except Exception:
-                    os.rename(tmp_lh, lh_path)
+                for attempt in range(3):
+                    try:
+                        os.replace(tmp_lh, lh_path)
+                        break
+                    except PermissionError:
+                        if attempt == 2:
+                            raise
+                        time.sleep(0.1)
             except Exception:
                 logger.exception("Failed to write loss history")
         return True
@@ -281,7 +297,7 @@ def find_existing_closure(model_dir, params, timing_metadata, model_type, traini
     next_idx = max(candidates, default=0) + 1
     run_name = f"{next_idx:02d}"
     run_dir = os.path.join(model_base, run_name)
-    return run_dir, False, next_idx
+    return run_dir, False, run_name
 
 
 def find_existing_data(base_dir, params, timing_metadata):

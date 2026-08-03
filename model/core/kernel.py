@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 @Pytree.register_pytree_class_attrs(
     children=["rek", "forcing_amplitude"],
-    static_attrs=["nz", "ny", "nx", "kmin", "kmax", "seed"],
+    static_attrs=["nz", "ny", "nx", "Lx", "Ly", "kmin", "kmax", "seed"],
 )
 class Kernel(ABC):
     def __init__(
@@ -20,6 +20,8 @@ class Kernel(ABC):
         nx: int,
         ny: int,
         nz: int,
+        Lx: float,
+        Ly: float,
         rek: float = 0,
         kmin: float = 3.0,
         kmax: float = 10,
@@ -27,13 +29,15 @@ class Kernel(ABC):
         seed: int = 0,
         dt: float = 1.0,
     ):
-        # Store small, fundamental properties (others will be computed on demand)
+        # params
         self.nx = nx
         self.ny = ny
         self.nz = nz
+        self.Lx = Lx
+        self.Ly = Ly
         self.rek = rek
-        self.kmin = kmin*2*jnp.pi/nx
-        self.kmax = kmax*2*jnp.pi/nx
+        self.kmin = kmin*2*jnp.pi/Lx
+        self.kmax = kmax*2*jnp.pi/Lx
         self.forcing_amplitude = forcing_amplitude
         self.seed = seed
         self.dt = dt
@@ -165,9 +169,9 @@ class Kernel(ABC):
         kR = 2 * jnp.pi * n_jets / self.get_grid().Ly
         band_mask = (self.Kmag >= kR / 2) & (self.Kmag <= 2 * kR)
 
-        # combine all masks once
-        qh = qh * jnp.expand_dims(band_mask, 0)
-        qh = jnp.expand_dims(self._dealias, 0) * qh
+        # masking
+        qh = qh * band_mask[None, ...]
+        qh = qh * self._dealias[None, ...]
         qh = qh.at[:, 0, 0].set(0.0)
         return qh
 
@@ -319,22 +323,13 @@ class Kernel(ABC):
         states.FullState
             State with forcing added to dqhdt
         """
-        if self.forcing_amplitude == 0.0:
-            return state
-
-        # Not sure about this
-        if forcing_key is None:
+        if self.forcing_amplitude == 0.0 or forcing_key is None:
             return state
 
         mask = (self.Kmag >= self.kmin) & (self.Kmag <= self.kmax)
-        noise = jax.random.normal(forcing_key, self.get_grid().real_state_shape)
-        ring = self.spectral_to_real(self.real_to_spectral(noise) * mask)
-        ring = ring - jnp.mean(ring, axis=(-2, -1), keepdims=True)  # zero-mean
-        std = jnp.std(ring, axis=(-2, -1), keepdims=True)
-
-        # zero forcing in case of empty annulus 
-        ring = ring / jnp.maximum(std, jnp.finfo(ring.dtype).eps)
-        dqhdt = state.dqhdt + self.real_to_spectral(self.forcing_amplitude * ring)
+        noise = jax.random.normal(forcing_key, self.get_grid().spectral_state_shape)
+        forcing = self.forcing_amplitude * noise * mask / jnp.sqrt(self.dt)
+        dqhdt = state.dqhdt + forcing 
         return state.update(dqhdt=dqhdt)
     
     def _do_wind_forcing(self, state: states.FullState):

@@ -7,7 +7,6 @@ warnings.filterwarnings(
 )
 import importlib 
 import os
-import sys
 from omegaconf import OmegaConf
 
 # Base repo paths
@@ -21,9 +20,6 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 
 # Hydra will supply `cfg` into main(); set no global config here.
 OUTDIR_OVERRIDE = None
-import model.core.grid
-import model.core.states
-import model.core.kernel
 import model.core.model
 import model.core.steppers
 import model.ML.generate_data
@@ -33,16 +29,8 @@ import model.ML.architectures.build_model
 import model.ML.utils.dataloading
 import model.ML.train
 import model.utils.plotting
-import model.utils.diagnostics
-import model.ML.utils.utils
 import model.ML.train
-import model.ML.forced_model
-importlib.reload(model.ML.utils.utils)
 importlib.reload(model.ML.train)
-importlib.reload(model.ML.forced_model)
-importlib.reload(model.core.grid)
-importlib.reload(model.core.states)
-importlib.reload(model.core.kernel)
 importlib.reload(model.core.model)
 importlib.reload(model.core.steppers)
 importlib.reload(model.ML.generate_data)
@@ -51,7 +39,6 @@ importlib.reload(model.ML.utils.loss)
 importlib.reload(model.ML.architectures.build_model)
 importlib.reload(model.ML.utils.dataloading)
 importlib.reload(model.ML.train)
-importlib.reload(model.utils.diagnostics)
 importlib.reload(model.utils.plotting)
 from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch, zero_validation, compute_zero_epoch_loss
 from model.ML.architectures.build_model import build_closure
@@ -83,6 +70,7 @@ def run(cfg):
     # load values
     dt = cfg.plotting.dt
     njets= cfg.plotting.njets
+    spinup = cfg.plotting.spinup
     nsteps = int(getattr(cfg.plotting, 'nsteps', 0))
     cadence = int(getattr(cfg.plotting, 'cadence', 100))
     batch_size = cfg.ml.batch_size
@@ -94,8 +82,7 @@ def run(cfg):
     key = jax.random.PRNGKey(seed)
     ratio = params["hr_nx"]/params["nx"]
     cfl_limit = float(getattr(cfg.plotting, 'cfl', 1.0))
-
-    use_float64 = cfg.ml.use_float64
+    
     prefetch = cfg.ml.prefetch
     model_type = cfg.ml.model_type
     learning_rate = learning_rate = cfg['architectures'][model_type].get('learning_rate', 0)
@@ -146,32 +133,23 @@ def run(cfg):
     model_nsteps = int(end_days * 24 * 3600 // low_res_dt)
     requested_rollout_days = (nsteps * low_res_dt) / (24.0 * 3600.0)
 
-    try:
-        lr_init_state = lr_model.initialise(key, tune=True, n_jets=njets, verbose=False)
-        lr_rhines_length, lr_u_rms = lr_model.rhines_length(lr_init_state)
-        tau_eddy = lr_rhines_length / (lr_u_rms + 1e-12)
-        logger.info(
-            'Fine timestep is %.2gs and coarsened timestep is %.2gs. '
-            'Training horizon is %.2f days, and validation rollout is %.2f days. '
-            'Estimated eddy turnover time is %.2g days.',
-            dt,
-            low_res_dt,
-            model_nsteps * low_res_dt / (24.0 * 3600.0),
-            requested_rollout_days,
-            float(tau_eddy) / (24.0 * 3600.0),
-        )
-    except Exception:
-        logger.info(
-            'Fine timestep is %.2gs and coarsened timestep is %.2gs. '
-            'Training horizon is %d low-res steps (~%.2f days). '
-            'Requested validation rollout is %d steps (~%.2f days).',
-            dt,
-            low_res_dt,
-            model_nsteps,
-            model_nsteps * low_res_dt / (24.0 * 3600.0),
-            nsteps,
-            requested_rollout_days,
-        )
+    lr_init_state = lr_model.initialise(key, tune=True, n_jets=njets, verbose=False)
+    lr_rhines_length, lr_u_rms = lr_model.rhines_length(lr_init_state)
+    tau_eddy = lr_rhines_length / (lr_u_rms + 1e-12)
+    logger.info(
+        'Fine timestep is %.2gs and coarsened timestep is %.2gs. '
+        'Model spanup for %.2f days (~%.2g eddy turnover times). '
+        'Training horizon is %d low-res steps (~%.2f days). '
+        'Validation plotting window is %d steps (~%.2f days).',
+        dt,
+        low_res_dt,
+        spinup,
+        float(tau_eddy) / (24.0 * 3600.0),
+        model_nsteps,
+        model_nsteps * low_res_dt / (24.0 * 3600.0),
+        nsteps,
+        requested_rollout_days,
+    )
 
     timing_metadata = {
         'nsteps': int(model_nsteps),
@@ -194,10 +172,12 @@ def run(cfg):
     if found == True: 
         logger.info(f"Found existing data with matching parameters at {run_dir}, loading trajectories from there.")
         data_loader = ZarrDataLoader(run_dir)
+        if cfg.ml.enabled == False:
+            q_traj = data_loader.get_trajectory(0) # shape (time, layers, ny, nx)
     elif found == False:
+        logger.info(f"No existing data found, generating new dataset at {run_dir}")
+        os.makedirs(run_dir, exist_ok=False)
         if cfg.ml.enabled == True:
-            logger.info(f"No existing data found, generating new dataset at {run_dir}")
-            os.makedirs(run_dir, exist_ok=False)
             try:
                 generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, run_dir)
             except Exception:
@@ -207,6 +187,11 @@ def run(cfg):
                     shutil.rmtree(run_dir)
                 raise
             data_loader = ZarrDataLoader(run_dir)
+        else:
+            cfg['ml']['n_train'] = 0 
+            cfg['ml']['n_test'] = 0 # leaves the one validation traj
+            q_traj = generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, run_dir) # just validations for plots
+            print('in generation print: ', q_traj.shape)
     else: # the case where nsteps too short so we load s and restart from end state to the desired number of steps
         logger.info(f"Found existing data with matching parameters at {run_dir}, but it has insufficient length. Loading trajectories and generating additional steps to reach desired length.")
         data_loader = ZarrDataLoader(run_dir)
@@ -228,67 +213,13 @@ def run(cfg):
                 extra_traj_q = jax.device_get(extra_traj_q)
                 full_traj_q = np.concatenate([traj, extra_traj_q], axis=0)
                 data_loader.save_trajectory(i, full_traj_q)
+
+    trajectories = {}
+    trajectories['grid'] = lr_model.get_grid()
+    trajectories['params'] = params
     
     if cfg.ml.enabled == False:
-        # just run the model and plot
-        init_state = hr_model.initialise(key, tune=True, n_jets=njets, verbose=True)
-        
-        # Calculate eddy turnover time for high-resolution model
-        hr_rhines_length, hr_u_rms = hr_model.model.rhines_length(init_state.state)
-        tau_eddy = hr_rhines_length / (hr_u_rms + 1e-12)
-        logger.info(
-            'High-resolution model: Rhines length = %.2g km, U_rms = %.2g m/s, '
-            'Estimated eddy turnover time = %.2f days',
-            float(hr_rhines_length) / 1000.0,
-            float(hr_u_rms),
-            float(tau_eddy) / (24.0 * 3600.0),
-        )
-        
-        @functools.partial(jax.jit, static_argnames=["nsteps", "cadence"])
-        def rollout(state, nsteps, cadence):
-            def loop_fn(carry, step):
-                next_state = hr_model.step_model(carry)
-                # record spectral qh every cadence steps 
-                q_snapshot = jax.lax.cond(
-                    step % cadence == 0,
-                    lambda s: s.state.qh,
-                    lambda s: jnp.zeros_like(s.state.qh),
-                    next_state,
-                )
-                return next_state, q_snapshot
-
-            steps = jnp.arange(nsteps)
-            _final_carry, traj_steps = jax.lax.scan(loop_fn, state, steps)
-            return _final_carry, traj_steps
-        
-        #spinup 
-        spinup_days = cfg.plotting.spinup
-        spinup = int((spinup_days * 24* 3600)// dt)
-        rollout_days = nsteps * dt / (24 * 3600)
-        logger.info(f"Spinup duration: {spinup_days:.1f} days ({spinup} steps)")
-        logger.info(f"Rollout duration: {rollout_days:.1f} days ({nsteps} steps)")
-        init_state, _ = rollout(init_state, spinup, cadence)
-        
-        _, q_traj_spectral = rollout(init_state, nsteps, cadence)
-        q_traj_spectral = jax.device_get(q_traj_spectral)  # shape (nsteps, nz, ny, nx//2+1)
-
-        # select only the frames recorded at cadence
-        indices = np.arange(0, nsteps, cadence)
-        q_traj_spectral = q_traj_spectral[indices]
-
-        # Convert from spectral to physical space
-        # q_traj_spectral shape: (n_frames, nz, ny, nx//2+1)
-        from model.core.states import _generic_irfftn
-        nt, nz, ny, nx_spectral = q_traj_spectral.shape
-        nx = 2 * (nx_spectral - 1)
-        physical_shape = (ny, nx)
-        
-        q_traj_list = []
-        for t in range(nt):
-            q_physical = _generic_irfftn(q_traj_spectral[t], shape=physical_shape)
-            q_traj_list.append(np.asarray(q_physical))
-        q_traj = np.stack(q_traj_list, axis=0)  # shape (n_frames, nz, ny, nx)
-
+        # just plot
         outbase = os.path.join(cfg.filepaths.out_dir)
         out_dir, found = find_output_dir(outbase, params, model_type, timing_metadata=timing_metadata,  training_metadata=training_metadata)
         if found:
@@ -296,12 +227,15 @@ def run(cfg):
         else:
             # Ensure the output directory exists when creating a new run directory
             os.makedirs(out_dir, exist_ok=True)
-        
+        print('prior to zero_validation print: ', q_traj.shape)
         # Set up trajectories dict with truth data for PV diagnostic
-        trajectories = {
-            'truth': q_traj,
-            'grid': hr_model.model.get_grid()
-        }
+        trajectories['truth'] = q_traj
+        try:
+            zero_results = zero_validation(lr_model, low_res_dt, q_traj, cfg, loss_fn)
+            trajectories['zero_frames'] = zero_results['zero_frames']
+            # Note: zero loss from per-epoch computation will be used for loss_history
+        except Exception as e:
+            raise RuntimeError("Failed to compute zero model baseline: ", e)
         
         cfg_plot = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
         Plotter(cfg_plot, trajectories=trajectories, out_dir=out_dir, cadence=cadence).plot()
@@ -637,7 +571,7 @@ def run(cfg):
 
 
     # === validation & diagnostics ===
-    truth_traj = data_loader.get_trajectory(n_epochs)  # shape (time, layers, ny, nx)
+    truth_traj = data_loader.get_trajectory(n_epochs-1)  # shape (time, layers, ny, nx)
     available_rollout_steps = int(truth_traj.shape[0])
     available_rollout_days = available_rollout_steps * low_res_dt / (24.0 * 3600.0)
     effective_rollout_steps = min(nsteps, available_rollout_steps)
@@ -657,7 +591,7 @@ def run(cfg):
             effective_rollout_steps,
             effective_rollout_days,
         )
-    trajectories = {}
+
     try:
         loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = checkpointer(None, None, model_dir, save=False)
         closure = build_closure(cfg, loaded_leaves)
@@ -671,7 +605,7 @@ def run(cfg):
         # Note: zero loss from per-epoch computation will be used for loss_history
     except Exception:
         raise RuntimeError("Failed to compute zero model baseline")
-
+    
     # Build validation function and run it on a held-out trajectory
     validation_epoch = make_validation_epoch(lr_model, low_res_dt, loss_fn, closure_scale=closure_scale)
     validation_results = validation_epoch(truth_traj, cfg, closure, trajectories['zero_frames'])
@@ -693,6 +627,7 @@ def run(cfg):
         'n_epochs': n_epochs,
     }
     trajectories["grid"] = lr_model.get_grid()
+    trajectories["params"] = params
     
     if os.environ.get('HPC_RUN', '0') == '1':
         return print("hello you have skipped the plotting")

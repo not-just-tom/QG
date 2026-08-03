@@ -34,7 +34,7 @@ def coarsen(hr_model, n_lr):
         "filterfac",
         "g",
         "f",
-        "rd",
+        "Ld",
         "delta",
         "U1",
         "U2",

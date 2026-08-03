@@ -9,43 +9,42 @@ params:
   seed: 42
   nx: 32
   Lx: 1000000
-  beta: 0.00000000001
+  beta: 0.0000000000025
   nz: 2
   # multi-layer model parameters (only used if nz>1)
   Lz: 500
-  rek: 7.0e-8 # gamma
-  rd: 15000 # dunno
+  rek: 7.0e-8 # Ekman drag coeff
+  Ld: 33333 # deformation radius
   delta: 0.1 # ratio between top/bottom layer depth
   U1: 0.025
   U2: 0.0
   hr_nx: 512
   # Stochastic forcing parameters
-  kmin: 4.0   # inner ring forcing 
+  kmin: 7.0   # inner ring forcing 
   kmax: 10.0   # outer ring forcing 
-  forcing_amplitude: 0.0001 # 0.0 for no stochastic forcing 
+  forcing_amplitude: 0.000000000001 # 0.0 for no stochastic forcing 
 
 plotting:
   nsteps: 2000
   dt: 1000
-  spinup: 200
+  spinup: 500 # in days
   cadence: 10
-  plot: ['loss', 'ke_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
+  plot: ['loss', 'ke_spectrum', 'pv_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
   auto_dt: false
   njets: 3
   cfl: 0.5
 
 ml:
-  enabled: true
-  model_type: mlp
+  enabled: false # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
+  model_type: zero
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
-  n_train: 3
-  n_test: 2
+  n_train: 24
+  n_test: 6
   start_days: 1        # initial window length in days
   end_days: 1         # final window length in days
   batch_size: 10 # number of samples in a training batch per update <--------------------------- is this used?
   prefetch: 3       # prefetch a few batches to aid efficiency
-  use_float64: false
 
 
 architectures:
@@ -64,14 +63,14 @@ architectures:
     depth: 4
     closure_scale: 0.2
   fno:
-    learning_rate: [0.0001, 0.0005]
-    loss: ['mse', 'spectral', 'strain', 'multistep', 'maddison']
-    width: [16, 32, 64]
-    modes2: [8, 16]
-    modes1: [8, 16, 32]
-    n_layers: [2, 4, 6]
+    learning_rate: 0.0005 #[0.0001, 0.0005]
+    loss: multistep #['mse', 'spectral', 'strain', 'multistep', 'maddison']
+    width: 64 #[16, 32, 64]
+    modes2: 16 #[8, 16]
+    modes1: 32 #[8, 16, 32]
+    n_layers: 4 #[2, 4, 6]
     zero_mean: true
-    closure_scale: [0.1, 0.2, 0.4]
+    closure_scale: 0.1 #[0.1, 0.2, 0.4]
   diffusion:
     loss: mse
     cutoff: 16.0
