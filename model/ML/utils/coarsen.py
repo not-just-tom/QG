@@ -24,7 +24,7 @@ def coarsen(hr_model, n_lr):
         "nx",
         "ny",
         "nz",
-        "rek",
+        "drag",
         "kmin",
         "kmax",
         "beta",

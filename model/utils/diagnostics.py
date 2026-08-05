@@ -200,6 +200,7 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
         # instantaneous lines
         Ez0 = E_zero_frames[frame_indices[0]]
         ln_zero, = ax.loglog(k[1:], Ez0[1:], label="Zero", color="C2", linestyle="--")
+        ax.axvline(k_deformation, ymin=0, ymax=1, color='red', linestyle="--")
         ax.text(k_deformation,1e-14,'k_deformation',rotation=270, color='k')
         ax.axvline(k_Rhines, ymin=0, ymax=1, color='red', linestyle="--")
         ax.text(k_Rhines,1e-14,'k_Rhines',rotation=270, color='k')

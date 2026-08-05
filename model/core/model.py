@@ -34,10 +34,10 @@ class QGM(Kernel):
         nx = params.get('nx')
         ny = params.get('ny', nx)
         nz = params.get('nz', 1)
-        rek = params.get('rek')
+        drag = params.get('drag')
         kmin = params.get('kmin')
         kmax = params.get('kmax')
-        forcing_amplitude = params.get('forcing_amplitude', 0.0)
+        epsilon = params.get('epsilon', 0.0)
         self.seed = seed = params.get('seed', 0)
         self.beta = params.get('beta', 10.0)
         self.Lx = Lx = params.get('Lx', 6.28)
@@ -58,10 +58,10 @@ class QGM(Kernel):
             nz=nz,
             Lx=Lx,
             Ly=Ly,
-            rek=rek,
+            drag=drag,
             kmin=kmin,
             kmax=kmax,
-            forcing_amplitude=forcing_amplitude,
+            epsilon=epsilon,
             seed=seed,
             dt=dt,
         )
@@ -111,19 +111,18 @@ class QGM(Kernel):
             raise ValueError("n_jets must be specified for tuning.")
         
         base_state = super().initialise(key, n_jets)
-        if not tune:
+        if tune==False:
             return base_state
 
         U_target = self.beta * (self.Ly / (jnp.pi * n_jets))**2
-        U_rms = self.rhines_length(base_state)[1] # i actually think im not using rhines here despite the name - just U_rms
+        U_rms = self.rhines_length(base_state)[1].astype(float) #  not using rhines here despite the name - just U_rms functionality
 
         scaler = U_target / (U_rms + 1e-12)
         qh = base_state.qh * scaler
-
+                    
         # Compute suggested dt only for debugging/logging to avoid extra work in vmapped init.
         scaled_state = base_state.update(qh=qh)
         if verbose:
-            logger.info(f"Initialised state with U_rms={U_rms:.3f}, scaled to U_target={U_target:.3f} with scale factor {scaler:.3f}")
             suggest_dt = self.estimate_cfl_dt(scaled_state)
             suggest_dx = self.estimate_kolmogorov_length(scaled_state)
             logger.info(f"Suggested initial dt for stability: {float(suggest_dt):.3f}")
@@ -309,7 +308,7 @@ class QGM(Kernel):
 
         Returns (Lr, U_rms) as JAX scalars (trace-safe under jit/vmap).
         """
-        full = self.get_full_state(state)
+        full = self.get_full_state(state, forcing_key=None)
         u = full.u
         v = full.v
         U_rms = jnp.sqrt(jnp.mean(u ** 2 + v ** 2))
@@ -332,17 +331,14 @@ class QGM(Kernel):
 
         Returns Lk as a JAX scalar (trace-safe under jit/vmap).
         """
-        full = self.get_full_state(state)
-        u = full.u
-        v = full.v
-        q = full.q
+        q = state.q
         # Compute enstrophy dissipation rate: epsilon = nu * <|grad q|^2>
         grad_qx = jnp.gradient(q, axis=-1) / self.dx
         grad_qy = jnp.gradient(q, axis=-2) / self.dy
         grad_q_sq = grad_qx ** 2 + grad_qy ** 2
-        epsilon = self.rek * jnp.mean(grad_q_sq)
+        epsilon = self.drag * jnp.mean(grad_q_sq)
         # Estimate Kolmogorov lengthscale: Lk ~ (nu^3 / epsilon)^(1/4)
-        Lk = (self.rek ** 3 / (epsilon + 1e-12)) ** 0.25
+        Lk = (self.drag ** 3 / (epsilon + 1e-12)) ** 0.25
         return Lk
 
     @classmethod

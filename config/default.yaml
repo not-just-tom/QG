@@ -13,7 +13,7 @@ params:
   nz: 2
   # multi-layer model parameters (only used if nz>1)
   Lz: 500
-  rek: 7.0e-8 # Ekman drag coeff
+  drag: 7.0e-8 # Ekman drag coeff
   Ld: 33333 # deformation radius
   delta: 0.1 # ratio between top/bottom layer depth
   U1: 0.025
@@ -22,12 +22,12 @@ params:
   # Stochastic forcing parameters
   kmin: 7.0   # inner ring forcing 
   kmax: 10.0   # outer ring forcing 
-  forcing_amplitude: 0.000000000001 # 0.0 for no stochastic forcing 
+  epsilon: 0.000000000001 # 0.0 for no stochastic forcing 
 
 plotting:
   nsteps: 2000
   dt: 1000
-  spinup: 500 # in days
+  spinup: 200 # in days
   cadence: 10
   plot: ['loss', 'ke_spectrum', 'pv_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
   auto_dt: false

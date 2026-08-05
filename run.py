@@ -185,13 +185,18 @@ def run(cfg):
                 if os.path.exists(run_dir):
                     import shutil
                     shutil.rmtree(run_dir)
-                raise
             data_loader = ZarrDataLoader(run_dir)
         else:
             cfg['ml']['n_train'] = 0 
             cfg['ml']['n_test'] = 0 # leaves the one validation traj
-            q_traj = generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, run_dir) # just validations for plots
-            print('in generation print: ', q_traj.shape)
+            try: 
+                generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, run_dir) # just validations for plots
+            except Exception:
+                logger.exception("Failed to generate trajectory; cleaning up and exiting.")
+                if os.path.exists(run_dir):
+                    import shutil
+                    shutil.rmtree(run_dir)
+            data_loader = ZarrDataLoader(run_dir)
     else: # the case where nsteps too short so we load s and restart from end state to the desired number of steps
         logger.info(f"Found existing data with matching parameters at {run_dir}, but it has insufficient length. Loading trajectories and generating additional steps to reach desired length.")
         data_loader = ZarrDataLoader(run_dir)
@@ -227,9 +232,8 @@ def run(cfg):
         else:
             # Ensure the output directory exists when creating a new run directory
             os.makedirs(out_dir, exist_ok=True)
-        print('prior to zero_validation print: ', q_traj.shape)
         # Set up trajectories dict with truth data for PV diagnostic
-        trajectories['truth'] = q_traj
+        trajectories['truth'] = q_traj = data_loader.get_trajectory(0) # shape (time, layers, ny, nx)
         try:
             zero_results = zero_validation(lr_model, low_res_dt, q_traj, cfg, loss_fn)
             trajectories['zero_frames'] = zero_results['zero_frames']

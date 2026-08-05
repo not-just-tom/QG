@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 @Pytree.register_pytree_class_attrs(
-    children=["rek", "forcing_amplitude"],
+    children=["drag", "epsilon"],
     static_attrs=["nz", "ny", "nx", "Lx", "Ly", "kmin", "kmax", "seed"],
 )
 class Kernel(ABC):
@@ -22,10 +22,10 @@ class Kernel(ABC):
         nz: int,
         Lx: float,
         Ly: float,
-        rek: float = 0,
+        drag: float = 0,
         kmin: float = 3.0,
         kmax: float = 10,
-        forcing_amplitude: float = 0.0,
+        epsilon: float = 0.0,
         seed: int = 0,
         dt: float = 1.0,
     ):
@@ -35,12 +35,15 @@ class Kernel(ABC):
         self.nz = nz
         self.Lx = Lx
         self.Ly = Ly
-        self.rek = rek
-        self.kmin = kmin*2*jnp.pi/Lx
-        self.kmax = kmax*2*jnp.pi/Lx
-        self.forcing_amplitude = forcing_amplitude
+        self.drag = drag
         self.seed = seed
         self.dt = dt
+
+        # stochastic forcing
+        self.epsilon = epsilon
+        self.kmin = kmin*2*jnp.pi/Lx
+        self.kmax = kmax*2*jnp.pi/Lx
+
 
 
     def dealias(self, state: states.State) -> states.State:
@@ -283,14 +286,13 @@ class Kernel(ABC):
         return state.update(dqhdt=dqhdt)
 
     def _do_friction(self, state: states.FullState) -> states.FullState:
-        # Apply Beckman friction to lower layer tendency
 
         def compute_friction(state):
             dqhdt = jnp.concatenate(
                 [
                     state.dqhdt[:-1],
                     jnp.expand_dims(
-                        state.dqhdt[-1] + (self.rek * self._k2l2 * state.ph[-1]), 0
+                        state.dqhdt[-1] + (self.drag * self._k2l2 * state.ph[-1]), 0
                     ),
                 ],
                 axis=0,
@@ -298,7 +300,7 @@ class Kernel(ABC):
             return state.update(dqhdt=dqhdt)
 
         return jax.lax.cond(
-            self.rek != 0,
+            self.drag != 0,
             compute_friction,
             lambda state: state,
             state,
@@ -307,9 +309,9 @@ class Kernel(ABC):
     def _do_stochastic_forcing(self, state: states.FullState, forcing_key: jax.Array = None) -> states.FullState:
         """Apply stochastic forcing to the PV tendency.
 
-        Annulus with inner radius kmin and outer radius kmax, with amplitude scaled to forcing_amplitude.
-        If no PRNG key is supplied, the forcing is skipped so diagnostics and initialisation
-        calls can safely inspect the state without triggering random-number generation.
+        Annulus with inner radius kmin and outer radius kmax, with energy input defined by epsilon. 
+        This is a Wiener process in spectral space, so is scaled by sqrt(dt) to ensure that the energy input is independent of the timestep.
+
                 
         Parameters
         ----------
@@ -317,19 +319,44 @@ class Kernel(ABC):
             The current full state
         key : jax.Array, optional
             PRNG key for generating random forcing.
+        epsilon : float
+            New implementation, defining energy input rather than forcing amplitude.
             
         Returns
         -------
         states.FullState
             State with forcing added to dqhdt
         """
-        if self.forcing_amplitude == 0.0 or forcing_key is None:
+        if self.epsilon == 0.0:
             return state
 
+        if forcing_key is None:
+            return state
+            #raise ValueError("Forcing key must be provided for stochastic forcing.")
+        
         mask = (self.Kmag >= self.kmin) & (self.Kmag <= self.kmax)
-        noise = jax.random.normal(forcing_key, self.get_grid().spectral_state_shape)
-        forcing = self.forcing_amplitude * noise * mask / jnp.sqrt(self.dt)
-        dqhdt = state.dqhdt + forcing 
+        forcing_spectrum = mask.astype(float)
+        invK2 = jnp.where(self.Kmag>0, 1.0 / self.Kmag**2, 0.0)
+        epsilon0 = 0.5 * jnp.sum(forcing_spectrum * invK2)
+        forcing_spectrum *= (self.epsilon / epsilon0)
+
+        noise_top = jax.random.normal(
+            forcing_key,
+            (self.nl, self.nk)
+        )
+
+        noise = jnp.stack([
+            noise_top,
+            jnp.zeros_like(noise_top)
+        ], axis=0)# forcing is in the top layer
+
+        forcing = (
+            jnp.sqrt(forcing_spectrum)
+            * noise
+            / jnp.sqrt(self.dt)
+        )
+
+        dqhdt = state.dqhdt + forcing
         return state.update(dqhdt=dqhdt)
     
     def _do_wind_forcing(self, state: states.FullState):

@@ -25,12 +25,19 @@ class StepperState(typing.Generic[P]):
 
     tc : jax.numpy.uint32
         The current model timestep
+
+    rng_key : jax.Array
+        General PRNG key for the stepper.
+
+    forcing_key : jax.Array
+        Dedicated PRNG key used to generate stochastic forcing.
     """
 
     state: P
     t: jax.Array
     tc: jax.Array
     rng_key: jax.Array
+    forcing_key: jax.Array
 
     def update(self, **kwargs):
         """Replace values stored in this state.
@@ -60,10 +67,10 @@ class StepperState(typing.Generic[P]):
             A copy of this object with the specified values replaced.
         """
         # Check that only valid updates are applied
-        if extra_attrs := (kwargs.keys() - {"state", "t", "tc", "rng_key"}):
+        if extra_attrs := (kwargs.keys() - {"state", "t", "tc", "rng_key", "forcing_key"}):
             extra_attr_str = ", ".join(extra_attrs)
             raise ValueError(
-            "invalid state updates, can only update state, t, tc, and rng_key "
+            "invalid state updates, can only update state, t, tc, rng_key, and forcing_key "
                 f"(not {extra_attr_str})"
             )
         # Perform the update
@@ -94,11 +101,13 @@ class Stepper(abc.ABC):
         """
         if rng_key is None:
             rng_key = jax.random.PRNGKey(0)
+        rng_key, forcing_key = jax.random.split(rng_key)
         return StepperState(
             state=state,
             t=jnp.float32(0),
             tc=jnp.uint32(0),
             rng_key=rng_key,
+            forcing_key=forcing_key,
         )
 
     @abc.abstractmethod
@@ -139,7 +148,8 @@ class SteppedModel:
         logger = logging.getLogger(__name__)
 
         # Apply model step
-        forcing_key, next_rng_key = jax.random.split(stepper_state.rng_key)
+        rng_key, next_rng_key = jax.random.split(stepper_state.rng_key)
+        forcing_key, next_forcing_key = jax.random.split(stepper_state.forcing_key)
         new_stepper_state = self.stepper.apply_updates(
             stepper_state,
             self.model.get_updates(
@@ -150,7 +160,9 @@ class SteppedModel:
         postprocessed_state = self.model.dealias(new_stepper_state.state)
         postprocessed_state = self.model.apply_exact_step_filter(postprocessed_state)
         new_stepper_state = new_stepper_state.update(
-            state=postprocessed_state, rng_key=next_rng_key
+            state=postprocessed_state,
+            rng_key=next_rng_key,
+            forcing_key=next_forcing_key,
         )
                 
         return new_stepper_state
@@ -249,6 +261,7 @@ class AB3Stepper(Stepper):
             t=base_state.t,
             tc=base_state.tc,
             rng_key=base_state.rng_key,
+            forcing_key=base_state.forcing_key,
             _ablevel=jnp.uint8(0),
             _updates=(dummy_update, dummy_update),
         )
@@ -312,6 +325,7 @@ class AB3Stepper(Stepper):
             t=new_t,
             tc=new_tc,
             rng_key=stepper_state.rng_key,
+            forcing_key=stepper_state.forcing_key,
             _ablevel=new_ablevel,
             _updates=new_updates,
         )
@@ -347,6 +361,7 @@ class CNABStepper(Stepper):
             t=base_state.t,
             tc=base_state.tc,
             rng_key=base_state.rng_key,
+            forcing_key=base_state.forcing_key,
             _ablevel=jnp.uint8(0),
             _updates=(dummy_update, dummy_update),
         )
@@ -396,6 +411,7 @@ class CNABStepper(Stepper):
             t=new_t,
             tc=new_tc,
             rng_key=stepper_state.rng_key,
+            forcing_key=stepper_state.forcing_key,
             _ablevel=new_ablevel,
             _updates=new_updates,
         )
