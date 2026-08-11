@@ -334,6 +334,7 @@ def find_existing_data(base_dir, params, timing_metadata):
                 return False, 'nsteps'
             else:
                 return False, None
+        
         timing_match, fail_reason = timing_conditions(timing_metadata, stored_meta.get("timing", {}))
         # Exact metadata match
         if (metadata_matches(params, stored_meta["parameters"])) and timing_match:
@@ -418,7 +419,8 @@ class ZarrDataLoader:
             raise IndexError(f"Trajectory index {idx} out of range [0, {self.n_trajectories})")
         
         traj_name = self.traj_names[idx]
-        return self.traj_group[traj_name][:]
+        key = jnp.asarray(self.traj_group[traj_name].attrs['init_key'], dtype=jnp.uint32)
+        return self.traj_group[traj_name][:], key
     
     def get_trajectory_window(
         self, 

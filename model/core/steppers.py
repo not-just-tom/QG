@@ -26,9 +26,6 @@ class StepperState(typing.Generic[P]):
     tc : jax.numpy.uint32
         The current model timestep
 
-    rng_key : jax.Array
-        General PRNG key for the stepper.
-
     forcing_key : jax.Array
         Dedicated PRNG key used to generate stochastic forcing.
     """
@@ -36,7 +33,6 @@ class StepperState(typing.Generic[P]):
     state: P
     t: jax.Array
     tc: jax.Array
-    rng_key: jax.Array
     forcing_key: jax.Array
 
     def update(self, **kwargs):
@@ -45,7 +41,7 @@ class StepperState(typing.Generic[P]):
         This function produces a *new* state object, containing the
         replacement values.
 
-        The keyword arguments may be any of `state`, `t`, `tc`, or `rng_key`.
+        The keyword arguments may be any of `state`, `t`, `tc`, or `forcing_key`.
 
         The object this method is called on is not modified.
 
@@ -67,10 +63,10 @@ class StepperState(typing.Generic[P]):
             A copy of this object with the specified values replaced.
         """
         # Check that only valid updates are applied
-        if extra_attrs := (kwargs.keys() - {"state", "t", "tc", "rng_key", "forcing_key"}):
+        if extra_attrs := (kwargs.keys() - {"state", "t", "tc", "forcing_key"}):
             extra_attr_str = ", ".join(extra_attrs)
             raise ValueError(
-            "invalid state updates, can only update state, t, tc, rng_key, and forcing_key "
+            "invalid state updates, can only update state, t, tc, and forcing_key "
                 f"(not {extra_attr_str})"
             )
         # Perform the update
@@ -81,7 +77,7 @@ class StepperState(typing.Generic[P]):
 class Stepper(abc.ABC):
     dt: float
 
-    def initialise_stepper_state(self, state, *, rng_key=None):
+    def initialise_stepper_state(self, state, forcing_key=None):
         """Wrap an existing `state` from a model in a
         :class:`StepperState` to prepare it for time stepping.
 
@@ -99,14 +95,10 @@ class Stepper(abc.ABC):
             The wrapped state. Note this will be a subclass of
             :class:`StepperState` appropriate for this time stepper.
         """
-        if rng_key is None:
-            rng_key = jax.random.PRNGKey(0)
-        rng_key, forcing_key = jax.random.split(rng_key)
         return StepperState(
             state=state,
             t=jnp.float32(0),
             tc=jnp.uint32(0),
-            rng_key=rng_key,
             forcing_key=forcing_key,
         )
 
@@ -135,36 +127,60 @@ class SteppedModel:
     def initialise(self, key, *args, **kwargs):
         model_state = self.model.initialise(key, *args, **kwargs)
         return self.initialise_stepper_state(
-            model_state, rng_key=jax.random.fold_in(key, 1)
+            model_state, forcing_key=key
         )
 
-    def initialise_stepper_state(self, state, /, *, rng_key=None):
-        return self.stepper.initialise_stepper_state(state, rng_key=rng_key)
+    def initialise_stepper_state(self, state, forcing_key=None):
+        if forcing_key==None:
+            raise ValueError("Forcing_key needs to be prodived to initialise_stepper_state")
+        return self.stepper.initialise_stepper_state(state, forcing_key=forcing_key)
+
+    def _unwrap_state(self, state):
+        unwrap_state = getattr(self.model, "unwrap_state", None)
+        if unwrap_state is not None:
+            return unwrap_state(state)
+        return state
+
+    def _apply_stochastic_forcing(self, state, *, forcing_key):
+        apply_stochastic_forcing = getattr(self.model, "apply_stochastic_forcing", None)
+        if apply_stochastic_forcing is not None:
+            return apply_stochastic_forcing(state, forcing_key=forcing_key)
+
+        inner_state = self._unwrap_state(state)
+        stochastic_update = self.model.do_stochastic_forcing(
+            inner_state,
+            forcing_key=forcing_key,
+        )
+        return inner_state.update(qh=inner_state.qh + stochastic_update.qh)
+
+    def _apply_postprocessing(self, state):
+        apply_postprocessing = getattr(self.model, "apply_postprocessing", None)
+        if apply_postprocessing is not None:
+            return apply_postprocessing(state)
+
+        postprocessed_state = self.model.dealias(state)
+        return self.model.apply_exact_step_filter(postprocessed_state)
 
     def step_model(self, stepper_state, /):
-        import logging
-        import numpy as np
-        
-        logger = logging.getLogger(__name__)
-
         # Apply model step
-        rng_key, next_rng_key = jax.random.split(stepper_state.rng_key)
         forcing_key, next_forcing_key = jax.random.split(stepper_state.forcing_key)
+
+        # all deterministic steps added and updates state
         new_stepper_state = self.stepper.apply_updates(
             stepper_state,
-            self.model.get_updates(
-                stepper_state.state,
-                forcing_key=forcing_key,
-            ),
+            self.model.get_updates(stepper_state.state),
         )
-        postprocessed_state = self.model.dealias(new_stepper_state.state)
-        postprocessed_state = self.model.apply_exact_step_filter(postprocessed_state)
+
+        updated_state = self._apply_stochastic_forcing(
+            new_stepper_state.state,
+            forcing_key=forcing_key,
+        )
+        postprocessed_state = self._apply_postprocessing(updated_state)
         new_stepper_state = new_stepper_state.update(
             state=postprocessed_state,
-            rng_key=next_rng_key,
             forcing_key=next_forcing_key,
         )
-                
+
         return new_stepper_state
 
     def get_full_state(self, stepper_state):
@@ -236,7 +252,7 @@ class AB3Stepper(Stepper):
         Numerical time step
     """
 
-    def initialise_stepper_state(self, state: P, *, rng_key=None) -> AB3State[P]:
+    def initialise_stepper_state(self, state: P, forcing_key=None) -> AB3State[P]:
         """Wrap an existing `state` from a model in a
         :class:`StepperState` to prepare it for time stepping.
 
@@ -254,13 +270,12 @@ class AB3Stepper(Stepper):
             The wrapped state. Note this will be a subclass of
             :class:`StepperState` appropriate for this time stepper.
         """
-        base_state = super().initialise_stepper_state(state, rng_key=rng_key)
+        base_state = super().initialise_stepper_state(state, forcing_key=forcing_key)
         dummy_update: P = _dummy_step_init(state)
         return AB3State(
             state=base_state.state,
             t=base_state.t,
             tc=base_state.tc,
-            rng_key=base_state.rng_key,
             forcing_key=base_state.forcing_key,
             _ablevel=jnp.uint8(0),
             _updates=(dummy_update, dummy_update),
@@ -324,7 +339,6 @@ class AB3Stepper(Stepper):
             state=new_state,
             t=new_t,
             tc=new_tc,
-            rng_key=stepper_state.rng_key,
             forcing_key=stepper_state.forcing_key,
             _ablevel=new_ablevel,
             _updates=new_updates,
@@ -353,14 +367,13 @@ class CNABStepper(Stepper):
       and JAX-friendly without extra model hooks.
     """
 
-    def initialise_stepper_state(self, state: P, *, rng_key=None) -> AB3State[P]:
-        base_state = super().initialise_stepper_state(state, rng_key=rng_key)
+    def initialise_stepper_state(self, state: P, forcing_key=None) -> AB3State[P]:
+        base_state = super().initialise_stepper_state(state, forcing_key=forcing_key)
         dummy_update: P = _dummy_step_init(state)
         return AB3State(
             state=base_state.state,
             t=base_state.t,
             tc=base_state.tc,
-            rng_key=base_state.rng_key,
             forcing_key=base_state.forcing_key,
             _ablevel=jnp.uint8(0),
             _updates=(dummy_update, dummy_update),
@@ -410,7 +423,6 @@ class CNABStepper(Stepper):
             state=new_state,
             t=new_t,
             tc=new_tc,
-            rng_key=stepper_state.rng_key,
             forcing_key=stepper_state.forcing_key,
             _ablevel=new_ablevel,
             _updates=new_updates,

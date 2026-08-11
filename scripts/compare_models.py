@@ -245,7 +245,7 @@ def rollout_model(model_info, validation_trajs, n_trajs=5):
     print(f"  Avg Max CFL: {avg_cfl:.6f}")
     
     # Convert predictions back to physical space for plotting
-    pred_frames = jax.vmap(lambda x: jnp.fft.irfftn(x, axes=(-2, -1), norm='ortho', s=eval_trajs.shape[-2:]))(
+    pred = jax.vmap(lambda x: jnp.fft.irfftn(x, axes=(-2, -1), norm='ortho', s=eval_trajs.shape[-2:]))(
         all_pred_qh
     )
     
@@ -253,7 +253,7 @@ def rollout_model(model_info, validation_trajs, n_trajs=5):
         "residuals": np.array(all_residuals),
         "pred_qh": np.array(all_pred_qh),
         "target_qh": np.array(all_target_qh),
-        "pred_frames": np.array(pred_frames),
+        "pred": np.array(pred),
         "mse_loss": float(mse_loss),
         "mae_loss": float(mae_loss),
         "max_cfls": np.array(max_cfls),
@@ -324,7 +324,7 @@ def compare_models(folder_dir, validation_data_path, output_dir, n_trajs=5):
     
     # Add each model's predictions and loss history
     for model_name, result in results.items():
-        trajs_dict[f"pred_{model_name}"] = result["pred_frames"]
+        trajs_dict[f"pred_{model_name}"] = result["pred"]
         trajs_dict[f"loss_history_{model_name}"] = result["loss_history"]
     
     # Create comparison plots using Plotter

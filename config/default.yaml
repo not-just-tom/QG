@@ -25,24 +25,24 @@ params:
   epsilon: 0.000000000001 # 0.0 for no stochastic forcing 
 
 plotting:
-  nsteps: 2000
+  nsteps: 300
   dt: 1000
   spinup: 200 # in days
-  cadence: 10
+  cadence: 1
   plot: ['loss', 'ke_spectrum', 'pv_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
   auto_dt: false
   njets: 3
   cfl: 0.5
 
 ml:
-  enabled: false # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
-  model_type: zero
+  enabled: true # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
+  model_type: resnet
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 24
   n_test: 6
   start_days: 1        # initial window length in days
-  end_days: 1         # final window length in days
+  end_days: 30         # final window length in days
   batch_size: 10 # number of samples in a training batch per update <--------------------------- is this used?
   prefetch: 3       # prefetch a few batches to aid efficiency
 
@@ -97,7 +97,7 @@ architectures:
     hidden_layers: 2
   resnet:
     learning_rate: 0.0001 #[0.0001, 0.0005]
-    loss: ['mse', 'mae', 'spectral', 'strain', 'multistep', 'maddison']
+    loss: 'maddison'
     nlayers: 7 #[3, 5, 7]
     width: 64 #[32, 64]
     kernel_size: 3  #[3, 5]

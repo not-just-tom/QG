@@ -82,9 +82,7 @@ class Kernel(ABC):
         """
         return state
 
-    def get_full_state(
-        self, state: states.State, forcing_key: jax.Array | None = None
-    ) -> states.FullState:
+    def get_full_state(self, state: states.State) -> states.FullState:
         """Compute full state with all tendencies.
         
         Parameters
@@ -110,10 +108,11 @@ class Kernel(ABC):
             v=_empty_real(),
             dqhdt=_empty_com(),
         )
+
+        # all deterministic steps added to tendency dqhdt, no stochastic forcing yet
         full_state = self._invert(full_state)
         full_state = self._do_advection(full_state)
         full_state = self._do_friction(full_state)
-        full_state = self._do_stochastic_forcing(full_state, forcing_key)
         full_state = self._do_wind_forcing(full_state)
         return full_state
 
@@ -135,17 +134,16 @@ class Kernel(ABC):
         )
         return self._invert(full_state).ph
 
-    def get_updates(
-        self, state: states.State, forcing_key: jax.Array | None = None
-    ) -> states.State:
+    def get_updates(self, state: states.State) -> states.State:
         """Get tendency updates for time-stepping.
+        Entirely deterministic; no stochastic forcing must be passed to steppers.
         
         Parameters
         ----------
         state : states.State
             The model state
         """
-        full_state = self.get_full_state(state, forcing_key=forcing_key)
+        full_state = self.get_full_state(state)
         return states.State(
             qh=full_state.dqhdt,
             _q_shape=self.get_grid().real_state_shape[-2:],
@@ -306,11 +304,11 @@ class Kernel(ABC):
             state,
         )
 
-    def _do_stochastic_forcing(self, state: states.FullState, forcing_key: jax.Array = None) -> states.FullState:
-        """Apply stochastic forcing to the PV tendency.
+    def do_stochastic_forcing(self, forcing_key: jax.Array = None) -> jax.Array:
+        """Apply stochastic forcing.
 
         Annulus with inner radius kmin and outer radius kmax, with energy input defined by epsilon. 
-        This is a Wiener process in spectral space, so is scaled by sqrt(dt) to ensure that the energy input is independent of the timestep.
+        This is a Wiener process in spectral space, so is multiplied by sqrt(dt) to ensure that the energy input is independent of the timestep.
 
                 
         Parameters
@@ -327,12 +325,8 @@ class Kernel(ABC):
         states.FullState
             State with forcing added to dqhdt
         """
-        if self.epsilon == 0.0:
-            return state
-
         if forcing_key is None:
-            return state
-            #raise ValueError("Forcing key must be provided for stochastic forcing.")
+            raise ValueError("Forcing key must be provided for stochastic forcing.")
         
         mask = (self.Kmag >= self.kmin) & (self.Kmag <= self.kmax)
         forcing_spectrum = mask.astype(float)
@@ -350,14 +344,13 @@ class Kernel(ABC):
             jnp.zeros_like(noise_top)
         ], axis=0)# forcing is in the top layer
 
-        forcing = (
+        forcing_qh = (
             jnp.sqrt(forcing_spectrum)
             * noise
-            / jnp.sqrt(self.dt)
+            * jnp.sqrt(self.dt)
         )
 
-        dqhdt = state.dqhdt + forcing
-        return state.update(dqhdt=dqhdt)
+        return forcing_qh
     
     def _do_wind_forcing(self, state: states.FullState):
         """Apply wind forcing to the PV tendency.

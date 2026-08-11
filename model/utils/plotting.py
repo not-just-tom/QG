@@ -150,9 +150,9 @@ def make_quad_gif(truth, pred, sgs_q=None, zero=None, out_file='quad.gif', caden
     """Compatibility wrapper for the newer diagnostic-based quad GIF plot."""
     trajs = {
         "truth": truth,
-        "pred_frames": pred,
+        "pred": pred,
         "sgs": sgs_q,
-        "zero_frames": zero,
+        "zero": zero,
         "target_sgs": target_sgs,
         "teacher_forced_sgs": teacher_forced_sgs,
     }

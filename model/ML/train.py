@@ -10,14 +10,15 @@ importlib.reload(model.ML.utils.dataloading)
 from model.ML.architectures.build_model import closure_combiner
 from model.ML.utils.dataloading import load_forced_model
 
-def rollout_traj_errors(target_traj, forced_model, template_state, closure_params, lr_model, dt):
+def rollout_traj_errors(target_traj, forced_model, template_state, closure_params, lr_model, dt, forcing_key=None):
     # nsteps is number of intervals
     nsteps = target_traj.shape[0] - 1
 
     init_qh = jnp.fft.rfftn(target_traj[0], axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
     base_state = template_state.update(qh=init_qh)
     init_state = forced_model.initialise_stepper_state(
-        forced_model.model.initialise_param_state(base_state, closure_params)
+        forced_model.model.initialise_param_state(base_state, closure_params),
+        forcing_key=forcing_key,
     )
 
     grid = lr_model.get_grid()
@@ -72,6 +73,7 @@ def make_train_epoch(lr_model, dt, optim, loss_fn, cfl_limit=1.0, closure_scale=
             """Compute loss and CFL from rollout in one pass.
             Returns mean loss over batch and max CFL.
             """
+            forcing_key = jax.random.PRNGKey(0) # fix: check this is ok
             errs, max_cfl, target_qh, pred_qh = jax.vmap(
                 functools.partial(
                     rollout_traj_errors,
@@ -80,6 +82,7 @@ def make_train_epoch(lr_model, dt, optim, loss_fn, cfl_limit=1.0, closure_scale=
                     closure_params=params,
                     lr_model=lr_model,
                     dt=dt,
+                    forcing_key=forcing_key,
                 )
             )(batch)
             # loss_fn now returns per-sample losses (shape: batch_size)
@@ -118,7 +121,8 @@ def make_train_epoch(lr_model, dt, optim, loss_fn, cfl_limit=1.0, closure_scale=
     return eqx.filter_jit(_train_epoch)
 
 def make_test_epoch(lr_model, dt, loss_fn, cfl_limit=1.0, closure_scale=0.1):
-    """basically the same minus the optim update. 
+    """basically the same minus the optim update. I've moved the zero loss output on the same trajs to here 
+    rather than having a split function and dealing with the random_keys matching up.
     """
     # Prepare any template state that is static and can be captured
     template_state = lr_model.initialise(jax.random.PRNGKey(0))
@@ -132,12 +136,22 @@ def make_test_epoch(lr_model, dt, loss_fn, cfl_limit=1.0, closure_scale=0.1):
             trajs=test_trajs,
             closure_scale=closure_scale,
         )
+        from model.ML.architectures.zero import ZeroModel
+        zero_closure_obj = ZeroModel()
+        zero_forced_model, zero_closure_params, zero_static_closure_obj, *_ = load_forced_model(
+            lr_model,
+            zero_closure_obj,
+            dt,
+            trajs=test_trajs,
+            closure_scale=closure_scale,
+        )
 
         def step_fn(carry, batch):
             # carry is (closure_params, optim_state) but test epoch does not update
             closure_params, optim_state = carry
 
             # Single rollout to get errors and CFL
+            forcing_key = jax.random.PRNGKey(0)
             errs, max_cfl, _, _ = jax.vmap(
                 functools.partial(
                     rollout_traj_errors,
@@ -146,6 +160,7 @@ def make_test_epoch(lr_model, dt, loss_fn, cfl_limit=1.0, closure_scale=0.1):
                     closure_params=closure_params,
                     lr_model=lr_model,
                     dt=dt,
+                    forcing_key=forcing_key,
                 )
             )(batch)
             
@@ -160,26 +175,59 @@ def make_test_epoch(lr_model, dt, loss_fn, cfl_limit=1.0, closure_scale=0.1):
             # Return unchanged carry and the computed loss
             return (closure_params, optim_state), (computed_loss, discard, jnp.max(max_cfl))
 
+        def step_zero(carry, batch):
+            # carry is (closure_params, optim_state) but test epoch does not update
+            closure_params, optim_state = carry
+
+            # Single rollout to get errors and CFL
+            forcing_key = jax.random.PRNGKey(0)
+            errs, max_cfl, _, _ = jax.vmap(
+                functools.partial(
+                    rollout_traj_errors,
+                    forced_model=zero_forced_model,
+                    template_state=template_state,
+                    closure_params=closure_params,
+                    lr_model=lr_model,
+                    dt=dt,
+                    forcing_key=forcing_key,
+                )
+            )(batch)
+            
+            discard = jnp.any(max_cfl > cfl_limit)
+            # loss_fn now returns per-sample losses; take mean for logging
+            computed_loss = jax.lax.cond(
+                discard,
+                lambda _: jnp.asarray(jnp.nan, dtype=batch.dtype),
+                lambda _: jnp.mean(loss_fn(errs, lr_model)),
+                operand=None,
+            )
+            # Return unchanged carry and the computed loss
+            return (closure_params, optim_state), (computed_loss, discard, jnp.max(max_cfl))
+        # test trajs with closure
         (final_closure_params, final_optim_state), (losses, discard_flags, max_cfls) = jax.lax.scan(
             step_fn, (closure_params, optim_state), test_trajs
         )
-        return eqx.combine(final_closure_params, static_closure_obj), final_optim_state, losses, discard_flags, max_cfls
+
+        # test traj with zero closure
+        (final_zero_closure_params, final_zero_optim_state), (zero_losses, zero_discard_flags, zero_max_cfls) = jax.lax.scan(
+            step_zero, (zero_closure_params, optim_state), test_trajs
+        )
+        return eqx.combine(final_closure_params, static_closure_obj), final_optim_state, losses, discard_flags, max_cfls, zero_losses
 
     return eqx.filter_jit(_test_epoch)
 
 
-def make_validation_epoch(lr_model, dt, loss_fn, closure_scale=0.1):
+def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
     """Factory that returns a validation_epoch function with
     SGS diagnostics and target SGS computation.
     """
 
-    def _validation_epoch(truth_traj, cfg, closure, zero_frames):
+    def _validation_epoch(truth_traj, cfg, closure):
 
         truth_traj = jnp.asarray(truth_traj)
         nsteps_cfg = int(getattr(cfg.plotting, "nsteps", truth_traj.shape[0] - 1))
-        seed = int(getattr(cfg.params, "seed", 0))
-
         n_intervals = min(nsteps_cfg, int(truth_traj.shape[0]) - 1)
+
         forced_model, closure_params, closure_static, q_mean, q_std, dq_mean, dq_std  = load_forced_model(
             lr_model,
             closure,
@@ -188,9 +236,7 @@ def make_validation_epoch(lr_model, dt, loss_fn, closure_scale=0.1):
             closure_scale=closure_scale,
         )
 
-        template_state = lr_model.initialise(
-            jax.random.PRNGKey(seed)
-        )
+        template_state = lr_model.initialise(init_key)
 
         init_qh = jnp.fft.rfftn(
             truth_traj[0],
@@ -204,7 +250,8 @@ def make_validation_epoch(lr_model, dt, loss_fn, closure_scale=0.1):
             forced_model.model.initialise_param_state(
                 base_state,
                 closure_params
-            )
+            ),
+            forcing_key=init_key,
         )
 
         real_shape = truth_traj.shape[-2:]
@@ -255,7 +302,7 @@ def make_validation_epoch(lr_model, dt, loss_fn, closure_scale=0.1):
             axis=0,
         )
 
-        pred_frames = jax.vmap(
+        pred = jax.vmap(
             lambda x: jnp.fft.irfftn(
                 x,
                 axes=(-2, -1),
@@ -264,239 +311,73 @@ def make_validation_epoch(lr_model, dt, loss_fn, closure_scale=0.1):
             )
         )(qh_traj)
 
-
-        # SGS diagnostics - compute ideal closure output by stepping physics from truth states
         
-        # Build a physics-only model (no closure) for computing ideal targets
+        # Build a physics-only model (no closure) for comparison
         from model.ML.architectures.zero import ZeroModel
-        zero_closure_obj = ZeroModel()
-        physics_only_model, physics_params, _, _, _, _, _ = load_forced_model(
-            lr_model, zero_closure_obj, dt, trajs=truth_traj, closure_scale=closure_scale,
+        zero_closure = ZeroModel()
+        zero_model, zero_params, *_ = load_forced_model(
+            lr_model,
+            zero_closure,
+            dt,
+            trajs=truth_traj,
+            closure_scale=1.0,  # No scaling for zero model
         )
         
-        # Step physics forward from each truth state to see where physics alone would take us
-        def step_physics_from_truth(q_truth):
-            qh = jnp.fft.rfftn(q_truth, axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
-            state = template_state.update(qh=qh)
-            init = physics_only_model.initialise_stepper_state(
-                physics_only_model.model.initialise_param_state(state, physics_params)
+        init_zero_state = zero_model.initialise_stepper_state(
+            zero_model.model.initialise_param_state(
+                base_state,
+                zero_params
+            ),
+            init_key
+        )
+        
+        # Zero model rollout
+        def _zero_step(carry, _x):
+            next_state = zero_model.step_model(carry)
+            dqh_total = (
+                next_state.state.model_state.qh
+                - carry.state.model_state.qh
             )
-            next_state = physics_only_model.step_model(init)
-            # Return the change in physical space
-            q_next = jnp.fft.irfftn(
-                next_state.state.model_state.qh,
-                axes=(-2, -1), norm='ortho', s=real_shape
+            return next_state, dqh_total
+        
+        _, zero_dqh = jax.lax.scan(
+            _zero_step,
+            init_zero_state,
+            None,
+            length=n_intervals,
+        )
+        
+        zero_qh_traj = jnp.concatenate(
+            [
+                qh0[None, ...],
+                qh0[None, ...] + jnp.cumsum(zero_dqh, axis=0),
+            ],
+            axis=0,
+        )
+        
+        zero = jax.vmap(
+            lambda x: jnp.fft.irfftn(
+                x,
+                axes=(-2, -1),
+                norm='ortho',
+                s=real_shape,
             )
-            return q_next - q_truth
-        
-        # Compute where physics would take each truth state
-        dq_physics_from_truth = jax.vmap(step_physics_from_truth)(truth_traj[:n_intervals])
-        
-        # Ideal closure output: what you'd need to add to physics to reach next truth state
-        dq_truth_steps = jnp.diff(truth_traj[:n_intervals + 1], axis=0)
-        ideal_closure_output = dq_truth_steps - dq_physics_from_truth
-        
-        # Teacher-forced: what does the model actually predict at truth states?
-        def eval_closure_at_truth_state(q_truth):
-            qh = jnp.fft.rfftn(q_truth, axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
-            state = template_state.update(qh=qh)
-            dq_pred, _ = closure_combiner(
-                state, closure_params, closure_static,
-                q_mean=q_mean, q_std=q_std,
-                dq_mean=dq_mean, dq_std=dq_std,
-                dt=dt,
-                model=lr_model,
-            )
-            return dq_pred
-        
-        teacher_forced_sgs = jax.vmap(eval_closure_at_truth_state)(truth_traj[:n_intervals])
+        )(zero_qh_traj)  
         
         # Rollout SGS (what was actually applied during deployment)
         sgs_increment = sgs_increment_step
 
         result = {
-            "pred_frames": jax.device_get(pred_frames),
+            "pred": jax.device_get(pred),
 
-            "zero_frames": jax.device_get(zero_frames),
+            "zero": jax.device_get(zero),
 
             "sgs": jax.device_get(sgs_increment),
-
-            "target_sgs": jax.device_get(ideal_closure_output),
-            
-            "teacher_forced_sgs": jax.device_get(teacher_forced_sgs),
 
             "truth": jax.device_get(truth_traj),
         }
         return result
 
     return _validation_epoch
-
-
-def zero_validation(lr_model, dt, truth_traj, cfg, loss_fn):
-    """Run zero model baseline and return zero_frames and zero_loss.
-    
-    Args:
-        lr_model: Low-resolution physics model
-        dt: Timestep
-        truth_traj: Truth trajectory array (time, layers, ny, nx)
-        cfg: Configuration object
-        loss: Loss type string ('maddison' or 'mse')
-    
-    Returns:
-        dict with 'zero_frames' and 'zero_loss' keys
-    """
-    truth_traj = jnp.asarray(truth_traj)
-    
-    nsteps_cfg = int(getattr(cfg.plotting, "nsteps", truth_traj.shape[0] - 1))
-    seed = int(getattr(cfg.params, "seed", 0))
-    n_intervals = min(nsteps_cfg, int(truth_traj.shape[0]) - 1)
-    
-    # Build zero model
-    from model.ML.architectures.zero import ZeroModel
-    zero_closure = ZeroModel()
-    zero_model, zero_params, *_ = load_forced_model(
-        lr_model,
-        zero_closure,
-        dt,
-        trajs=truth_traj,
-        closure_scale=1.0,  # No scaling for zero model
-    )
-    
-    template_state = lr_model.initialise(jax.random.PRNGKey(seed))
-    
-    init_qh = jnp.fft.rfftn(
-        truth_traj[0],
-        axes=(-2, -1),
-        norm='ortho'
-    ).astype(template_state.qh.dtype)
-    
-    base_state = template_state.update(qh=init_qh)
-    
-    init_zero_state = zero_model.initialise_stepper_state(
-        zero_model.model.initialise_param_state(
-            base_state,
-            zero_params
-        )
-    )
-    
-    real_shape = truth_traj.shape[-2:]
-    
-    # Zero model rollout
-    def _zero_step(carry, _x):
-        next_state = zero_model.step_model(carry)
-        dqh_total = (
-            next_state.state.model_state.qh
-            - carry.state.model_state.qh
-        )
-        return next_state, dqh_total
-    
-    _, zero_dqh = jax.lax.scan(
-        _zero_step,
-        init_zero_state,
-        None,
-        length=n_intervals,
-    )
-    
-    # Reconstruct zero trajectory in physical space
-    qh0 = jnp.fft.rfftn(
-        truth_traj[0],
-        axes=(-2, -1),
-        norm='ortho'
-    )
-    
-    zero_qh_traj = jnp.concatenate(
-        [
-            qh0[None, ...],
-            qh0[None, ...] + jnp.cumsum(zero_dqh, axis=0),
-        ],
-        axis=0,
-    )
-    
-    zero_frames = jax.vmap(
-        lambda x: jnp.fft.irfftn(
-            x,
-            axes=(-2, -1),
-            norm='ortho',
-            s=real_shape,
-        )
-    )(zero_qh_traj)
-    
-    # Compute zero loss using the same loss function as training
-    zero_error = truth_traj[1:n_intervals + 1] - zero_frames[1:]
-    # For validation, we typically want the mean loss across timesteps
-    # Add batch dimension if needed for loss_fn consistency
-    zero_error_batched = zero_error[None, ...]  # (1, nsteps, nz, ny, nx)
-    per_sample_loss = loss_fn(zero_error_batched, lr_model)
-    zero_loss = jnp.mean(per_sample_loss)
-    
-    return {
-        'zero_frames': jax.device_get(zero_frames),
-        'zero_loss': jax.device_get(zero_loss),
-    }
-
-
-def compute_zero_epoch_loss(lr_model, dt, test_trajs, loss_fn, batch_steps, closure_scale=0.1):
-    """Compute zero model loss for a batch of trajectories with specific window size.
-    
-    Efficient per-epoch zero baseline computation for curriculum learning.
-    
-    Args:
-        lr_model: Low-resolution physics model
-        dt: Timestep
-        test_trajs: Batch of test trajectories (batch, timesteps, nz, ny, nx)
-        loss_fn: Loss function
-        batch_steps: Number of timesteps to use (window size)
-        closure_scale: Closure scaling factor
-    
-    Returns:
-        Mean loss over batch
-    """
-    from model.ML.architectures.zero import ZeroModel
-    
-    # Truncate trajectories to batch_steps + 1 (need initial condition)
-    test_trajs = test_trajs[:, :batch_steps + 1]
-    
-    zero_closure = ZeroModel()
-    zero_model, zero_params, *_ = load_forced_model(
-        lr_model,
-        zero_closure,
-        dt,
-        trajs=test_trajs,
-        closure_scale=1.0,
-    )
-    
-    template_state = lr_model.initialise(jax.random.PRNGKey(0))
-    
-    # Rollout for a single trajectory
-    def rollout_zero(traj):
-        init_qh = jnp.fft.rfftn(traj[0], axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
-        base_state = template_state.update(qh=init_qh)
-        init_state = zero_model.initialise_stepper_state(
-            zero_model.model.initialise_param_state(base_state, zero_params)
-        )
-        
-        def step(carry, _x):
-            next_state = zero_model.step_model(carry)
-            dqh = next_state.state.model_state.qh - carry.state.model_state.qh
-            return next_state, dqh
-        
-        _, dqh_traj = jax.lax.scan(step, init_state, None, length=batch_steps)
-        
-        # Reconstruct predictions
-        pred_qh = init_qh[None] + jnp.cumsum(dqh_traj, axis=0)
-        pred_q = jax.vmap(lambda x: jnp.fft.irfftn(x, axes=(-2, -1), norm='ortho', s=traj.shape[-2:]))(pred_qh)
-        
-        # Error vs truth
-        error = traj[1:] - pred_q
-        return error
-    
-    # Process batch
-    errors = jax.vmap(rollout_zero)(test_trajs)
-    
-    # Compute loss
-    per_sample_losses = loss_fn(errors, lr_model)
-    mean_loss = jnp.mean(per_sample_losses)
-    
-    return jax.device_get(mean_loss)
 
 

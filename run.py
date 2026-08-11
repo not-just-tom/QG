@@ -40,7 +40,7 @@ importlib.reload(model.ML.architectures.build_model)
 importlib.reload(model.ML.utils.dataloading)
 importlib.reload(model.ML.train)
 importlib.reload(model.utils.plotting)
-from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch, zero_validation, compute_zero_epoch_loss
+from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import coarsen
 from model.ML.utils.loss import build_loss
@@ -138,7 +138,7 @@ def run(cfg):
     tau_eddy = lr_rhines_length / (lr_u_rms + 1e-12)
     logger.info(
         'Fine timestep is %.2gs and coarsened timestep is %.2gs. '
-        'Model spanup for %.2f days (~%.2g eddy turnover times). '
+        'Model spinup for %.2f days (~%.2g eddy turnover times). '
         'Training horizon is %d low-res steps (~%.2f days). '
         'Validation plotting window is %d steps (~%.2f days).',
         dt,
@@ -173,7 +173,7 @@ def run(cfg):
         logger.info(f"Found existing data with matching parameters at {run_dir}, loading trajectories from there.")
         data_loader = ZarrDataLoader(run_dir)
         if cfg.ml.enabled == False:
-            q_traj = data_loader.get_trajectory(0) # shape (time, layers, ny, nx)
+            q_traj, init_key = data_loader.get_trajectory(0) # shape (time, layers, ny, nx)
     elif found == False:
         logger.info(f"No existing data found, generating new dataset at {run_dir}")
         os.makedirs(run_dir, exist_ok=False)
@@ -201,7 +201,7 @@ def run(cfg):
         logger.info(f"Found existing data with matching parameters at {run_dir}, but it has insufficient length. Loading trajectories and generating additional steps to reach desired length.")
         data_loader = ZarrDataLoader(run_dir)
         for i in range(len(data_loader)):
-            traj = data_loader.get_trajectory(i)
+            traj, _ = data_loader.get_trajectory(i)
             last_state = jax.device_put(traj[-1])
             extra_steps = nsteps - traj.shape[0]
             if extra_steps > 0:
@@ -233,11 +233,14 @@ def run(cfg):
             # Ensure the output directory exists when creating a new run directory
             os.makedirs(out_dir, exist_ok=True)
         # Set up trajectories dict with truth data for PV diagnostic
-        trajectories['truth'] = q_traj = data_loader.get_trajectory(0) # shape (time, layers, ny, nx)
+        truth_traj, init_key = data_loader.get_trajectory(0) # shape (time, layers, ny, nx)
+        trajectories['truth'] = truth_traj
         try:
-            zero_results = zero_validation(lr_model, low_res_dt, q_traj, cfg, loss_fn)
-            trajectories['zero_frames'] = zero_results['zero_frames']
-            # Note: zero loss from per-epoch computation will be used for loss_history
+            validation_epoch = make_validation_epoch(lr_model, low_res_dt, init_key, closure_scale=closure_scale)
+            from model.ML.architectures.zero import ZeroModel
+            zero_closure = ZeroModel()
+            validation_results = validation_epoch(truth_traj, cfg, zero_closure)
+            trajectories['zero'] = validation_results['zero']
         except Exception as e:
             raise RuntimeError("Failed to compute zero model baseline: ", e)
         
@@ -405,10 +408,12 @@ def run(cfg):
 
         window_train_epoch_means = []
         window_test_epoch_means = []
+        window_zero_epoch_means = []
 
         for stage_epoch in range(stage_resume_epoch, n_epochs):
             train_losses_accum = []
             test_losses_accum = []
+            zero_losses_accum = []
             batch_counter = 0
             train_rng, test_rng, rng = jax.random.split(rng, 3)
             shuffled = shuffled[1:] + shuffled[:1] # move all indice in shuffled forward one
@@ -459,12 +464,13 @@ def run(cfg):
                 chunk = windows.reshape((1, windows.shape[0], current_batch_steps) + windows.shape[2:])
                 chunk = jax.device_put(chunk)
                 if model_type == "diffusion":
-                    closure, optim_state, losses, discard_flags, max_cfls = test_epoch(chunk, closure, optim_state, test_rng)
+                    closure, optim_state, losses, discard_flags, max_cfls, zero_losses = test_epoch(chunk, closure, optim_state, test_rng)
                 else:
-                    closure, optim_state, losses, discard_flags, max_cfls = test_epoch(chunk, closure, optim_state)
+                    closure, optim_state, losses, discard_flags, max_cfls, zero_losses = test_epoch(chunk, closure, optim_state)
                 discard_flags = np.asarray(discard_flags).reshape(-1)
                 losses = np.asarray(losses).reshape(-1)
                 max_cfls = np.asarray(max_cfls).reshape(-1)
+                zero_losses = np.asarray(zero_losses).reshape(-1)
                 if np.any(discard_flags):
                     n_discard = int(np.sum(discard_flags))
                     logger.warning(
@@ -472,39 +478,21 @@ def run(cfg):
                         n_discard, discard_flags.size, float(np.max(max_cfls)), cfl_limit,
                     )
                 test_losses_accum.extend([float(loss) for loss, discarded in zip(losses, discard_flags) if not discarded])
+                zero_losses_accum.extend([float(zero_loss) for zero_loss, discarded in zip(zero_losses, discard_flags) if not discarded])
                 if batch_counter % gc_every_batches == 0:
                     gc.collect()
 
-            # Compute zero model baseline for current window size
-            # Use one batch from test set for efficiency
-            try:
-                test_gen_zero = data_loader.iterate_batches(
-                    traj_indices=test_idx[:min(4, len(test_idx))],  # Use first few test trajectories
-                    n_samples=current_n_samples,
-                    batch_steps=current_batch_steps+1,
-                    key=test_rng,
-                    batch_size=min(4, stage_batch_size),
-                )
-                zero_batch = next(test_gen_zero).astype(np.float32)
-                zero_loss = compute_zero_epoch_loss(
-                    lr_model, 
-                    low_res_dt, 
-                    zero_batch, 
-                    loss_fn, 
-                    current_batch_steps,
-                    closure_scale=closure_scale
-                )
-            except Exception as e:
-                logger.warning(f"Failed to compute zero loss for epoch: {e}")
-                zero_loss = float('nan')
 
             train_mean = float(np.mean(train_losses_accum)) if train_losses_accum else float('nan')
             test_mean  = float(np.mean(test_losses_accum))  if test_losses_accum  else float('nan')
+            zero_mean  = float(np.mean(zero_losses_accum))  if zero_losses_accum  else float('nan')
             train_mean_losses.append(train_mean)
             test_mean_losses.append(test_mean)
-            zero_mean_losses.append(float(zero_loss))
+            zero_mean_losses.append(zero_mean)
             window_train_epoch_means.append(train_mean)
             window_test_epoch_means.append(test_mean)
+            window_zero_epoch_means.append(zero_mean)
+
             epoch_counter += 1
 
             logger.info(
@@ -513,7 +501,7 @@ def run(cfg):
                 day_idx + 1, len(window_days),
                 stage_epoch + 1, n_epochs,
                 epoch_counter, total_curriculum_epochs,
-                train_mean, test_mean, float(zero_loss),
+                train_mean, test_mean, zero_mean,
             )
 
             try:
@@ -551,8 +539,9 @@ def run(cfg):
         # Summarise results once the full window has completed.
         window_train_mean = float(np.mean(window_train_epoch_means)) if window_train_epoch_means else float('nan')
         window_test_mean = float(np.mean(window_test_epoch_means)) if window_test_epoch_means else float('nan')
+        window_zero_mean = float(np.mean(window_zero_epoch_means)) if window_test_epoch_means else float('nan')
         logger.info(
-            "Completed window %d/%d: mean train=%.4E | mean test=%.4E over %d epochs",
+            "Completed window %d/%d: mean train=%.4E | mean test=%.4E | mean zero = %.4E over %d epochs",
             day_idx + 1,
             len(window_days),
             window_train_mean,
@@ -573,9 +562,10 @@ def run(cfg):
     with open(metadata_path, "w") as f:
         json.dump(meta, f, indent=4)
 
-
-    # === validation & diagnostics ===
-    truth_traj = data_loader.get_trajectory(n_epochs-1)  # shape (time, layers, ny, nx)
+    # ================================================================================================
+    # === validation & diagnostics ===================================================================
+    # ================================================================================================
+    truth_traj, init_key = data_loader.get_trajectory(n_epochs-1)  # shape (time, layers, ny, nx)
     available_rollout_steps = int(truth_traj.shape[0])
     available_rollout_days = available_rollout_steps * low_res_dt / (24.0 * 3600.0)
     effective_rollout_steps = min(nsteps, available_rollout_steps)
@@ -601,23 +591,11 @@ def run(cfg):
         closure = build_closure(cfg, loaded_leaves)
     except Exception:
         logger.exception("Failed to load trained model for testing.")
-
-    # Compute zero model baseline for diagnostics (for zero_frames visualization only)
-    try:
-        zero_results = zero_validation(lr_model, low_res_dt, truth_traj, cfg, loss_fn)
-        trajectories['zero_frames'] = zero_results['zero_frames']
-        # Note: zero loss from per-epoch computation will be used for loss_history
-    except Exception:
-        raise RuntimeError("Failed to compute zero model baseline")
     
     # Build validation function and run it on a held-out trajectory
-    validation_epoch = make_validation_epoch(lr_model, low_res_dt, loss_fn, closure_scale=closure_scale)
-    validation_results = validation_epoch(truth_traj, cfg, closure, trajectories['zero_frames'])
+    validation_epoch = make_validation_epoch(lr_model, low_res_dt, init_key, closure_scale=closure_scale)
+    validation_results = validation_epoch(truth_traj, cfg, closure)
     trajectories.update(validation_results)
-    if 'val_loss' in validation_results:
-        if 'loss_history' not in trajectories:
-            trajectories['loss_history'] = {}
-        trajectories['loss_history']['val'] = validation_results['val_loss']
 
     for k,v in trajectories.items():
         if isinstance(v, np.ndarray) and v.ndim > 1 and v.shape[0] > effective_rollout_steps:
@@ -648,8 +626,9 @@ def run(cfg):
     Plotter(cfg, trajectories=trajectories, out_dir=out_dir, cadence=cadence).plot()
 
 
-# ========================================================
-# ========================================================
+# ============================================================================================
+# ====== main loop for parsing arguments and doing param sweep logic =========================
+# ============================================================================================
 
 def main():
     import argparse
@@ -750,6 +729,7 @@ def main():
         print('\nTop 5 runs by validation MSE:')
         for i, r in enumerate(filtered[:5], 1):
             print(f"{i}. mse={r['mse']:.6E} -> {r['combo']} -> outdir={r['out_dir']}")
+
 
 
 

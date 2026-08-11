@@ -100,11 +100,11 @@ class LossDiagnostic(Diagnostic):
             ax.plot(np.arange(1, len(test) + 1), test, label="test")
         if zero.size:
             # plot average zero loss per curriculum stage
-            x = np.arange(1, len(zero) + 1, max(1, int(n_epochs)))
-            y = [np.mean(zero[i:i + max(1, int(n_epochs))]) for i in x]
+            x = np.arange(0, len(zero)+1, max(1, int(n_epochs)))
+            y = [np.mean(zero[x[i-1]:x[i]]) for i in np.arange(len(x))] # fix: this causes a mean of an empty slice error every time
             ax.step(x, y, label="zero model", linestyle="--", color="C2")
 
-        ax.set_title("Training / Validation Loss")
+        ax.set_title("Train / Test Loss")
         ax.set_xlabel("Epoch")
         ax.set_ylabel("Loss")
         ax.grid(True)
@@ -130,8 +130,8 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
 
         # prefer physical predicted frames produced by validation; fallback to 'pred'
         q_truth = _sanitize_numeric_array(trajs.get("truth"))
-        q_pred = _sanitize_numeric_array(trajs.get("pred_frames"))
-        zero = _sanitize_numeric_array(trajs.get("zero_frames"))
+        q_pred = _sanitize_numeric_array(trajs.get("pred"))
+        zero = _sanitize_numeric_array(trajs.get("zero"))
         q_truth = q_truth[10:] # im trying out skipping first few frames to avoid 0s ?
         zero = zero[10:]
         if q_pred is not None:
@@ -171,15 +171,15 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
                 return None, None
 
         E_truth_frames, k = compute_frame_spectra(q_truth)
-        E_zero_frames, _ = compute_frame_spectra(zero)
+        E_zero, _ = compute_frame_spectra(zero)
         if q_pred is not None:
-            E_pred_frames, _ = compute_frame_spectra(q_pred) 
+            E_pred, _ = compute_frame_spectra(q_pred) 
 
         # averages and stds
         E_truth_avg = E_truth_frames.mean(axis=0)
         if q_pred is not None:
-            E_pred_avg = E_pred_frames.mean(axis=0)
-            E_pred_std = E_pred_frames.std(axis=0)
+            E_pred_avg = E_pred.mean(axis=0)
+            E_pred_std = E_pred.std(axis=0)
 
 
         # select frames for animation using cadence
@@ -192,13 +192,13 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
 
         try:
             ax.fill_between(k[1:], (E_pred_avg - E_pred_std)[1:], (E_pred_avg + E_pred_std)[1:], color="C1", alpha=0.08)
-            Ep0 = E_pred_frames[frame_indices[0]]
+            Ep0 = E_pred[frame_indices[0]]
             ln_pred, = ax.loglog(k[1:], Ep0[1:], label="ML", color="C3", linestyle="--")
         except Exception:
             pass
 
         # instantaneous lines
-        Ez0 = E_zero_frames[frame_indices[0]]
+        Ez0 = E_zero[frame_indices[0]]
         ln_zero, = ax.loglog(k[1:], Ez0[1:], label="Zero", color="C2", linestyle="--")
         ax.axvline(k_deformation, ymin=0, ymax=1, color='red', linestyle="--")
         ax.text(k_deformation,1e-14,'k_deformation',rotation=270, color='k')
@@ -219,10 +219,10 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
             ax.relim()
             ax.autoscale_view()
             ax.set_title(f"KE spectrum (t={idx})")
-            Ez = E_zero_frames[idx]
+            Ez = E_zero[idx]
             ln_zero.set_data(k[1:], Ez[1:])
             if q_pred is not None:
-                Ep = E_pred_frames[idx]
+                Ep = E_pred[idx]
                 ln_pred.set_data(k[1:], Ep[1:])
                 return (ln_pred, ln_zero)
             else: 
@@ -244,8 +244,8 @@ class KESpectrumDiagnostic(Diagnostic):
         # --- get stuff ---
         grid = trajs.get("grid")
         q_truth = _sanitize_numeric_array(trajs.get("truth"))
-        q_pred  = _sanitize_numeric_array(trajs.get("pred_frames"))
-        zero = _sanitize_numeric_array(trajs.get("zero_frames"))
+        q_pred  = _sanitize_numeric_array(trajs.get("pred"))
+        zero = _sanitize_numeric_array(trajs.get("zero"))
 
         # stuff for wavelength calcs
         beta = trajs['params'].get('beta', None)
@@ -300,8 +300,8 @@ class KESpectrumDiagnostic(Diagnostic):
         E_truth_frames = compute_frame_spectra(q_truth)
         E_truth_std = E_truth_frames.std(axis=0)
         if q_pred is not None:
-            E_pred_frames = compute_frame_spectra(q_pred)
-            E_pred_std = E_pred_frames.std(axis=0)
+            E_pred = compute_frame_spectra(q_pred)
+            E_pred_std = E_pred.std(axis=0)
 
         # --- plot ---
         fig, ax = plt.subplots()
@@ -350,7 +350,7 @@ class VorticityDiagnostic(Diagnostic): # this might need cadence adding to it tb
         truth = _prepare_array(_get_traj_array(trajs, "truth", "q"))
         if truth is None:
             raise KeyError("PV diagnostic requires 'q' or 'truth' in trajectories")
-        ml = _prepare_array(_get_traj_array(trajs, "pred_frames", "pred"))
+        ml = _prepare_array(_get_traj_array(trajs, "pred", "pred"))
 
         # Auto-determine number of layers from data shape
         # Expected shape: (nt, nz, ny, nx)
@@ -411,8 +411,8 @@ class PVSpectrumDiagnostic(Diagnostic):
 
         grid = trajs.get("grid")
         q_truth = _sanitize_numeric_array(trajs.get("truth"))
-        q_pred  = _sanitize_numeric_array(trajs.get("pred_frames"))
-        q_zero  = _sanitize_numeric_array(trajs.get("zero_frames"))
+        q_pred  = _sanitize_numeric_array(trajs.get("pred"))
+        q_zero  = _sanitize_numeric_array(trajs.get("zero"))
 
 
         def compute_avg_spectrum(q):
@@ -475,9 +475,9 @@ class QuadGifDiagnostic(Diagnostic):
         - Text annotations with statistics
         """
         # Extract data
-        pred = _prepare_array(_get_traj_array(trajs, "pred_frames", "pred"))
+        pred = _prepare_array(_get_traj_array(trajs, "pred", "pred"))
         truth = _prepare_array(_get_traj_array(trajs, "truth", "q"))
-        zero = _prepare_array(_get_traj_array(trajs, "zero_frames", "zero"))
+        zero = _prepare_array(_get_traj_array(trajs, "zero", "zero"))
         grid = trajs.get("grid")
         
         pred_np = np.asarray(pred)
@@ -725,13 +725,13 @@ class ZeroComparisonDiagnostic(Diagnostic):
 
     def run(self, trajs, out_path, cadence):
         truth = _prepare_array(_get_traj_array(trajs, "truth", "q"))
-        zero = _prepare_array(_get_traj_array(trajs, "zero_frames", "zero"))
+        zero = _prepare_array(_get_traj_array(trajs, "zero", "zero"))
 
         truth_np = np.asarray(truth)
         zero_np = np.asarray(zero)
         
         if "pred" in trajs:
-            pred = _prepare_array(_get_traj_array(trajs, "pred_frames", "pred"))
+            pred = _prepare_array(_get_traj_array(trajs, "pred"))
             pred_np = np.asarray(pred)
         else: 
             pred_np = None
@@ -744,7 +744,7 @@ class ZeroComparisonDiagnostic(Diagnostic):
             sgs_pred_np = None
 
         # Determine number of timesteps from available prediction/truth
-        nt = pred_np.shape[0] if pred_np is not None else truth_np.shape[0]
+        nt = truth_np.shape[0]
 
         def pad_to_frames(arr):
             if arr is None:
@@ -883,7 +883,7 @@ class CFLDiagnostic(Diagnostic):
         if grid is None:
             raise KeyError("cfl diagnostic requires 'grid' in trajectories")
 
-        q_pred = trajs.get("pred_frames")
+        q_pred = trajs.get("pred")
         q_pred = np.asarray(q_pred)
         if q_pred.ndim == 3:
             q_pred = q_pred[:, None, ...]
@@ -935,8 +935,8 @@ class DomainDiagnostic(Diagnostic):
             raise KeyError("domain diagnostic requires 'q' or 'truth' in trajectories")
 
         # Get predicted and zero model data if available
-        q_pred = _prepare_array(_get_traj_array(trajs, "pred_frames", "pred"))
-        q_zero = _prepare_array(_get_traj_array(trajs, "zero_frames", "zero"))
+        q_pred = _prepare_array(_get_traj_array(trajs, "pred", "pred"))
+        q_zero = _prepare_array(_get_traj_array(trajs, "zero", "zero"))
 
         # Compute energy and enstrophy over time for truth
         def compute_timeseries(q):

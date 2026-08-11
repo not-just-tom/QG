@@ -166,6 +166,9 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
                 data=q_traj.astype(np.float32),
                 chunks=(1000, q_traj.shape[1], q_traj.shape[2], q_traj.shape[3]),
                 compressors=[compressor],
+                attributes={
+                    "init_key": keys[i].tolist(), # save the initialisation key for reproducibility (just in case)
+                },
             )
 
         n_generated += current_batch

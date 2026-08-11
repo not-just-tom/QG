@@ -27,7 +27,7 @@ def parameterization(param_func):
     def wrapped_q_param(state, param_aux, model, *args, **kwargs):
         dq, param_aux = param_func(state, param_aux, model, *args, **kwargs)
         dqh = states._generic_rfftn(dq)
-        updates = model.get_updates(state, **kwargs)
+        updates = model.get_updates(state)
         dqhdt = updates.qh + dqh
         return updates.update(qh=dqhdt), param_aux
 

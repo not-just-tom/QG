@@ -6,7 +6,9 @@ import jax
 import jax.numpy as jnp
 import importlib
 import model.core.kernel 
+import model.ML.forced_model
 importlib.reload(model.core.kernel)
+importlib.reload(model.ML.forced_model)
 from model.core.kernel import Kernel
 import model.core.states as states
 import model.utils.pytree as Pytree
@@ -133,11 +135,11 @@ class QGM(Kernel):
         """Set the initial state from a given spectral PV array `qh`."""
         return states.State(qh=qh, _q_shape=_q_shape)
     
-    def get_full_state(self, state: states.State, forcing_key: jax.Array | None = None) -> states.FullState:
-        return super().get_full_state(state, forcing_key)
+    def get_full_state(self, state: states.State) -> states.FullState:
+        return super().get_full_state(state)
 
-    def get_updates(self, state: states.State, forcing_key: jax.Array | None = None) -> states.State:
-        return super().get_updates(state, forcing_key)
+    def get_updates(self, state: states.State) -> states.State:
+        return super().get_updates(state)
 
     def get_grid(self) -> Grid:
         """Retrieve the grid for this model."""
@@ -165,6 +167,25 @@ class QGM(Kernel):
     def apply_exact_step_filter(self, state: states.State) -> states.State:
         """Apply exact spectral damping after each explicit step."""
         return state.update(qh=state.qh * jnp.expand_dims(self._exact_step_filter, 0))
+
+    def do_stochastic_forcing(self, state: states.State, forcing_key: jax.Array | None = None) -> states.State:
+        """Apply stochastic forcing.
+        
+        Provides the qh increment to the state due to stochastic forcing, avoiding stepping states. 
+        """
+
+        if self.epsilon == 0.0:
+            return states.State(
+                qh=jnp.zeros_like(state.qh),
+                _q_shape=state._q_shape,
+            )
+
+        forcing = super().do_stochastic_forcing(forcing_key)
+
+        return states.State(
+            qh=forcing,
+            _q_shape=state._q_shape,
+        )
     
     @property
     def x(self):
@@ -308,7 +329,7 @@ class QGM(Kernel):
 
         Returns (Lr, U_rms) as JAX scalars (trace-safe under jit/vmap).
         """
-        full = self.get_full_state(state, forcing_key=None)
+        full = self.get_full_state(state)
         u = full.u
         v = full.v
         U_rms = jnp.sqrt(jnp.mean(u ** 2 + v ** 2))

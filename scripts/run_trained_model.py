@@ -129,18 +129,18 @@ def run():
 
     layer = 0
     hr_frames = np.asarray(truth_traj[:, layer])
-    pred_frames = np.asarray(pred_traj[:, layer])
+    pred = np.asarray(pred_traj[:, layer])
     sgs_frames = np.asarray(sgs_traj[:, layer])
 
     gif_out = os.path.join(out_dir, "PV.gif")
     quad_out = os.path.join(out_dir, "quad.gif")
     # make_quad_gif expects arrays with shape (nt, ny, nx)
-    #gif_that(pred_frames, out_file=gif_out, cadence=100)
-    make_quad_gif(hr_frames, pred_frames, sgs_q=sgs_frames, out_file=quad_out, cadence=10)
+    #gif_that(pred, out_file=gif_out, cadence=100)
+    make_quad_gif(hr_frames, pred, sgs_q=sgs_frames, out_file=quad_out, cadence=10)
     print(f"Saved comparison GIF to {quad_out}")
 
     try:
-        mse_per_timestep = np.mean((pred_frames - hr_frames) ** 2, axis=(1, 2))
+        mse_per_timestep = np.mean((pred - hr_frames) ** 2, axis=(1, 2))
         mse_out = os.path.join(out_dir, "mse_per_timestep.png")
         plt.figure(figsize=(6, 3))
         plt.plot(np.arange(mse_per_timestep.size), mse_per_timestep, '-o')

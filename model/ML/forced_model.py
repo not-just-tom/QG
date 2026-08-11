@@ -4,7 +4,6 @@ import jax
 from model.core import states, steppers
 from model.utils import pytree as Pytree
 
-
 @Pytree.register_pytree_dataclass
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class ForcedModelState:
@@ -43,6 +42,45 @@ class ForcedModel:
         if isinstance(init_param_aux_func, types.FunctionType):
             init_param_aux_func = jax.tree_util.Partial(init_param_aux_func)
         self.init_param_aux_func = init_param_aux_func
+
+    def unwrap_state(self, state):
+        """Return the inner model state from a wrapped forced state."""
+        if isinstance(state, ForcedModelState):
+            return state.model_state
+        return state
+
+    def wrap_state(self, state, param_aux):
+        """Wrap an inner model state back into a forced-state container."""
+        return ForcedModelState(
+            model_state=state,
+            param_aux=steppers.PassWeights(param_aux),
+        )
+
+    def apply_stochastic_forcing(self, state, *, forcing_key=None):
+        """Apply stochastic forcing while preserving the forced-state wrapper."""
+        inner_state = self.unwrap_state(state)
+        stochastic_update = self.model.do_stochastic_forcing(
+            inner_state,
+            forcing_key=forcing_key,
+        )
+        updated_inner_state = inner_state.update(
+            qh=inner_state.qh + stochastic_update.qh
+        )
+        if isinstance(state, ForcedModelState):
+            return ForcedModelState(
+                model_state=updated_inner_state,
+                param_aux=state.param_aux,
+            )
+        return updated_inner_state
+
+    def apply_postprocessing(self, state):
+        """Apply dealiasing and exact-step filtering while preserving the wrapper."""
+        if isinstance(state, ForcedModelState):
+            wrapped_state = state
+        else:
+            wrapped_state = self.wrap_state(state, None)
+        postprocessed_state = self.dealias(wrapped_state)
+        return self.apply_exact_step_filter(postprocessed_state)
 
     def get_full_state(self, state):
         """Expand a wrapped partial state into an *unwrapped* full
