@@ -11,3 +11,7 @@ class ZeroModel(eqx.Module):
 
     def __call__(self, x):
         return jnp.zeros_like(x)
+
+    @property
+    def model_type(self):
+        return 'zero'

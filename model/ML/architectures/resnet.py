@@ -120,3 +120,7 @@ class ResNet(eqx.Module):
 
         # Return network output in the same normalized space as input
         return total
+
+    @property
+    def model_type(self):
+        return 'resnet'

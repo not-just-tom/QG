@@ -53,7 +53,6 @@ from model.core.model import QGM
 import logging
 import functools
 import jax
-import jax.numpy as jnp
 import os
 import json
 import time
@@ -73,6 +72,7 @@ def run(cfg):
     spinup = cfg.plotting.spinup
     nsteps = int(getattr(cfg.plotting, 'nsteps', 0))
     cadence = int(getattr(cfg.plotting, 'cadence', 100))
+    validation_rollout = int(getattr(cfg.plotting, 'validation_rollout', 1000))
     batch_size = cfg.ml.batch_size
     n_train = cfg.ml.n_train
     n_test = cfg.ml.n_test
@@ -130,8 +130,6 @@ def run(cfg):
     lr_model = coarsen(hr_model.model, params['nx'])
     low_res_dt = dt * ratio
     steps_per_day = int(24 * 3600 // low_res_dt)
-    model_nsteps = int(end_days * 24 * 3600 // low_res_dt)
-    requested_rollout_days = (nsteps * low_res_dt) / (24.0 * 3600.0)
 
     lr_init_state = lr_model.initialise(key, tune=True, n_jets=njets, verbose=False)
     lr_rhines_length, lr_u_rms = lr_model.rhines_length(lr_init_state)
@@ -145,14 +143,14 @@ def run(cfg):
         low_res_dt,
         spinup,
         float(tau_eddy) / (24.0 * 3600.0),
-        model_nsteps,
-        model_nsteps * low_res_dt / (24.0 * 3600.0),
         nsteps,
-        requested_rollout_days,
+        nsteps * low_res_dt / (24.0 * 3600.0),
+        validation_rollout,
+        validation_rollout * low_res_dt / (24.0 * 3600.0),
     )
 
     timing_metadata = {
-        'nsteps': int(model_nsteps),
+        'nsteps': int(nsteps),
         "dt (original)": float(old_dt),
         'auto_dt': bool(cfg.plotting.auto_dt),
         'final dt': float(dt),
@@ -173,7 +171,7 @@ def run(cfg):
         logger.info(f"Found existing data with matching parameters at {run_dir}, loading trajectories from there.")
         data_loader = ZarrDataLoader(run_dir)
         if cfg.ml.enabled == False:
-            q_traj, init_key = data_loader.get_trajectory(0) # shape (time, layers, ny, nx)
+            truth_traj, init_key = data_loader.get_trajectory(0) # shape (time, layers, ny, nx)
     elif found == False:
         logger.info(f"No existing data found, generating new dataset at {run_dir}")
         os.makedirs(run_dir, exist_ok=False)
@@ -233,7 +231,6 @@ def run(cfg):
             # Ensure the output directory exists when creating a new run directory
             os.makedirs(out_dir, exist_ok=True)
         # Set up trajectories dict with truth data for PV diagnostic
-        truth_traj, init_key = data_loader.get_trajectory(0) # shape (time, layers, ny, nx)
         trajectories['truth'] = truth_traj
         try:
             validation_epoch = make_validation_epoch(lr_model, low_res_dt, init_key, closure_scale=closure_scale)
@@ -363,7 +360,7 @@ def run(cfg):
 
     for day_idx, current_days in enumerate(window_days):
         current_batch_steps = current_days * steps_per_day
-        current_n_samples   = model_nsteps // current_batch_steps
+        current_n_samples   = nsteps // current_batch_steps
         stage_batch_size = batch_size
         if current_days >= 14:
             stage_batch_size = max(1, batch_size // 4)
@@ -372,7 +369,7 @@ def run(cfg):
         if current_n_samples < 1:
             logger.warning(
                 "Window %d days (%d steps) >= nsteps=%d; stopping curriculum early.",
-                current_days, current_batch_steps, model_nsteps,
+                current_days, current_batch_steps, nsteps,
             )
             break
 
@@ -546,6 +543,7 @@ def run(cfg):
             len(window_days),
             window_train_mean,
             window_test_mean,
+            window_zero_mean,
             len(window_train_epoch_means),
         )
         gc.collect()
@@ -566,25 +564,11 @@ def run(cfg):
     # === validation & diagnostics ===================================================================
     # ================================================================================================
     truth_traj, init_key = data_loader.get_trajectory(n_epochs-1)  # shape (time, layers, ny, nx)
-    available_rollout_steps = int(truth_traj.shape[0])
-    available_rollout_days = available_rollout_steps * low_res_dt / (24.0 * 3600.0)
-    effective_rollout_steps = min(nsteps, available_rollout_steps)
-    effective_rollout_days = effective_rollout_steps * low_res_dt / (24.0 * 3600.0)
-    if nsteps > available_rollout_steps:
-        logger.warning(
-            "Requested validation rollout is %d steps (~%.2f days), but data only provides %d steps (~%.2f days). "
-            "Validation will use the shorter available rollout.",
-            nsteps,
-            requested_rollout_days,
-            available_rollout_steps,
-            available_rollout_days,
-        )
-    else:
-        logger.info(
-            "Validation rollout will run %d steps (~%.2f days).",
-            effective_rollout_steps,
-            effective_rollout_days,
-        )
+    logger.warning(
+        "Requested validation rollout is %d steps (~%.2f days).",
+        validation_rollout,
+        validation_rollout * low_res_dt / (24.0 * 3600.0),
+    )
 
     try:
         loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = checkpointer(None, None, model_dir, save=False)
@@ -598,8 +582,8 @@ def run(cfg):
     trajectories.update(validation_results)
 
     for k,v in trajectories.items():
-        if isinstance(v, np.ndarray) and v.ndim > 1 and v.shape[0] > effective_rollout_steps:
-            trajectories[k] = v[:effective_rollout_steps]
+        if isinstance(v, np.ndarray) and v.ndim > 1 and v.shape[0] > validation_rollout:
+            trajectories[k] = v[:validation_rollout]
 
     # Use per-epoch zero losses from training loop
     trajectories["loss_history"] = {
@@ -629,7 +613,6 @@ def run(cfg):
 # ============================================================================================
 # ====== main loop for parsing arguments and doing param sweep logic =========================
 # ============================================================================================
-
 def main():
     import argparse
     from itertools import product

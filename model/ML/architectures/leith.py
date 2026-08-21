@@ -47,3 +47,7 @@ class LeithClosure(eqx.Module):
         flux_y_h = model.dealiased_product(viscosity * qy)
         tendency = model.spectral_to_real(ikx * flux_x_h + iky * flux_y_h)
         return jnp.asarray(dt, dtype=real_dtype) * tendency
+
+    @property
+    def model_type(self):
+        return 'leith'

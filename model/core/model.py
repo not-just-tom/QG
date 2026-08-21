@@ -309,9 +309,8 @@ class QGM(Kernel):
         qh = state.qh
 
         # find layer axis (size == self.nz)
-        qh_shape = qh.shape
         try:
-            layer_axis = next(i for i, s in enumerate(qh_shape) if s == self.nz)
+            layer_axis = next(i for i, s in enumerate(qh.shape) if s == self.nz)
         except StopIteration:
             raise ValueError("Could not find layer axis in state.qh")
 

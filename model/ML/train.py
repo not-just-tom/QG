@@ -27,7 +27,7 @@ def rollout_traj_errors(target_traj, forced_model, template_state, closure_param
     dt_arr = jnp.asarray(dt, dtype=target_traj.dtype)
 
     def step(carry, _x):
-        next_state = forced_model.step_model(carry)
+        next_state = forced_model.step_model(carry, closure_params)
         dqh_total = next_state.state.model_state.qh - carry.state.model_state.qh
         full = lr_model.get_full_state(next_state.state.model_state)
         cfl_val = (jnp.max(jnp.abs(full.u)) * dt_arr) / dx + (jnp.max(jnp.abs(full.v)) * dt_arr) / dy
@@ -258,9 +258,9 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
 
         # ML closure rollout
         def _step(carry, _x):
-
-            dq_increment, _ = closure_combiner(
+            dq, _ = closure_combiner(
                 carry.state.model_state,
+                closure_params,
                 carry.state.param_aux.value,
                 closure_static,
                 q_mean=q_mean,
@@ -271,14 +271,14 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
                 model=lr_model,
             )
 
-            next_state = forced_model.step_model(carry)
+            next_state = forced_model.step_model(carry, closure_params)
 
             dqh_total = (
                 next_state.state.model_state.qh
                 - carry.state.model_state.qh
             )
 
-            return next_state, (dqh_total, dq_increment)
+            return next_state, (dqh_total, dq)
 
         _, (traj_dqh, sgs_increment_step) = jax.lax.scan(
             _step,
@@ -333,7 +333,7 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
         
         # Zero model rollout
         def _zero_step(carry, _x):
-            next_state = zero_model.step_model(carry)
+            next_state = zero_model.step_model(carry, zero_params)
             dqh_total = (
                 next_state.state.model_state.qh
                 - carry.state.model_state.qh

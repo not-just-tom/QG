@@ -27,16 +27,3 @@ class ModuleFactory:
     def __repr__(self):
         fixed_str = f", fixed_args={self.fixed_args!r}" if self.fixed_args else ""
         return f"ModuleFactory({__name__}.{self.module}:{self.class_name}{fixed_str})"
-
-
-
-ARCHITECTURES = {
-    "cnn": ModuleFactory("cnn", "CNN"),
-    "zero": ModuleFactory("zero", "ZeroModel"),
-}
-
-
-def net_constructor(arch):
-    if (constructor := ARCHITECTURES.get(arch)) is not None:
-        return constructor
-    raise ValueError(f"unknown architecture {arch}")

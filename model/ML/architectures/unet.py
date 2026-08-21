@@ -117,3 +117,7 @@ class UNet(eqx.Module):
             x = up(x, skip)
 
         return self.final(x)
+
+    @property
+    def model_type(self):
+        return 'unet'

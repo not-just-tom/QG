@@ -65,3 +65,7 @@ class BiharmonicClosure(eqx.Module):
         # -div(A_4 grad(laplacian(q))) is fourth-order, not sixth-order.
         tendency = model.spectral_to_real(-div_flux_h)
         return jnp.asarray(dt, dtype=real_dtype) * tendency
+
+    @property
+    def model_type(self):
+        return 'biharmonic'

@@ -14,34 +14,25 @@ class ForcedModelState:
     param_aux: steppers.PassWeights
 
 
-def _init_none(init_state, model):
-    return None
-
-
 @Pytree.register_pytree_class_attrs(
-    children=["model", "closure", "init_param_aux_func"],
+    children=["model", "closure", "init_latent_state_func"],
     static_attrs=[],
 )
 class ForcedModel:
     """Model with defined parameterisation
     """
-
-    def __init__(self, model, closure, init_param_aux_func=None):
-        # closure(full_state, param_aux, model) -> full_state, param_aux
-        # init_param_aux_func(model_state, model) -> param_aux
-        # param_aux (often None) is used to carry parameterization state
+    def __init__(self, model, closure, init_latent_state_func=None):
+        # closure(full_state, latent_state, model, closure_params) -> full_state, latent_state
+        # latent_state (often None) carries recurrent state between steps
         # between time steps, for example: a JAX PRNGKey, if needed
-        self.model = model
         if isinstance(closure, types.FunctionType):
-            # If this is a plain function, wrap in Partial
-            # This ensures it is a pytree
             closure = jax.tree_util.Partial(closure)
+        if isinstance(init_latent_state_func, types.FunctionType):
+            init_latent_state_func = jax.tree_util.Partial(init_latent_state_func)
+
+        self.model = model
+        self.init_latent_state_func = init_latent_state_func
         self.closure = closure
-        if init_param_aux_func is None:
-            init_param_aux_func = _init_none
-        if isinstance(init_param_aux_func, types.FunctionType):
-            init_param_aux_func = jax.tree_util.Partial(init_param_aux_func)
-        self.init_param_aux_func = init_param_aux_func
 
     def unwrap_state(self, state):
         """Return the inner model state from a wrapped forced state."""
@@ -88,16 +79,21 @@ class ForcedModel:
         """
         return self.model.get_full_state(state.model_state)
 
-    def get_updates(self, state, *, forcing_key=None):
+    def get_updates(self, state, *, closure_params=None, forcing_key=None):
         """Get updates for time-stepping `state`.
+        For now I am assuming that I only need to pass the trainable params
+        through the ForcedModel, leaving the latent states behind. 
         """
-        param_updates, new_param_aux = self.closure(
-            state.model_state, state.param_aux.value, self.model,
+        param_updates, new_latent_state = self.closure(
+            state=state.model_state,
+            model=self.model,
+            param_aux=state.param_aux.value,
+            closure_params=closure_params,
             forcing_key=forcing_key,
         )
         return ForcedModelState(
             model_state=param_updates,
-            param_aux=steppers.PassWeights(new_param_aux),
+            param_aux=steppers.PassWeights(new_latent_state),
         )
 
     def dealias(self, state):
@@ -121,7 +117,7 @@ class ForcedModel:
         )
 
     def initialise_param_state(self, state, *args, **kwargs):
-        init_param_state = self.init_param_aux_func(state, self.model, *args, **kwargs)
+        init_param_state = self.init_latent_state_func(state, self.model, *args, **kwargs)
         return ForcedModelState(
             model_state=state,
             param_aux=steppers.PassWeights(init_param_state),

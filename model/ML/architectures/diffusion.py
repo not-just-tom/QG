@@ -20,8 +20,8 @@ class _ScoreBackbone(eqx.Module):
         in_channels,
         out_channels,
         width,
-        modes1,
-        modes2,
+        xmodes,
+        ymodes,
         depth,
         key,
     ):
@@ -39,7 +39,7 @@ class _ScoreBackbone(eqx.Module):
         spec_layers = []
         point_layers = []
         for i in range(self.depth):
-            spec_layers.append(SpectralConv2d(width, width, modes1, modes2, key=keys[1 + i]))
+            spec_layers.append(SpectralConv2d(width, width, xmodes, ymodes, key=keys[1 + i]))
             point_layers.append(
                 eqx.nn.Conv2d(
                     in_channels=width,
@@ -118,8 +118,8 @@ class Diffusion(eqx.Module):
     def __init__(
         self,
         width=32,
-        modes1=16,
-        modes2=16,
+        xmodes=16,
+        ymodes=16,
         n_layers=4,
         time_embed_dim=16,
         sampler_steps=24,
@@ -170,7 +170,7 @@ class Diffusion(eqx.Module):
         y_spec_layers = []
         y_point_layers = []
         for i in range(int(n_layers)):
-            x_spec_layers.append(SpectralConv2d(int(width), int(width), int(modes1), int(modes2), key=keys[2 + i]))
+            x_spec_layers.append(SpectralConv2d(int(width), int(width), int(xmodes), int(ymodes), key=keys[2 + i]))
             x_point_layers.append(
                 eqx.nn.Conv2d(
                     in_channels=int(width),
@@ -180,7 +180,7 @@ class Diffusion(eqx.Module):
                     padding_mode="CIRCULAR",
                 )
             )
-            y_spec_layers.append(SpectralConv2d(int(width), int(width), int(modes1), int(modes2), key=keys[2 + 2 * int(n_layers) + i]))
+            y_spec_layers.append(SpectralConv2d(int(width), int(width), int(xmodes), int(ymodes), key=keys[2 + 2 * int(n_layers) + i]))
             y_point_layers.append(
                 eqx.nn.Conv2d(
                     in_channels=int(width),
@@ -394,3 +394,7 @@ class Diffusion(eqx.Module):
     def __call__(self, q):
         # Compatible with the existing closure interface in the solver.
         return self._sample_single(q.astype(jnp.float32), key=None, stochastic=None)
+
+    @property
+    def model_type(self):
+        return 'diffusion'

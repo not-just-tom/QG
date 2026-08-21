@@ -65,3 +65,7 @@ class CNN(eqx.Module):
         for layer in self.layers:
             x = layer(x)
         return x # remove batch dim
+
+    @property
+    def model_type(self):
+        return 'cnn'

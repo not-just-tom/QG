@@ -8,6 +8,7 @@ import model.ML.architectures.resnet
 import model.ML.architectures.mlp
 import model.ML.architectures.leith
 import model.ML.architectures.biharmonic
+import model.ML.architectures.gru
 importlib.reload(model.ML.architectures.zero)
 importlib.reload(model.ML.architectures.cnn)
 importlib.reload(model.ML.architectures.unet)
@@ -17,6 +18,7 @@ importlib.reload(model.ML.architectures.resnet)
 importlib.reload(model.ML.architectures.mlp)
 importlib.reload(model.ML.architectures.leith)
 importlib.reload(model.ML.architectures.biharmonic)
+importlib.reload(model.ML.architectures.gru)
 from model.ML.architectures.cnn import CNN
 from model.ML.architectures.zero import ZeroModel
 from model.ML.architectures.unet import UNet
@@ -26,6 +28,7 @@ from model.ML.architectures.resnet import ResNet
 from model.ML.architectures.mlp import MLP
 from model.ML.architectures.leith import LeithClosure
 from model.ML.architectures.biharmonic import BiharmonicClosure
+from model.ML.architectures.gru import GRUClosure, GRUHiddenState
 from model.ML.utils.utils import module_to_single
 import equinox as eqx
 import numpy as np
@@ -37,9 +40,28 @@ logger = logging.getLogger(__name__)
 def _standardise(name):
     return str(name).strip().lower()
 
+def init_latent_state(closure):
+    if getattr(closure, "stateful", False):
+        hidden_channels = closure.hidden_channels
+
+        def init_state(state, model, params):
+            shape = (hidden_channels,) + state.q.shape[-2:]
+            hidden = jnp.zeros(shape, dtype=state.q.dtype)
+            return GRUHiddenState(hidden_state=hidden)
+
+        return init_state
+
+    def init_state(state, model, params):
+        return None
+
+    return init_state
+    
+    
+
 def closure_combiner(
     state,
     closure_params,
+    latent_state,
     static_closure_obj=None,
     q_mean=None,
     q_std=None,
@@ -60,16 +82,22 @@ def closure_combiner(
         else:
             q_in = (q - q_mean) / (q_std + 1e-6)
 
-        dq_increment = closure(q_in.astype(jnp.float32)).astype(q.dtype)
+        if getattr(closure, "stateful", False):
+            dq, new_latent_state = closure(q_in.astype(jnp.float32), latent_state)
+        else:
+            dq = closure(q_in.astype(jnp.float32))
+            new_latent_state = latent_state
+        dq = dq.astype(q.dtype)
 
         if dq_mean is not None and dq_std is not None:
-            dq_increment = (dq_increment * dq_std) + dq_mean
+            dq = (dq * dq_std) + dq_mean
     else:
         # Analytical closures derive any required diagnostic fields directly
         # from the model state.  They return a per-step increment, matching
         # the convention used by the ML closures above.
-        dq_increment = closure(state, model=model, dt=dt).astype(q.dtype)
-    return dq_increment, closure_params
+        dq = closure(state, model=model, dt=dt).astype(q.dtype)
+        new_latent_state = latent_state
+    return dq, new_latent_state
 
     
 def _get_arch_params(cfg, arch_name):
@@ -123,6 +151,7 @@ def build_closure(cfg=None, loaded_leaves=None):
         'mlp': MLP,
         'leith': LeithClosure,
         'biharmonic': BiharmonicClosure,
+        'gru': GRUClosure,
     }
 
     arch_name = cfg.ml.model_type

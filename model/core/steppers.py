@@ -161,14 +161,17 @@ class SteppedModel:
         postprocessed_state = self.model.dealias(state)
         return self.model.apply_exact_step_filter(postprocessed_state)
 
-    def step_model(self, stepper_state, /):
+    def step_model(self, stepper_state, /, closure_params=None):
         # Apply model step
         forcing_key, next_forcing_key = jax.random.split(stepper_state.forcing_key)
 
         # all deterministic steps added and updates state
         new_stepper_state = self.stepper.apply_updates(
             stepper_state,
-            self.model.get_updates(stepper_state.state),
+            self.model.get_updates(
+                stepper_state.state,
+                closure_params=closure_params,
+            ),
         )
 
         updated_state = self._apply_stochastic_forcing(
@@ -444,7 +447,7 @@ class NoStepValue(typing.Generic[P]):
     :func:`updating them <jax.random.split>` can accomplish this.
 
     This class is used as part of :class:`ParameterizedModelState
-    <pyqg_jax.parameterizations.ParameterizedModelState>`.
+    <pyqg_jax.parameterisations.ParameterizedModelState>`.
 
     Parameters
     ----------

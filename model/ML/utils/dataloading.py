@@ -10,10 +10,10 @@ import equinox as eqx
 import logging
 import threading
 import queue
-from model.ML.utils.utils import parameterization
+from model.ML.utils.utils import parameterisation
 from model.ML.forced_model import ForcedModel
 from model.core.steppers import SteppedModel, AB3Stepper, CNABStepper
-from model.ML.architectures.build_model import closure_combiner
+from model.ML.architectures.build_model import closure_combiner, init_latent_state
 logger = logging.getLogger(__name__)
 
 # Match either data or model run directories, e.g.:
@@ -47,32 +47,33 @@ def load_forced_model(
     closure,
     dt,
     trajs=None,
-    closure_scale=0.1,
+    closure_scale=1,
 ):
     '''Load forced model from provided closure.
     
     If trajs is provided, automatically computes scalers and filter.
     Otherwise uses provided scalers/filter (useful for inference).
     '''
-    trajs_arr = jnp.asarray(trajs)
+    trajs = jnp.asarray(trajs)
     eps = 1e-6
-    layer_axis = trajs_arr.ndim - 3
-    reduce_axes = tuple(i for i in range(trajs_arr.ndim) if i != layer_axis)
-    q_std = jnp.std(trajs_arr, axis=reduce_axes)
+    layer_axis = trajs.ndim - 3
+    reduce_axes = tuple(i for i in range(trajs.ndim) if i != layer_axis)
+    q_std = jnp.std(trajs, axis=reduce_axes)
     q_std = jnp.maximum(q_std, eps).reshape((-1, 1, 1))
     q_mean = jnp.zeros_like(q_std)
     dq_std = jnp.maximum(q_std * closure_scale, eps)
     dq_mean = jnp.zeros_like(dq_std)
 
 
-    closure_params, closure_static = eqx.partition(closure, eqx.is_array)
-    init_param_func = lambda state, model, params: params
+    closure_params, closure_static = eqx.partition(closure, eqx.is_array) # splits closure into edited and static parts
+    init_latent_state_func = init_latent_state(closure)
     dt_arr = jnp.asarray(dt)
 
-    def _param_adapter(state, param_aux, model, *args, **kwargs):
-        dq_increment, new_params = closure_combiner(
+    def _param_adapter(state, latent_state, model, closure_params, *args, **kwargs):
+        dq, new_latent_state = closure_combiner(
             state,
-            param_aux,
+            closure_params,
+            latent_state,
             closure_static,
             q_mean=q_mean,
             q_std=q_std,
@@ -81,16 +82,16 @@ def load_forced_model(
             dt=dt_arr,
             model=model,
         )
-        # Closure network predicts a per-step increment dQ; the parameterization
+        # Closure network predicts a per-step increment dQ; the parameterisation
         # wrapper expects a tendency dQ/dt to add to model.get_updates(...).
-        dq_forcing = dq_increment / dt_arr
-        return dq_forcing, new_params
+        dq_forcing = dq / dt_arr
+        return dq_forcing, new_latent_state
 
-    closure_func = parameterization(_param_adapter)
+    closure_func = parameterisation(_param_adapter)
 
     lr_stepper = AB3Stepper(dt=dt)
     forced_model = SteppedModel(
-        model=ForcedModel(model=lr_model, closure=closure_func, init_param_aux_func=init_param_func),
+        model=ForcedModel(model=lr_model, closure=closure_func, init_latent_state_func=init_latent_state_func),
         stepper=lr_stepper,
     )
     
