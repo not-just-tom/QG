@@ -7,10 +7,17 @@ import model.ML.architectures.build_model
 import model.ML.utils.dataloading
 importlib.reload(model.ML.architectures.build_model)
 importlib.reload(model.ML.utils.dataloading)
-from model.ML.architectures.build_model import closure_combiner
 from model.ML.utils.dataloading import load_forced_model
 
-def rollout_traj_errors(target_traj, forced_model, template_state, closure_params, lr_model, dt, forcing_key=None):
+def rollout_traj_errors(
+    target_traj,
+    forced_model,
+    template_state,
+    closure_params,
+    lr_model,
+    dt,
+    forcing_key=None,
+):
     # nsteps is number of intervals
     nsteps = target_traj.shape[0] - 1
 
@@ -61,7 +68,7 @@ def make_train_epoch(lr_model, dt, optim, loss_fn, cfl_limit=1.0, closure_scale=
 
     def _train_epoch(train_trajs, closure, optim_state):
         # Use the low-resolution physics model for training 
-        forced_model, closure_params, static_closure_obj, *_ = load_forced_model(
+        forced_model, closure_params, static_closure_obj, _ = load_forced_model(
             lr_model,
             closure,
             dt,
@@ -129,7 +136,7 @@ def make_test_epoch(lr_model, dt, loss_fn, cfl_limit=1.0, closure_scale=0.1):
 
     def _test_epoch(test_trajs, closure, optim_state):
         # Use the low-resolution physics model for testing 
-        forced_model, closure_params, static_closure_obj, *_ = load_forced_model(
+        forced_model, closure_params, static_closure_obj, _ = load_forced_model(
             lr_model,
             closure,
             dt,
@@ -138,7 +145,7 @@ def make_test_epoch(lr_model, dt, loss_fn, cfl_limit=1.0, closure_scale=0.1):
         )
         from model.ML.architectures.zero import ZeroModel
         zero_closure_obj = ZeroModel()
-        zero_forced_model, zero_closure_params, zero_static_closure_obj, *_ = load_forced_model(
+        zero_forced_model, zero_closure_params, zero_static_closure_obj, _ = load_forced_model(
             lr_model,
             zero_closure_obj,
             dt,
@@ -228,7 +235,7 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
         nsteps_cfg = int(getattr(cfg.plotting, "nsteps", truth_traj.shape[0] - 1))
         n_intervals = min(nsteps_cfg, int(truth_traj.shape[0]) - 1)
 
-        forced_model, closure_params, closure_static, q_mean, q_std, dq_mean, dq_std  = load_forced_model(
+        forced_model, closure_params, closure_static, closure_adapter = load_forced_model(
             lr_model,
             closure,
             dt,
@@ -258,17 +265,11 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
 
         # ML closure rollout
         def _step(carry, _x):
-            dq, _ = closure_combiner(
+            dq, _ = closure_adapter.predict(
                 carry.state.model_state,
                 closure_params,
                 carry.state.param_aux.value,
-                closure_static,
-                q_mean=q_mean,
-                q_std=q_std,
-                dq_mean=dq_mean,
-                dq_std=dq_std,
-                dt=dt,
-                model=lr_model,
+                lr_model,
             )
 
             next_state = forced_model.step_model(carry, closure_params)
@@ -315,7 +316,7 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
         # Build a physics-only model (no closure) for comparison
         from model.ML.architectures.zero import ZeroModel
         zero_closure = ZeroModel()
-        zero_model, zero_params, *_ = load_forced_model(
+        zero_model, zero_params, _, _ = load_forced_model(
             lr_model,
             zero_closure,
             dt,

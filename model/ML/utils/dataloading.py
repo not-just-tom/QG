@@ -13,7 +13,7 @@ import queue
 from model.ML.utils.utils import parameterisation
 from model.ML.forced_model import ForcedModel
 from model.core.steppers import SteppedModel, AB3Stepper, CNABStepper
-from model.ML.architectures.build_model import closure_combiner, init_latent_state
+from model.ML.architectures.build_model import ClosureAdapter, init_latent_state
 logger = logging.getLogger(__name__)
 
 # Match either data or model run directories, e.g.:
@@ -68,26 +68,15 @@ def load_forced_model(
     closure_params, closure_static = eqx.partition(closure, eqx.is_array) # splits closure into edited and static parts
     init_latent_state_func = init_latent_state(closure)
     dt_arr = jnp.asarray(dt)
-
-    def _param_adapter(state, latent_state, model, closure_params, *args, **kwargs):
-        dq, new_latent_state = closure_combiner(
-            state,
-            closure_params,
-            latent_state,
-            closure_static,
-            q_mean=q_mean,
-            q_std=q_std,
-            dq_mean=dq_mean,
-            dq_std=dq_std,
-            dt=dt_arr,
-            model=model,
-        )
-        # Closure network predicts a per-step increment dQ; the parameterisation
-        # wrapper expects a tendency dQ/dt to add to model.get_updates(...).
-        dq_forcing = dq / dt_arr
-        return dq_forcing, new_latent_state
-
-    closure_func = parameterisation(_param_adapter)
+    closure_adapter = ClosureAdapter(
+        closure_static,
+        q_mean,
+        q_std,
+        dq_mean,
+        dq_std,
+        dt_arr,
+    )
+    closure_func = parameterisation(closure_adapter)
 
     lr_stepper = AB3Stepper(dt=dt)
     forced_model = SteppedModel(
@@ -96,7 +85,7 @@ def load_forced_model(
     )
     
     # Return preprocessing params for diagnostics
-    return forced_model, closure_params, closure_static, q_mean, q_std, dq_mean, dq_std
+    return forced_model, closure_params, closure_static, closure_adapter
 
 def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save: bool = False, epoch: int = None, n_epochs: int = None, losses: dict = None):
     '''

@@ -100,8 +100,9 @@ class LossDiagnostic(Diagnostic):
             ax.plot(np.arange(1, len(test) + 1), test, label="test")
         if zero.size:
             # plot average zero loss per curriculum stage
-            x = np.arange(0, len(zero)+1, max(1, int(n_epochs)))
-            y = [np.mean(zero[x[i-1]:x[i]]) for i in np.arange(len(x))] # fix: this causes a mean of an empty slice error every time
+            x = np.arange(1, len(zero)+1)
+            arr = [np.mean(zero[x[i-1]:x[i]]) for i in np.arange(1, len(x), n_epochs)]
+            y = np.repeat(arr, n_epochs) 
             ax.step(x, y, label="zero model", linestyle="--", color="C2")
 
         ax.set_title("Train / Test Loss")

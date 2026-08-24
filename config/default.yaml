@@ -40,10 +40,10 @@ ml:
   model_type: resnet
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
-  n_train: 2
-  n_test: 1
-  start_days: 1        # initial window length in days
-  end_days: 1         # final window length in days
+  n_train: 16
+  n_test: 4
+  start_days: 5        # initial window length in days
+  end_days: 5         # final window length in days
   batch_size: 10 # number of samples in a training batch per update <--------------------------- is this used?
   prefetch: 3       # prefetch a few batches to aid efficiency
 
@@ -69,8 +69,9 @@ architectures:
     width: 32 #[16, 32, 64]
     ymodes: 16 #[8, 16]
     xmodes: 32 #[8, 16, 32]
+    projection_width: 128
     depth: 4 #[2, 4, 6]
-    activation: elu
+    activation: gelu
     closure_scale: 0.3 
   diffusion:
     loss: mae
@@ -93,9 +94,9 @@ architectures:
     activation: "tanh"
     closure_scale: 0.2
   gru:
-    learning_rate: 0.0001
+    learning_rate: 0.0025
     loss: mae
-    hidden_channels: 2
+    hidden_channels: 16
     kernel_size: 3
     activation: elu
     closure_scale: 0.2

@@ -35,6 +35,7 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 import logging
+import model.utils.pytree as Pytree
 logger = logging.getLogger(__name__)
 
 def _standardise(name):
@@ -58,46 +59,53 @@ def init_latent_state(closure):
     
     
 
-def closure_combiner(
-    state,
-    closure_params,
-    latent_state,
-    static_closure_obj=None,
-    q_mean=None,
-    q_std=None,
-    dq_mean=None,
-    dq_std=None,
-    dt=None,
-    model=None,
-):
-    """Evaluate closure and return per-step PV increment dQ plus params.
-    """
-    closure = eqx.combine(closure_params, static_closure_obj)
-    q = state.q
+@Pytree.register_pytree_class_attrs(
+    children=["q_mean", "q_std", "dq_mean", "dq_std"],
+    static_attrs=["closure_static", "dt"],
+)
+class ClosureAdapter:
+    """Single execution boundary for closure scaling and recurrent state."""
 
-    if getattr(closure, 'ml', True):
-        # ML closure: normalize input and output if mean/std provided
-        if q_mean is None or q_std is None:
-            q_in = q
-        else:
-            q_in = (q - q_mean) / (q_std + 1e-6)
+    def __init__(self, closure_static, q_mean, q_std, dq_mean, dq_std, dt):
+        self.closure_static = closure_static
+        self.q_mean = q_mean
+        self.q_std = q_std
+        self.dq_mean = dq_mean
+        self.dq_std = dq_std
+        self.dt = dt
 
-        if getattr(closure, "stateful", False):
-            dq, new_latent_state = closure(q_in.astype(jnp.float32), latent_state)
+    def _normalise(self, q):
+        return (q - self.q_mean) / (self.q_std + 1e-6)
+
+    def _denormalise(self, dq):
+        return (dq * self.dq_std) + self.dq_mean
+
+    def predict(self, state, closure_params, latent_state, model):
+        closure = eqx.combine(closure_params, self.closure_static)
+        q = state.q
+
+        if getattr(closure, "ml", True):
+            q_in = self._normalise(q).astype(jnp.float32)
+            if getattr(closure, "stateful", False):
+                dq, new_latent_state = closure(q_in, latent_state)
+            else:
+                dq = closure(q_in)
+                new_latent_state = latent_state
+            dq = self._denormalise(dq).astype(q.dtype)
         else:
-            dq = closure(q_in.astype(jnp.float32))
+            dq = closure(state, model=model, dt=self.dt).astype(q.dtype)
             new_latent_state = latent_state
-        dq = dq.astype(q.dtype)
 
-        if dq_mean is not None and dq_std is not None:
-            dq = (dq * dq_std) + dq_mean
-    else:
-        # Analytical closures derive any required diagnostic fields directly
-        # from the model state.  They return a per-step increment, matching
-        # the convention used by the ML closures above.
-        dq = closure(state, model=model, dt=dt).astype(q.dtype)
-        new_latent_state = latent_state
-    return dq, new_latent_state
+        return dq, new_latent_state
+
+    def __call__(self, state, latent_state, model, closure_params, **kwargs):
+        dq, new_latent_state = self.predict(
+            state,
+            closure_params,
+            latent_state,
+            model,
+        )
+        return dq / self.dt, new_latent_state
 
     
 def _get_arch_params(cfg, arch_name):

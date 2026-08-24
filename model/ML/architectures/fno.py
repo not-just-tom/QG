@@ -2,42 +2,6 @@ import jax
 import jax.numpy as jnp
 import equinox as eqx
 from typing import Sequence, Optional
-import dataclasses
-import model.utils.pytree as Pytree
-
-@Pytree.register_pytree_dataclass
-@dataclasses.dataclass(frozen=True, kw_only=True)
-class FNOMemoryStates:
-    """Past x states of the trajectory for the FNO to be passed through
-    the Forced Model.
-    """
-    past_states: jnp.ndarray
-
-    @property
-    def qh(self) -> jnp.ndarray:
-        """Return the hidden state when called.       
-        """
-        return self.past_states
-
-
-    def update(self, **kwargs) -> "FNOMemoryStates":
-        """This should add the most recent qh to the list and remove the first, so the memory is updated.
-        fix: It doesn't do that right now.
-        """
-        if not kwargs:
-            # Copy the class with no changes
-            return dataclasses.replace(self)
-        if extra_attrs := (kwargs.keys() - {"qh"}):
-            extra_attr_str = ", ".join(extra_attrs)
-            pl_suf = "s" if len(extra_attrs) > 1 else ""
-            raise ValueError(
-                f"tried to update unknown state attribute{pl_suf} {extra_attr_str}"
-            )
-        if len(kwargs) > 1:
-            raise ValueError("duplicate updates for qh") 
-
-        attr, new_qh = next(iter(kwargs.items()))
-        return dataclasses.replace(self, qh=new_qh)
 
 class SpectralConv2d(eqx.Module):
     """
@@ -75,7 +39,7 @@ class SpectralConv2d(eqx.Module):
         """Complex multiplication in Fourier space: (batch, in_ch, x, y) * (in_ch, out_ch, x, y) -> (batch, out_ch, x, y)"""
         return jnp.einsum("bixy,ioxy->boxy", input, weights)
 
-    def __call__(self, x, aux): 
+    def __call__(self, x): 
         # x expected shape: (C, H, W)
         x = x[None, ...]
         
@@ -108,7 +72,7 @@ class SpectralConv2d(eqx.Module):
 
 class FNO(eqx.Module):
     """
-    Fourier Neural Operator for ocean subgrid parameterisation.
+    Fourier Neural Operator parameterisation
     
     Architecture:
     - Lift input channels -> `width` via a 1x1 conv
@@ -142,8 +106,9 @@ class FNO(eqx.Module):
         width: int = 32,
         xmodes: int = 16,
         ymodes: int = 16,
+        projection_width: int = 128,
         depth: int = 4,
-        activation: Optional[str] = 'elu',
+        activation: Optional[str] = 'gelu',
         key=jax.random.PRNGKey(0),
         cfg=None,
         **kwargs,
@@ -192,15 +157,15 @@ class FNO(eqx.Module):
         self.spec_layers = spec_layers
         self.w_layers = w_layers
 
-        # Projection layers: width -> 128 -> out_channels
+        # Projection layers: width -> projection_width -> out_channels
         k_proj1 = keys[-2]
         k_proj2 = keys[-1]
         self.proj1 = eqx.nn.Conv2d(
-            width, 128, kernel_size=1, key=k_proj1,
+            width, projection_width, kernel_size=1, key=k_proj1,
             padding_mode="CIRCULAR"
         )
         self.proj2 = eqx.nn.Conv2d(
-            128, out_channels, kernel_size=1, key=k_proj2,
+            projection_width, out_channels, kernel_size=1, key=k_proj2,
             padding_mode="CIRCULAR"
         )
 

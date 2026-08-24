@@ -533,6 +533,9 @@ def run(cfg):
                     "Failed to save checkpoint at stage %d sub-epoch %d", day_idx + 1, stage_epoch + 1
                 )
 
+            # patience clause to be added
+            
+
         # Summarise results once the full window has completed.
         window_train_mean = float(np.mean(window_train_epoch_means)) if window_train_epoch_means else float('nan')
         window_test_mean = float(np.mean(window_test_epoch_means)) if window_test_epoch_means else float('nan')
