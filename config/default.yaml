@@ -29,7 +29,7 @@ plotting:
   dt: 1000
   spinup: 200 # in days
   cadence: 10
-  validation_rollout: 100
+  validation_rollout: 300
   plot: ['loss', 'ke_spectrum', 'pv_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
   auto_dt: false
   njets: 3
@@ -37,7 +37,7 @@ plotting:
 
 ml:
   enabled: true # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
-  model_type: resnet
+  model_type: gru
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 16
@@ -45,6 +45,7 @@ ml:
   start_days: 5        # initial window length in days
   end_days: 5         # final window length in days
   batch_size: 10 # number of samples in a training batch per update <--------------------------- is this used?
+  patience: 20
   prefetch: 3       # prefetch a few batches to aid efficiency
 
 
@@ -55,7 +56,7 @@ architectures:
     nlayers: 10
     width: 64
     kernel_size: 5
-    activation: "relu" 
+    activation: relu 
     closure_scale: 0.2
   unet:
     learning_rate: 0.0005
@@ -65,14 +66,14 @@ architectures:
     closure_scale: 0.2
   fno:
     learning_rate: 0.0005 #[0.0001, 0.0005]
-    loss: maddison
+    loss: mae
     width: 32 #[16, 32, 64]
     ymodes: 16 #[8, 16]
     xmodes: 32 #[8, 16, 32]
     projection_width: 128
     depth: 4 #[2, 4, 6]
     activation: gelu
-    closure_scale: 0.3 
+    closure_scale: 1 
   diffusion:
     loss: mae
     cutoff: 16.0
@@ -96,10 +97,10 @@ architectures:
   gru:
     learning_rate: 0.0025
     loss: mae
-    hidden_channels: 16
-    kernel_size: 3
-    activation: elu
-    closure_scale: 0.2
+    hidden_channels: [8, 16, 32, 64]
+    kernel_size: [1, 3]
+    activation: [gelu, elu]
+    closure_scale: [0.1, 0.4, 0.8]
   resnet:
     learning_rate: 0.0001 #[0.0001, 0.0005]
     loss: maddison

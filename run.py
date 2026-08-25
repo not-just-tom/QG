@@ -77,6 +77,7 @@ def run(cfg):
     n_train = cfg.ml.n_train
     n_test = cfg.ml.n_test
     n_epochs = n_train + n_test
+    patience = cfg.ml.patience
     params = dict(OmegaConf.to_container(cfg.params, resolve=True))
     seed = params.get("seed", 42)
     key = jax.random.PRNGKey(seed)
@@ -243,7 +244,6 @@ def run(cfg):
         
         cfg_plot = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
         Plotter(cfg_plot, trajectories=trajectories, out_dir=out_dir, cadence=cadence).plot()
-        return
     
     # ================================================================
     # === closure building ===========================================
@@ -252,23 +252,26 @@ def run(cfg):
     # Build training/sweep metadata to avoid accidentally reusing closures from different sweeps
     model_dir, found, id= find_existing_closure(MODEL_DIR, params, timing_metadata, model_type, training_metadata)
     start_epoch = 0
+    loaded_leaves = None
+    loaded_optim = None
+    ckpt_meta = None
+    loaded_loss_history = None
     if found:
         logger.info(f"Found existing {model_type} closure with matching parameters at {model_dir}, attempting to load checkpoint.")
         try:
-            _, loaded_optim, ckpt_meta, loaded_loss_history = checkpointer(None, None, model_dir, save=False)
+            loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = checkpointer(None, None, model_dir, save=False)
         except Exception:
             logger.exception("Failed to load checkpoint; will build a new closure")
-            _, loaded_optim, ckpt_meta, loaded_loss_history = None, None, None, None
+            loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = None, None, None, None
 
-        saved_epoch = int(ckpt_meta.get('epoch', 0))
-        saved_n_epochs = int(ckpt_meta.get('n_epochs', n_epochs))
-        if saved_epoch >= saved_n_epochs:
-            logger.info(f"Model at {model_dir} already trained for {saved_n_epochs} epochs; skipping training loop.")
-        else:
-            pass
-        start_epoch = saved_epoch
+        if ckpt_meta is not None:
+            saved_epoch = int(ckpt_meta.get('epoch', 0))
+            saved_n_epochs = int(ckpt_meta.get('n_epochs', n_epochs))
+            if saved_epoch >= saved_n_epochs:
+                logger.info(f"Model at {model_dir} already trained for {saved_n_epochs} epochs; skipping training loop.")
+            start_epoch = saved_epoch
 
-    closure = build_closure(cfg)
+    closure = build_closure(cfg, loaded_leaves)
 
     # Set up optimiser - might be needed to make more complex if we want to do things like learning rate scheduling
     if cfg.ml.optimiser=='Adam':
@@ -359,6 +362,8 @@ def run(cfg):
     start_time = time.time()
 
     for day_idx, current_days in enumerate(window_days):
+        best_stage_loss = 100000 #just large number to start off with covering all loss types.
+        epochs_without_improvement=0 # resets each stage
         current_batch_steps = current_days * steps_per_day
         current_n_samples   = nsteps // current_batch_steps
         stage_batch_size = batch_size
@@ -533,7 +538,18 @@ def run(cfg):
                     "Failed to save checkpoint at stage %d sub-epoch %d", day_idx + 1, stage_epoch + 1
                 )
 
-            # patience clause to be added
+            # patience clause
+            # variance between traj runs is huge so the best performance is measured by deviation from zero closure run.
+            if zero_mean-test_mean<best_stage_loss:
+                best_stage_loss = zero_mean-test_mean
+                epochs_without_improvement = 0
+            else:
+                epochs_without_improvement+=1
+            if epochs_without_improvement>=patience:
+                logger.warning(f"Model didn't improve in {patience} epochs, training stopping early.")
+                break
+
+
             
 
         # Summarise results once the full window has completed.
@@ -599,18 +615,15 @@ def run(cfg):
     trajectories["params"] = params
     
     if os.environ.get('HPC_RUN', '0') == '1':
-        return print("hello you have skipped the plotting")
-    
-    # output dir 
-    outbase = os.path.join(cfg.filepaths.out_dir)
-    out_dir, found = find_output_dir(outbase, params, model_type, metadata=meta, id=str(id))
-    if found:
-        logger.info(f"Found existing output directory with matching parameters")
+        print("hello you have skipped the plotting")
     else:
-        os.makedirs(out_dir, exist_ok=True)
-
-
-    Plotter(cfg, trajectories=trajectories, out_dir=out_dir, cadence=cadence).plot()
+        outbase = os.path.join(cfg.filepaths.out_dir)
+        out_dir, found = find_output_dir(outbase, params, model_type, metadata=meta, id=str(id))
+        if found:
+            logger.info(f"Found existing output directory with matching parameters")
+        else:
+            os.makedirs(out_dir, exist_ok=True)
+        Plotter(cfg, trajectories=trajectories, out_dir=out_dir, cadence=cadence).plot()
 
 
 # ============================================================================================
@@ -624,7 +637,7 @@ def main():
     p.add_argument('--outdir', default=None, help='Optional output directory override')
     p.add_argument('--dry-run', action='store_true', help='Print sweep jobs but do not execute')
     p.add_argument('--generate-only', action='store_true', help='Only generate dataset then exit')
-    p.add_argument('--hpc-run', action='store_true', help='HPC mode: no plotting; collect final validation MSE for sweep ranking')
+    p.add_argument('--hpc-run', help='HPC mode: no plotting; collect final validation MSE for sweep ranking')
     args = p.parse_args()
 
     # If requested, set an env var so `run()` can detect generate-only behavior.
@@ -634,6 +647,8 @@ def main():
     # If requested, set an env var so `run()` can detect HPC mode and skip plotting.
     if getattr(args, 'hpc_run', False):
         os.environ['HPC_RUN'] = '1'
+    else:
+        os.environ['HPC_RUN'] = '0'
 
     base_cfg = OmegaConf.load(args.config)
     # apply optional outdir override
@@ -644,77 +659,84 @@ def main():
 
     # Convert to plain python containers for sweep detection (OmegaConf keeps ListConfig/DictConfig types)
     cfg_plain = OmegaConf.to_container(base_cfg, resolve=True)
-    model_type = cfg_plain.get('ml', {}).get('model_type')
-    archs = cfg_plain.get('architectures', {})
-    arch_cfg = archs.get(model_type, {}) if archs else {}
+    model_types = cfg_plain.get('ml', {}).get('model_type')
+    if isinstance(model_types, list) and len(model_types)>1:
+        pass
+    else:
+        model_types = [model_types]
+    for model_type in model_types:
+        archs = cfg_plain.get('architectures', {})
+        arch_cfg = archs.get(model_type, {}) if archs else {}
+        model_cfg = OmegaConf.to_container(base_cfg, resolve=True)
+        model_cfg['ml']['model_type'] = model_type
+        model_run = OmegaConf.create(model_cfg)
+        # Find sweeped keys whose value is a list with length > 1
+        sweep_keys = [k for k, v in arch_cfg.items() if isinstance(v, list) and len(v) > 1]
+        if not sweep_keys:
+            # No sweep: run normally
+            if args.dry_run:
+                print('No sweep axes found; would run single job with provided config.')
+                return
+            run(model_run)
+        else:
+            # Build lists for sweep axes
+            lists = [arch_cfg[k] for k in sweep_keys]
+            total = 1
+            for l in lists:
+                total *= max(1, len(l))
+            print(f"Found sweep axes for {model_type}: {sweep_keys} -> {total} combinations")
 
-    # Find sweeped keys whose value is a list with length > 1
-    sweep_keys = [k for k, v in arch_cfg.items() if isinstance(v, list) and len(v) > 1]
-    if not sweep_keys:
-        # No sweep: run normally
-        if args.dry_run:
-            print('No sweep axes found; would run single job with provided config.')
-            return
-        return run(base_cfg)
+            idx = 0
+            results = []
+            for combo in product(*lists):
+                # deep-copy base config to plain dict then modify
+                cfg_copy = OmegaConf.to_container(model_cfg, resolve=True)
+                if 'architectures' not in cfg_copy:
+                    cfg_copy['architectures'] = {}
+                if model_type not in cfg_copy['architectures']:
+                    cfg_copy['architectures'][model_type] = {}
+                for k, val in zip(sweep_keys, combo):
+                    cfg_copy['architectures'][model_type][k] = val
 
-    # Build lists for sweep axes
-    lists = [arch_cfg[k] for k in sweep_keys]
-    total = 1
-    for l in lists:
-        total *= max(1, len(l))
-    print(f"Found sweep axes for {model_type}: {sweep_keys} -> {total} combinations")
+                # set per-run outdir
+                out_base = cfg_copy.get('filepaths', {}).get('out_dir', 'outputs')
+                run_out = os.path.join(out_base, f'sweep_{model_type}', f'run_{idx+1}')
+                if 'filepaths' not in cfg_copy:
+                    cfg_copy['filepaths'] = {}
+                cfg_copy['filepaths']['out_dir'] = run_out
 
-    idx = 0
-    results = []
-    for combo in product(*lists):
-        # deep-copy base config to plain dict then modify
-        cfg_copy = OmegaConf.to_container(base_cfg, resolve=True)
-        if 'architectures' not in cfg_copy:
-            cfg_copy['architectures'] = {}
-        if model_type not in cfg_copy['architectures']:
-            cfg_copy['architectures'][model_type] = {}
-        for k, val in zip(sweep_keys, combo):
-            cfg_copy['architectures'][model_type][k] = val
+                cfg_run = OmegaConf.create(cfg_copy)
 
-        # set per-run outdir
-        out_base = cfg_copy.get('filepaths', {}).get('out_dir', 'outputs')
-        run_out = os.path.join(out_base, f'sweep_{model_type}', f'run_{idx+1}')
-        if 'filepaths' not in cfg_copy:
-            cfg_copy['filepaths'] = {}
-        cfg_copy['filepaths']['out_dir'] = run_out
+                print(f"Running sweep {idx+1}/{total}: {dict(zip(sweep_keys, combo))} -> {run_out}")
+                if args.dry_run:
+                    idx += 1
+                    continue
 
-        cfg_run = OmegaConf.create(cfg_copy)
+                # run() will return a scalar metric when in HPC mode; otherwise None
+                try:
+                    metric = run(cfg_run)
+                except Exception:
+                    # If a single sweep job fails, log and continue to next combo
+                    logging.getLogger(__name__).exception("Sweep run failed for combo %s", dict(zip(sweep_keys, combo)))
+                    metric = None
 
-        print(f"Running sweep {idx+1}/{total}: {dict(zip(sweep_keys, combo))} -> {run_out}")
-        if args.dry_run:
-            idx += 1
-            continue
+                if os.environ.get('HPC_RUN', '0') == '1':
+                    results.append({
+                        'idx': idx + 1,
+                        'combo': dict(zip(sweep_keys, combo)),
+                        'out_dir': run_out,
+                        'mse': metric,
+                    })
+                idx += 1
 
-        # run() will return a scalar metric when in HPC mode; otherwise None
-        try:
-            metric = run(cfg_run)
-        except Exception:
-            # If a single sweep job fails, log and continue to next combo
-            logging.getLogger(__name__).exception("Sweep run failed for combo %s", dict(zip(sweep_keys, combo)))
-            metric = None
-
-        if os.environ.get('HPC_RUN', '0') == '1':
-            results.append({
-                'idx': idx + 1,
-                'combo': dict(zip(sweep_keys, combo)),
-                'out_dir': run_out,
-                'mse': metric,
-            })
-        idx += 1
-
-    # If HPC mode was requested, print top-5 runs by lowest validation MSE
-    if os.environ.get('HPC_RUN', '0') == '1':
-        # filter out failed runs (None mse)
-        filtered = [r for r in results if r['mse'] is not None]
-        filtered.sort(key=lambda r: r['mse'])
-        print('\nTop 5 runs by validation MSE:')
-        for i, r in enumerate(filtered[:5], 1):
-            print(f"{i}. mse={r['mse']:.6E} -> {r['combo']} -> outdir={r['out_dir']}")
+            # If HPC mode was requested, print top-5 runs by lowest validation MSE
+            if os.environ.get('HPC_RUN', '0') == '1':
+                # filter out failed runs (None mse)
+                filtered = [r for r in results if r['mse'] is not None]
+                filtered.sort(key=lambda r: r['mse'])
+                print('\nTop 5 runs by validation MSE:')
+                for i, r in enumerate(filtered[:5], 1):
+                    print(f"{i}. mse={r['mse']:.6E} -> {r['combo']} -> outdir={r['out_dir']}")
 
 
 

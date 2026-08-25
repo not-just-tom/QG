@@ -54,28 +54,9 @@ def load_forced_model(
     If trajs is provided, automatically computes scalers and filter.
     Otherwise uses provided scalers/filter (useful for inference).
     '''
-    trajs = jnp.asarray(trajs)
-    eps = 1e-6
-    layer_axis = trajs.ndim - 3
-    reduce_axes = tuple(i for i in range(trajs.ndim) if i != layer_axis)
-    q_std = jnp.std(trajs, axis=reduce_axes)
-    q_std = jnp.maximum(q_std, eps).reshape((-1, 1, 1))
-    q_mean = jnp.zeros_like(q_std)
-    dq_std = jnp.maximum(q_std * closure_scale, eps)
-    dq_mean = jnp.zeros_like(dq_std)
-
-
     closure_params, closure_static = eqx.partition(closure, eqx.is_array) # splits closure into edited and static parts
     init_latent_state_func = init_latent_state(closure)
-    dt_arr = jnp.asarray(dt)
-    closure_adapter = ClosureAdapter(
-        closure_static,
-        q_mean,
-        q_std,
-        dq_mean,
-        dq_std,
-        dt_arr,
-    )
+    closure_adapter = ClosureAdapter(closure_static, trajs, closure_scale, dt)
     closure_func = parameterisation(closure_adapter)
 
     lr_stepper = AB3Stepper(dt=dt)

@@ -60,25 +60,32 @@ def init_latent_state(closure):
     
 
 @Pytree.register_pytree_class_attrs(
-    children=["q_mean", "q_std", "dq_mean", "dq_std"],
-    static_attrs=["closure_static", "dt"],
+    children=["trajs"],
+    static_attrs=["closure_static", "closure_scale", "dt"],
 )
 class ClosureAdapter:
-    """Single execution boundary for closure scaling and recurrent state."""
+    """Adapter which scales the input to a standard deviation centred on zero for the closure, 
+    and rescales the output back to improve generalisability.
+    
+    The output also have std reduced by the closure scale."""
 
-    def __init__(self, closure_static, q_mean, q_std, dq_mean, dq_std, dt):
+    def __init__(self, closure_static, trajs, closure_scale, dt):
+        eps = 1e-6
+        layer_axis = trajs.ndim - 3
+        reduce_axes = tuple(i for i in range(trajs.ndim) if i != layer_axis)
+        q_std = jnp.std(trajs, axis=reduce_axes)
+        self.q_std = jnp.maximum(q_std, eps).reshape((-1, 1, 1))
+        self.q_mean = jnp.mean(trajs, axis=reduce_axes).reshape((-1, 1, 1))
+        self.dq_std = jnp.maximum(q_std * closure_scale, eps).reshape((-1, 1, 1))
+
         self.closure_static = closure_static
-        self.q_mean = q_mean
-        self.q_std = q_std
-        self.dq_mean = dq_mean
-        self.dq_std = dq_std
         self.dt = dt
 
     def _normalise(self, q):
         return (q - self.q_mean) / (self.q_std + 1e-6)
 
     def _denormalise(self, dq):
-        return (dq * self.dq_std) + self.dq_mean
+        return (dq * self.dq_std) + self.q_mean
 
     def predict(self, state, closure_params, latent_state, model):
         closure = eqx.combine(closure_params, self.closure_static)
@@ -92,6 +99,7 @@ class ClosureAdapter:
                 dq = closure(q_in)
                 new_latent_state = latent_state
             dq = self._denormalise(dq).astype(q.dtype)
+            dq = dq - jnp.mean(dq, axis=(-2, -1), keepdims=True) # removes the spacial mean from the increment
         else:
             dq = closure(state, model=model, dt=self.dt).astype(q.dtype)
             new_latent_state = latent_state
