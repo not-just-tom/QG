@@ -7,37 +7,38 @@ filepaths:
 
 params: 
   seed: 42
+  nondimensional: true
   nx: 32
   Lx: 1000000
   beta: 0.0000000000025
+  n_jets: 3 # number of jets in the regime, used for non dimensionalisation
   nz: 2
   # multi-layer model parameters (only used if nz>1)
-  Lz: 500
-  drag: 7.0e-8 # Ekman drag coeff
+  Lz: 500 # depth of top layer. 
+  drag: 1.0e-8 # Ekman drag coeff
   Ld: 33333 # deformation radius
-  delta: 0.1 # ratio between top/bottom layer depth
+  delta: 1 # ratio between top/bottom layer depth
   U1: 0.025
   U2: 0.0
   hr_nx: 512
   # Stochastic forcing parameters
-  kmin: 7.0   # inner ring forcing 
-  kmax: 10.0   # outer ring forcing 
-  epsilon: 0.000000000001 # 0.0 for no stochastic forcing 
+  kmin: 7.0   # the wavelenth MODE of inner ring forcing 
+  kmax: 10.0   # the wavelenth MODE of outer ring forcing 
+  epsilon: 1e-13 # 0.0 for no stochastic forcing 
 
 plotting:
   nsteps: 2000
   dt: 1000
   spinup: 200 # in days
   cadence: 10
-  validation_rollout: 300
+  validation_rollout: 1000
   plot: ['loss', 'ke_spectrum', 'pv_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
   auto_dt: false
-  njets: 3
   cfl: 0.5
 
 ml:
   enabled: true # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
-  model_type: gru
+  model_type: fno
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 16
@@ -73,7 +74,7 @@ architectures:
     projection_width: 128
     depth: 4 #[2, 4, 6]
     activation: gelu
-    closure_scale: 1 
+    closure_scale: 0.2 
   diffusion:
     loss: mae
     cutoff: 16.0
@@ -97,10 +98,10 @@ architectures:
   gru:
     learning_rate: 0.0025
     loss: mae
-    hidden_channels: [8, 16, 32, 64]
-    kernel_size: [1, 3]
-    activation: [gelu, elu]
-    closure_scale: [0.1, 0.4, 0.8]
+    hidden_channels: 16 #[8, 16, 32, 64]
+    kernel_size: 3 #[1, 3]
+    activation: elu #[gelu, elu]
+    closure_scale: 0.2 #[0.1, 0.4, 0.8]
   resnet:
     learning_rate: 0.0001 #[0.0001, 0.0005]
     loss: maddison

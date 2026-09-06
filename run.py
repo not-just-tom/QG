@@ -68,7 +68,6 @@ import gc
 def run(cfg):
     # load values
     dt = cfg.plotting.dt
-    njets= cfg.plotting.njets
     spinup = cfg.plotting.spinup
     nsteps = int(getattr(cfg.plotting, 'nsteps', 0))
     cadence = int(getattr(cfg.plotting, 'cadence', 100))
@@ -79,6 +78,8 @@ def run(cfg):
     n_epochs = n_train + n_test
     patience = cfg.ml.patience
     params = dict(OmegaConf.to_container(cfg.params, resolve=True))
+    params["dt"] = float(dt)
+    n_jets = params.get('n_jets', 4)
     seed = params.get("seed", 42)
     key = jax.random.PRNGKey(seed)
     ratio = params["hr_nx"]/params["nx"]
@@ -119,20 +120,23 @@ def run(cfg):
         old_dt = dt
         logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
         raw_model = QGM({**params, "nx": params['hr_nx']})
-        init_state = raw_model.initialise(key, tune=True, n_jets=njets, verbose=True)
+        init_state = raw_model.initialise(key, tune=True, n_jets=n_jets, verbose=True)
         dt = float(raw_model.estimate_cfl_dt(init_state))
+        params["dt"] = dt * raw_model.time_scale
 
     # instantiate the model
+    hr_physics_model = QGM({**params, "nx": params['hr_nx']})
+    dt = float(hr_physics_model.dt)
     hr_model = SteppedModel(
-        model=QGM({**params, "nx": params['hr_nx']}),
+        model=hr_physics_model,
         stepper=AB3Stepper(dt=dt),
     )
     # build low-resolution physics model (coarsened from high-res physics)
     lr_model = coarsen(hr_model.model, params['nx'])
     low_res_dt = dt * ratio
-    steps_per_day = int(24 * 3600 // low_res_dt)
+    steps_per_day = int(hr_physics_model.seconds_to_model_time(24 * 3600) // low_res_dt)
 
-    lr_init_state = lr_model.initialise(key, tune=True, n_jets=njets, verbose=False)
+    lr_init_state = lr_model.initialise(key, tune=True, n_jets=n_jets, verbose=False)
     lr_rhines_length, lr_u_rms = lr_model.rhines_length(lr_init_state)
     tau_eddy = lr_rhines_length / (lr_u_rms + 1e-12)
     logger.info(
@@ -140,14 +144,14 @@ def run(cfg):
         'Model spinup for %.2f days (~%.2g eddy turnover times). '
         'Training horizon is %d low-res steps (~%.2f days). '
         'Validation plotting window is %d steps (~%.2f days).',
-        dt,
-        low_res_dt,
+        dt * hr_physics_model.time_scale,
+        low_res_dt * hr_physics_model.time_scale,
         spinup,
-        float(tau_eddy) / (24.0 * 3600.0),
+        float(tau_eddy * hr_physics_model.time_scale) / (24.0 * 3600.0),
         nsteps,
-        nsteps * low_res_dt / (24.0 * 3600.0),
+        nsteps * low_res_dt * hr_physics_model.time_scale / (24.0 * 3600.0),
         validation_rollout,
-        validation_rollout * low_res_dt / (24.0 * 3600.0),
+        validation_rollout * low_res_dt * hr_physics_model.time_scale / (24.0 * 3600.0),
     )
 
     timing_metadata = {
@@ -244,6 +248,8 @@ def run(cfg):
         
         cfg_plot = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
         Plotter(cfg_plot, trajectories=trajectories, out_dir=out_dir, cadence=cadence).plot()
+        return
+
     
     # ================================================================
     # === closure building ===========================================
@@ -549,9 +555,6 @@ def run(cfg):
                 logger.warning(f"Model didn't improve in {patience} epochs, training stopping early.")
                 break
 
-
-            
-
         # Summarise results once the full window has completed.
         window_train_mean = float(np.mean(window_train_epoch_means)) if window_train_epoch_means else float('nan')
         window_test_mean = float(np.mean(window_test_epoch_means)) if window_test_epoch_means else float('nan')
@@ -583,7 +586,7 @@ def run(cfg):
     # === validation & diagnostics ===================================================================
     # ================================================================================================
     truth_traj, init_key = data_loader.get_trajectory(n_epochs-1)  # shape (time, layers, ny, nx)
-    logger.warning(
+    logger.info(
         "Requested validation rollout is %d steps (~%.2f days).",
         validation_rollout,
         validation_rollout * low_res_dt / (24.0 * 3600.0),

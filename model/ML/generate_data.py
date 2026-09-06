@@ -19,8 +19,9 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
 
     # Timing parameters
     n_total = cfg.ml.n_train + cfg.ml.n_test + 1 # one for validation
-    batch_size = 11 # hardcoded bc it was confusing me. It's just the trajs generated in batches
-    spinup = int(cfg.plotting.spinup * 24 * 3600 // hr_model.stepper.dt)
+    batch_size = 21 # hardcoded bc it was confusing me. It's just the trajs generated in batches
+    spinup_time = hr_model.model.seconds_to_model_time(cfg.plotting.spinup * 24 * 3600)
+    spinup = int(spinup_time // hr_model.stepper.dt)
     # Prepare low-resolution template and ratio for coarsening
     dummy_key = jax.random.PRNGKey(0)
     lr_template = lr_model.initialise(dummy_key)
@@ -124,7 +125,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
         _spinup_batched = jax.vmap(_spinup_state, in_axes=(0, None))
 
     # Prefer balanced, band-limited initial conditions when available.
-    n_jets = getattr(cfg.plotting, "njets", None)
+    n_jets = params.get('n_jets', None)
     if n_jets is not None:
         init_kwargs = {"n_jets": int(n_jets), "pseudo": True, "tune": True}
         logger.info("Using tuned jet initialisation for data generation (n_jets=%s)", n_jets)

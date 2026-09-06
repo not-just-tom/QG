@@ -144,15 +144,21 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
         kmax = trajs['params'].get('kmax', None)
         Lx = trajs['params'].get('Lx', None)
         Ld = trajs['params'].get('Ld', None)
+        n_jets = trajs['params'].get('n_jets', None)
+        length_scale = Lx / (np.pi * n_jets) # converting between dimensional params and nondim plots. 
 
-        # compute key wavelength values 
-        u, v = velocity_from_psi(invert_pv_to_psi(q_truth, grid), grid)
-        U_rms = np.sqrt(np.mean(u**2 + v**2))
+        k_min = 2*kmin*np.pi/grid.Lx
+        k_max = 2*kmax*np.pi/grid.Lx
+        k_deformation = length_scale / Ld # equiv to scaling dimensional wavenumber
+        kx_max = np.pi / grid.dx
+        ky_max = np.pi / grid.dy
+        k_nyquist = np.sqrt(kx_max**2 + ky_max**2) # maximum meaningful wavenumber 
 
-        k_min = 2*kmin*np.pi/Lx
-        k_max = 2*kmax*np.pi/Lx
-        k_Rhines = np.sqrt(beta / U_rms)
-        k_deformation = 1 / Ld
+        def rhines_wavenumber(frame):
+            psi = invert_pv_to_psi(_sanitize_numeric_array(frame), grid)
+            u, v = velocity_from_psi(psi, grid)
+            U_rms = np.sqrt(np.mean(u**2 + v**2))
+            return np.sqrt(1.0 / U_rms)
 
         # compute per-frame spectra helper
         def compute_frame_spectra(q):
@@ -203,12 +209,15 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
         ln_zero, = ax.loglog(k[1:], Ez0[1:], label="Zero", color="C2", linestyle="--")
         ax.axvline(k_deformation, ymin=0, ymax=1, color='red', linestyle="--")
         ax.text(k_deformation,1e-14,'k_deformation',rotation=270, color='k')
-        ax.axvline(k_Rhines, ymin=0, ymax=1, color='red', linestyle="--")
-        ax.text(k_Rhines,1e-14,'k_Rhines',rotation=270, color='k')
+        k_Rhines = rhines_wavenumber(q_truth[frame_indices[0]])
+        rhines_line = ax.axvline(k_Rhines, ymin=0, ymax=1, color='red', linestyle="--")
+        rhines_label = ax.text(k_Rhines,1e-14,'k_Rhines',rotation=270, color='k')
         ax.axvline(k_min, ymin=0, ymax=1, color='red', linestyle="--")
         ax.text(k_min,1e-14,'k_min',rotation=270, color='k')
         ax.axvline(k_max, ymin=0, ymax=1, color='red', linestyle="--")
         ax.text(k_max,1e-14,'k_max',rotation=270, color='k')
+        #ax.axvline(k_nyquist, ymin=0, ymax=1, color='red', linestyle="--")
+        #ax.text(k_nyquist,1e-14,'k_nyquist',rotation=270, color='k')
         ax.set_xlabel("k")
         ax.set_ylabel("E(k)")
         ax.set_title(f"KE spectrum (t={frame_indices[0]})")
@@ -217,6 +226,9 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
 
         def update(i):
             idx = frame_indices[i]
+            k_Rhines = rhines_wavenumber(q_truth[idx])
+            rhines_line.set_xdata([k_Rhines, k_Rhines])
+            rhines_label.set_position((k_Rhines, 1e-14))
             ax.relim()
             ax.autoscale_view()
             ax.set_title(f"KE spectrum (t={idx})")
@@ -254,6 +266,15 @@ class KESpectrumDiagnostic(Diagnostic):
         kmax = trajs['params'].get('kmax', None)
         Lx = trajs['params'].get('Lx', None)
         Ld = trajs['params'].get('Ld', None)
+        n_jets = trajs['params'].get('n_jets', None)
+        length_scale = Lx / (np.pi * n_jets) # converting between dimensional params and nondim plots. 
+
+        k_min = 2*kmin*np.pi/grid.Lx
+        k_max = 2*kmax*np.pi/grid.Lx
+        k_deformation = length_scale / Ld # equiv to scaling dimensional wavenumber
+        kx_max = np.pi / grid.dx
+        ky_max = np.pi / grid.dy
+        k_nyquist = np.sqrt(kx_max**2 + ky_max**2) # maximum meaningful wavenumber 
 
         # --- helper: compute spectrum from PV (time-averaged) ---
         def compute_avg_spectrum(q):
@@ -277,11 +298,7 @@ class KESpectrumDiagnostic(Diagnostic):
         # compute key wavelength values 
         u, v = velocity_from_psi(invert_pv_to_psi(q_truth, grid), grid)
         U_rms = np.sqrt(np.mean(u**2 + v**2))
-
-        k_min = 2*kmin*np.pi/Lx
-        k_max = 2*kmax*np.pi/Lx
-        k_Rhines = np.sqrt(beta / U_rms)
-        k_deformation = 1 / Ld
+        k_Rhines = np.sqrt(1.0 / U_rms) # again, numerator here is beta(=1.0) from nondim scaling
 
         # --- compute per-frame spectra ---
         def compute_frame_spectra(q):
@@ -323,13 +340,15 @@ class KESpectrumDiagnostic(Diagnostic):
             pass
 
         ax.axvline(k_deformation, ymin=0, ymax=1, color='red', linestyle="--")
-        ax.text(k_deformation,1e-14,'k_deformation',rotation=270, color='k')
+        ax.text(k_deformation,1e-3,'k_deformation',rotation=270, color='k')
         ax.axvline(k_Rhines, ymin=0, ymax=1, color='red', linestyle="--")
-        ax.text(k_Rhines,1e-14,'k_Rhines',rotation=270, color='k')
+        ax.text(k_Rhines,1e-3,'k_Rhines',rotation=270, color='k')
         ax.axvline(k_min, ymin=0, ymax=1, color='red', linestyle="--")
-        ax.text(k_min,1e-14,'k_min',rotation=270, color='k')
+        ax.text(k_min,1e-3,'k_min',rotation=270, color='k')
         ax.axvline(k_max, ymin=0, ymax=1, color='red', linestyle="--")
-        ax.text(k_max,1e-14,'k_max',rotation=270, color='k')
+        ax.text(k_max,1e-3,'k_max',rotation=270, color='k')
+        #ax.axvline(k_nyquist, ymin=0, ymax=1, color='red', linestyle="--")
+        #ax.text(k_nyquist,1e-14,'k_nyquist',rotation=270, color='k')
         ax.set_xlabel("k")
         ax.set_ylabel("E(k)")
         ax.set_title("Time-averaged KE spectrum")

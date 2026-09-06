@@ -48,6 +48,7 @@ with open(CONFIG_DEFAULT_PATH) as f:
     cfg_dict = yaml.safe_load(f)
 
 params = dict(cfg_dict["params"])   # pure dict for JAX  
+params["dt"] = float(cfg.plotting.dt)
 
 # =========================================
 # Main loop to run from Command Line 
@@ -60,15 +61,17 @@ def main():
     # load config values
     nsteps = cfg.plotting.nsteps
     cadence = cfg.plotting.cadence
-    njets = cfg.plotting.njets
+    n_jets = params['n_jets']
     spinup = cfg.plotting.spinup
     key = jax.random.PRNGKey(params['seed'])
     model = QGM(params)
     # Instantiate the model from configs using factory
     if cfg.plotting.auto_dt:
         logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
-        init_state = model.initialise(key, tune=True, n_jets=njets, verbose=True)
+        init_state = model.initialise(key, tune=True, n_jets=n_jets, verbose=True)
         dt = model.estimate_cfl_dt(init_state)
+    else:
+        dt = model.dt
 
     sm = SteppedModel(model=model, stepper=AB3Stepper(dt))
     init_state = sm.initialise(key)

@@ -166,12 +166,16 @@ class SteppedModel:
         forcing_key, next_forcing_key = jax.random.split(stepper_state.forcing_key)
 
         # all deterministic steps added and updates state
-        new_stepper_state = self.stepper.apply_updates(
-            stepper_state,
-            self.model.get_updates(
+        if closure_params is None:
+            updates = self.model.get_updates(stepper_state.state)
+        else:
+            updates = self.model.get_updates(
                 stepper_state.state,
                 closure_params=closure_params,
-            ),
+            )
+        new_stepper_state = self.stepper.apply_updates(
+            stepper_state,
+            updates,
         )
 
         updated_state = self._apply_stochastic_forcing(
