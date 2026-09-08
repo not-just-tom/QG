@@ -139,7 +139,7 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
             q_pred = q_pred[10:]
 
         # stuff for wavelength calcs
-        beta = trajs['params'].get('beta', None)
+        beta = trajs['params'].get('n_jets', None)**2 *np.pi**2 # nondim beta formula
         kmin = trajs['params'].get('kmin', None)
         kmax = trajs['params'].get('kmax', None)
         Lx = trajs['params'].get('Lx', None)
@@ -158,7 +158,7 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
             psi = invert_pv_to_psi(_sanitize_numeric_array(frame), grid)
             u, v = velocity_from_psi(psi, grid)
             U_rms = np.sqrt(np.mean(u**2 + v**2))
-            return np.sqrt(1.0 / U_rms)
+            return np.sqrt(beta / U_rms)
 
         # compute per-frame spectra helper
         def compute_frame_spectra(q):
@@ -261,7 +261,7 @@ class KESpectrumDiagnostic(Diagnostic):
         zero = _sanitize_numeric_array(trajs.get("zero"))
 
         # stuff for wavelength calcs
-        beta = trajs['params'].get('beta', None)
+        beta = trajs['params'].get('n_jets', None)**2 *np.pi**2 # nondimensional beta calc
         kmin = trajs['params'].get('kmin', None)
         kmax = trajs['params'].get('kmax', None)
         Lx = trajs['params'].get('Lx', None)
@@ -298,7 +298,7 @@ class KESpectrumDiagnostic(Diagnostic):
         # compute key wavelength values 
         u, v = velocity_from_psi(invert_pv_to_psi(q_truth, grid), grid)
         U_rms = np.sqrt(np.mean(u**2 + v**2))
-        k_Rhines = np.sqrt(1.0 / U_rms) # again, numerator here is beta(=1.0) from nondim scaling
+        k_Rhines = np.sqrt(beta / U_rms)
 
         # --- compute per-frame spectra ---
         def compute_frame_spectra(q):

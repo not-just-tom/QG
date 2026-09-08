@@ -68,7 +68,7 @@ def main():
     # Instantiate the model from configs using factory
     if cfg.plotting.auto_dt:
         logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
-        init_state = model.initialise(key, tune=True, n_jets=n_jets, verbose=True)
+        init_state = model.initialise(key, n_jets=n_jets, verbose=True)
         dt = model.estimate_cfl_dt(init_state)
     else:
         dt = model.dt

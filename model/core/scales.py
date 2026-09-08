@@ -13,7 +13,7 @@ class RhinesScales:
     time: float
 
 
-def apply_rhines_scaling(params: dict) -> tuple[dict, RhinesScales]:
+def nondimensionalise(params: dict) -> tuple[dict, RhinesScales]:
     """Convert dimensional QG parameters to Rhines-scaled parameters."""
     if not params.get("nondimensional", False):
         return dict(params), RhinesScales(1.0, 1.0, 1.0)
@@ -28,18 +28,18 @@ def apply_rhines_scaling(params: dict) -> tuple[dict, RhinesScales]:
         raise ValueError("Ly and beta must be positive for Rhines scaling")
 
     length = ly / (math.pi * float(n_jets))
-    velocity = beta * length**2
+    velocity = beta * length**2 / (math.pi * float(n_jets))**2
     time = length / velocity
 
     scaled = dict(params)
     scaled["Lx"] = float(params.get("Lx", ly)) / length
     scaled["Ly"] = ly / length
-    scaled["beta"] = 1.0
+    scaled["beta"] = n_jets**2 * math.pi**2
     scaled["Ld"] = float(params["Ld"]) / length
     scaled["U1"] = float(params.get("U1", 0.0)) / velocity
     scaled["U2"] = float(params.get("U2", 0.0)) / velocity
     scaled["drag"] = float(params.get("drag", 0.0)) * time
-    scaled["epsilon"] = float(params.get("epsilon", 0.0)) * length / velocity**3
+    scaled["epsilon"] = float(params.get("epsilon", 0.0)) * length**2 / velocity**2
     if "dt" in params:
         scaled["dt"] = float(params["dt"]) / time
     return scaled, RhinesScales(length, velocity, time)

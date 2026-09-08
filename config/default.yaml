@@ -41,7 +41,7 @@ ml:
   model_type: fno
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
-  n_train: 16
+  n_train: 10
   n_test: 4
   start_days: 5        # initial window length in days
   end_days: 5         # final window length in days

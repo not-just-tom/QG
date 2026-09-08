@@ -47,7 +47,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
                 ],
                 axis=-2,
             )
-            filtered = trunc * lr_model._dealias / (ratio ** 2)
+            filtered = trunc * lr_model._dealias / ratio
             lr_state = lr_template.update(qh=filtered)
             return lr_state.q
 
@@ -127,7 +127,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     # Prefer balanced, band-limited initial conditions when available.
     n_jets = params.get('n_jets', None)
     if n_jets is not None:
-        init_kwargs = {"n_jets": int(n_jets), "pseudo": True, "tune": True}
+        init_kwargs = {"n_jets": int(n_jets), "pseudo": True}
         logger.info("Using tuned jet initialisation for data generation (n_jets=%s)", n_jets)
     else:
         logger.info("Using default random initialisation for data generation")
@@ -153,6 +153,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
         # Transfer once per batch
         traj_batch = jax.device_get(traj_batch)
 
+        failed_runs = 0
         for i in range(current_batch):
 
             logger.info(f"Processing trajectory {n_generated+i+1}/{n_total+len(existing)}")
@@ -160,19 +161,20 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
 
             if not np.all(np.isfinite(q_traj)):
                 logger.warning(f"NaN detected in trajectory {n_generated+i}")
+                failed_runs += 1
                 continue
 
             traj_group.create_array(
                 f"traj_{n_generated+i:05d}",
                 data=q_traj.astype(np.float32),
-                chunks=(1000, q_traj.shape[1], q_traj.shape[2], q_traj.shape[3]),
+                chunks=(128, q_traj.shape[1], q_traj.shape[2], q_traj.shape[3]),
                 compressors=[compressor],
                 attributes={
                     "init_key": keys[i].tolist(), # save the initialisation key for reproducibility (just in case)
                 },
             )
 
-        n_generated += current_batch
+        n_generated += current_batch - failed_runs
         logger.info(f"Generated {n_generated}/{n_total+len(existing)} trajectories")
 
     logger.info("Finished generating all trajectories")

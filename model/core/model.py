@@ -13,7 +13,7 @@ from model.core.kernel import Kernel
 import model.core.states as states
 import model.utils.pytree as Pytree
 from model.core.grid import Grid
-from model.core.scales import apply_rhines_scaling
+from model.core.scales import nondimensionalise
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class QGM(Kernel):
     """multi-layer quasi-geostrophic model.
     """
     def __init__(self, params):
-        params, self.scales = apply_rhines_scaling(params)
+        params, self.scales = nondimensionalise(params)
         self.params = params
         # Use safe dict lookups so missing keys 
         nx = params.get('nx')
@@ -121,7 +121,6 @@ class QGM(Kernel):
         self,
         key,
         n_jets=None,
-        tune=False,
         pseudo=False,
         verbose=False,
     ) -> states.State: 
@@ -130,13 +129,11 @@ class QGM(Kernel):
         """
         if pseudo and n_jets is None:
             raise ValueError("n_jets must be specified for pseudo random initialisation.")
-        if tune and n_jets is None:
-            raise ValueError("n_jets must be specified for tuning.")
         
         base_state = super().initialise(key, n_jets)
-        if tune==False:
-            return base_state
+        return base_state
 
+        # =============This is all legacy i dont wanna remove just yet ==================
         U_target = self.beta * (self.Ly / (jnp.pi * n_jets))**2
         U_rms = self.rhines_length(base_state)[1].astype(float) #  not using rhines here despite the name - just U_rms functionality
 

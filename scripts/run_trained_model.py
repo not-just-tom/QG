@@ -59,7 +59,7 @@ def run():
     if cfg.plotting.auto_dt:
         logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
         raw_model = QGM({**params, "nx": params['hr_nx']})
-        init_state = raw_model.initialise(key, tune=True, n_jets=n_jets, verbose=True)
+        init_state = raw_model.initialise(key, n_jets=n_jets, verbose=True)
         dt = raw_model.estimate_cfl_dt(init_state)
 
     # locate model checkpoint

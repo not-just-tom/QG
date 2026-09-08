@@ -120,7 +120,7 @@ def run(cfg):
         old_dt = dt
         logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
         raw_model = QGM({**params, "nx": params['hr_nx']})
-        init_state = raw_model.initialise(key, tune=True, n_jets=n_jets, verbose=True)
+        init_state = raw_model.initialise(key, n_jets=n_jets, verbose=True)
         dt = float(raw_model.estimate_cfl_dt(init_state))
         params["dt"] = dt * raw_model.time_scale
 
@@ -136,7 +136,7 @@ def run(cfg):
     low_res_dt = dt * ratio
     steps_per_day = int(hr_physics_model.seconds_to_model_time(24 * 3600) // low_res_dt)
 
-    lr_init_state = lr_model.initialise(key, tune=True, n_jets=n_jets, verbose=False)
+    lr_init_state = lr_model.initialise(key, n_jets=n_jets, verbose=False)
     lr_rhines_length, lr_u_rms = lr_model.rhines_length(lr_init_state)
     tau_eddy = lr_rhines_length / (lr_u_rms + 1e-12)
     logger.info(
@@ -201,6 +201,7 @@ def run(cfg):
                     shutil.rmtree(run_dir)
             data_loader = ZarrDataLoader(run_dir)
     else: # the case where nsteps too short so we load s and restart from end state to the desired number of steps
+        raise NotImplementedError("The case where existing data is found but has insufficient length is kinda broken. Please generate a new dataset with sufficient length.")
         logger.info(f"Found existing data with matching parameters at {run_dir}, but it has insufficient length. Loading trajectories and generating additional steps to reach desired length.")
         data_loader = ZarrDataLoader(run_dir)
         for i in range(len(data_loader)):
