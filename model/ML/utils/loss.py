@@ -207,7 +207,7 @@ def maddison_loss(residual_q, lr_model, beta=None, scale_factor=1e4):
     Returns per-sample loss if input has batch dimension, otherwise scalar.
     """
     if beta is None:
-        beta = float(getattr(lr_model, 'beta', 10.0))
+        beta = float(getattr(lr_model, 'beta', None))
     
     ny, nx = residual_q.shape[-2:]
     interior_mask = jnp.ones((ny, nx))

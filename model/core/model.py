@@ -13,6 +13,7 @@ from model.core.kernel import Kernel
 import model.core.states as states
 import model.utils.pytree as Pytree
 from model.core.grid import Grid
+from model.core.scales import nondimensionalise
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +32,14 @@ class QGM(Kernel):
     """multi-layer quasi-geostrophic model.
     """
     def __init__(self, params):
+        params, self.scales = nondimensionalise(params)
         self.params = params
         # Use safe dict lookups so missing keys 
         nx = params.get('nx')
         ny = params.get('ny', nx)
         nz = params.get('nz', 1)
+        if nz not in (1, 2):
+            raise ValueError("QGM supports only nz=1 or nz=2; multilayer inversion is not implemented")
         drag = params.get('drag')
         kmin = params.get('kmin')
         kmax = params.get('kmax')
@@ -50,7 +54,7 @@ class QGM(Kernel):
         self.g = params.get('g', 9.81)
         self.f = params.get('f', None)
         self.Ld = params.get('Ld', 15.0)
-        self.delta = params.get('delta', 0.25)
+        self.delta = delta = params.get('delta', 1.0)
         self.U1 = params.get('U1', 0.0)
         self.U2 = params.get('U2', 0.0)
 
@@ -60,6 +64,7 @@ class QGM(Kernel):
             nz=nz,
             Lx=Lx,
             Ly=Ly,
+            delta=delta,
             drag=drag,
             kmin=kmin,
             kmax=kmax,
@@ -96,11 +101,26 @@ class QGM(Kernel):
         exact_filter = jnp.exp(-self.filterfac * (wvx - cphi) ** 4)
         self._exact_step_filter = jnp.where(wvx <= cphi, 1.0, exact_filter)
 
+    @property
+    def length_scale(self):
+        return self.scales.length
+
+    @property
+    def velocity_scale(self):
+        return self.scales.velocity
+
+    @property
+    def time_scale(self):
+        return self.scales.time
+
+    def seconds_to_model_time(self, seconds):
+        """Convert dimensional seconds to the model's internal time."""
+        return seconds / self.time_scale
+
     def initialise( 
         self,
         key,
         n_jets=None,
-        tune=False,
         pseudo=False,
         verbose=False,
     ) -> states.State: 
@@ -109,13 +129,11 @@ class QGM(Kernel):
         """
         if pseudo and n_jets is None:
             raise ValueError("n_jets must be specified for pseudo random initialisation.")
-        if tune and n_jets is None:
-            raise ValueError("n_jets must be specified for tuning.")
         
         base_state = super().initialise(key, n_jets)
-        if tune==False:
-            return base_state
+        return base_state
 
+        # =============This is all legacy i dont wanna remove just yet ==================
         U_target = self.beta * (self.Ly / (jnp.pi * n_jets))**2
         U_rms = self.rhines_length(base_state)[1].astype(float) #  not using rhines here despite the name - just U_rms functionality
 
@@ -322,6 +340,20 @@ class QGM(Kernel):
         ph_last = jnp.einsum("ijlk,...lkj->...lki", A, qh_last)
         ph = jnp.moveaxis(ph_last, -1, layer_axis)
         return ph
+
+    def _forcing_energy_response(self) -> jnp.ndarray:
+        """Return kinetic-energy response for noise in each PV layer."""
+        if self.nz == 1:
+            return super()._forcing_energy_response()
+
+        layer_weights = self.Lz / jnp.sum(self.Lz)
+        # A[..., output_layer, forcing_layer, ...] maps PV noise to streamfunction.
+        # The result is one response field per independently forced layer.
+        return self.K2[None, ...] * jnp.einsum(
+            "i,ijkl->jkl",
+            layer_weights,
+            jnp.abs(self._A) ** 2,
+        )
 
     def rhines_length(self, state: states.State):
         """Estimate Rhines length from a `State` by computing U_rms and Lr = sqrt(U/beta).

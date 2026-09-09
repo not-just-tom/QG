@@ -22,6 +22,7 @@ class Kernel(ABC):
         nz: int,
         Lx: float,
         Ly: float,
+        delta: float = 1.0,
         drag: float = 0,
         kmin: float = 3.0,
         kmax: float = 10,
@@ -35,6 +36,7 @@ class Kernel(ABC):
         self.nz = nz
         self.Lx = Lx
         self.Ly = Ly
+        self.delta = delta
         self.drag = drag
         self.seed = seed
         self.dt = dt
@@ -118,10 +120,6 @@ class Kernel(ABC):
 
     def invert_pv(self, state: states.State) -> jax.Array:
         """Return streamfunction obtained from the model's PV inversion.
-
-        This is intentionally narrower than :meth:`get_full_state`: closures
-        that need only streamfunction do not need to also evaluate advection,
-        friction, or stochastic forcing.
         """
         self._state_shape_check(state)
         real_dtype = jnp.real(state.qh).dtype
@@ -136,7 +134,7 @@ class Kernel(ABC):
 
     def get_updates(self, state: states.State) -> states.State:
         """Get tendency updates for time-stepping.
-        Entirely deterministic; no stochastic forcing must be passed to steppers.
+        Entirely deterministic.
         
         Parameters
         ----------
@@ -307,8 +305,10 @@ class Kernel(ABC):
     def do_stochastic_forcing(self, forcing_key: jax.Array = None) -> jax.Array:
         """Apply stochastic forcing.
 
-        Annulus with inner radius kmin and outer radius kmax, with energy input defined by epsilon. 
-        This is a Wiener process in spectral space, so is multiplied by sqrt(dt) to ensure that the energy input is independent of the timestep.
+        Annulus with inner and outer radii specified by Fourier mode number,
+        with total kinetic-energy input defined by ``epsilon``. The stored
+        wavenumbers are in the model's current coordinates, so this remains
+        consistent after nondimensionalisation.
 
                 
         Parameters
@@ -329,28 +329,48 @@ class Kernel(ABC):
             raise ValueError("Forcing key must be provided for stochastic forcing.")
         
         mask = (self.Kmag >= self.kmin) & (self.Kmag <= self.kmax)
-        forcing_spectrum = mask.astype(float)
-        invK2 = jnp.where(self.Kmag>0, 1.0 / self.Kmag**2, 0.0)
-        epsilon0 = 0.5 * jnp.sum(forcing_spectrum * invK2)
-        forcing_spectrum *= (self.epsilon / epsilon0)
 
-        noise_top = jax.random.normal(
-            forcing_key,
-            (self.nl, self.nk)
+        # rfft stores only the non-negative x wavenumbers. Interior modes
+        # represent two full-spectrum modes and therefore carry twice the
+        # spectral energy of the x=0/Nyquist boundaries.
+        rfft_weight = 2.0 * jnp.ones((self.nk,))
+        rfft_weight = rfft_weight.at[0].set(1.0)
+        if self.nx % 2 == 0:
+            rfft_weight = rfft_weight.at[-1].set(1.0)
+        rfft_weight = rfft_weight.reshape((1, self.nk))
+
+        # With orthonormal FFTs, mean kinetic energy is divided by the number
+        # of physical grid points. Give every forcing layer the same share of
+        # epsilon, while accounting for its response through PV inversion.
+        energy_response = self._forcing_energy_response()
+        energy_per_layer = (
+            0.5
+            / (self.nx * self.ny)
+            * jnp.sum(mask[None, ...] * rfft_weight[None, ...] * energy_response, axis=(-2, -1))
+        )
+        forcing_variance = jnp.where(
+            energy_per_layer > 0,
+            self.epsilon / (self.nz * energy_per_layer),
+            0.0,
         )
 
-        noise = jnp.stack([
-            noise_top,
-            jnp.zeros_like(noise_top)
-        ], axis=0)# forcing is in the top layer
-
+        # Generate white noise in physical space before transforming it. This
+        # preserves the Hermitian symmetry required by a real irfft field.
+        noise = jax.random.normal(forcing_key, (self.nz, self.ny, self.nx))
+        noise_h = self.real_to_spectral(noise)
         forcing_qh = (
-            jnp.sqrt(forcing_spectrum)
-            * noise
+            mask[None, ...]
+            * jnp.sqrt(forcing_variance)[:, None, None]
+            * noise_h
             * jnp.sqrt(self.dt)
         )
 
         return forcing_qh
+
+    def _forcing_energy_response(self) -> jax.Array:
+        """Kinetic-energy response for unit variance in each PV layer."""
+        invK2 = jnp.where(self.Kmag > 0, 1.0 / self.Kmag**2, 0.0)
+        return jnp.broadcast_to(invK2, (self.nz, self.nl, self.nk))
     
     def _do_wind_forcing(self, state: states.FullState):
         """Apply wind forcing to the PV tendency.
