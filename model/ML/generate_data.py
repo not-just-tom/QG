@@ -16,10 +16,9 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     on-the-fly using `lr_model` as the low-resolution physics template, and lower res dt.
     Saves metadata and trajectories into `hr_dir`.
     '''
-
     # Timing parameters
     n_total = cfg.ml.n_train + cfg.ml.n_test + 1 # one for validation
-    batch_size = 21 # hardcoded bc it was confusing me. It's just the trajs generated in batches
+    batch_size = 21 # hardcoded bc it was confusing me. It's just the number of trajs generated in batches
     spinup_time = hr_model.model.seconds_to_model_time(cfg.plotting.spinup * 24 * 3600)
     spinup = int(spinup_time // hr_model.stepper.dt)
     # Prepare low-resolution template and ratio for coarsening

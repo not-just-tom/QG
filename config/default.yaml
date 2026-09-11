@@ -17,7 +17,7 @@ params:
   Lz: 500 # depth of top layer. 
   drag: 1.0e-8 # Ekman drag coeff
   Ld: 33333 # deformation radius
-  delta: 1 # ratio between top/bottom layer depth
+  delta: 0.1 # ratio between top/bottom layer depth
   U1: 0.025
   U2: 0.0
   hr_nx: 512
@@ -27,9 +27,9 @@ params:
   epsilon: 1e-13 # 0.0 for no stochastic forcing 
 
 plotting:
-  nsteps: 2000
+  nsteps: 20000
   dt: 1000
-  spinup: 200 # in days
+  spinup: 0 # in days
   cadence: 10
   validation_rollout: 1000
   plot: ['loss', 'ke_spectrum', 'pv_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
