@@ -341,19 +341,32 @@ class QGM(Kernel):
         ph = jnp.moveaxis(ph_last, -1, layer_axis)
         return ph
 
-    def _forcing_energy_response(self) -> jnp.ndarray:
-        """Return kinetic-energy response for noise in each PV layer."""
-        if self.nz == 1:
-            return super()._forcing_energy_response()
+    def _forcing_energy_response(self):
+        """Return kinetic-energy response for each forced layer."""
 
-        layer_weights = self.Lz / jnp.sum(self.Lz)
-        # A[..., output_layer, forcing_layer, ...] maps PV noise to streamfunction.
-        # The result is one response field per independently forced layer.
-        return self.K2[None, ...] * jnp.einsum(
-            "i,ijkl->jkl",
+        # _A layout is (output_layer, forcing_layer, kx, ky).
+        n_output, n_forcing = self._A.shape[:2]
+
+        if n_output != self.nz or n_forcing != self.nz:
+            raise ValueError(
+                f"Unexpected inversion-matrix shape: A.shape={self._A.shape}, "
+                f"nz={self.nz}"
+            )
+
+        # Equal energy weighting for each output layer.
+        layer_weights = jnp.ones(
+            (n_output,),
+            dtype=jnp.asarray(self._A).real.dtype,
+        )
+        layer_weights = layer_weights / jnp.sum(layer_weights)
+
+        response = jnp.einsum(
+            "o,ofkl->fkl",
             layer_weights,
             jnp.abs(self._A) ** 2,
         )
+
+        return self.K2[None, ...] * response
 
     def rhines_length(self, state: states.State):
         """Estimate Rhines length from a `State` by computing U_rms and Lr = sqrt(U/beta).

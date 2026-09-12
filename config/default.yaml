@@ -10,7 +10,7 @@ params:
   nondimensional: true
   nx: 32
   Lx: 1000000
-  beta: 0.0000000000025
+  beta: 2.5e-12
   n_jets: 3 # number of jets in the regime, used for non dimensionalisation
   nz: 2
   # multi-layer model parameters (only used if nz>1)
@@ -27,9 +27,9 @@ params:
   epsilon: 1e-13 # 0.0 for no stochastic forcing 
 
 plotting:
-  nsteps: 20000
+  nsteps: 2000
   dt: 1000
-  spinup: 0 # in days
+  spinup: 5 # in days
   cadence: 10
   validation_rollout: 1000
   plot: ['loss', 'ke_spectrum', 'pv_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
@@ -38,7 +38,7 @@ plotting:
 
 ml:
   enabled: true # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
-  model_type: fno
+  model_type: zero
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 10

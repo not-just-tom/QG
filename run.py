@@ -159,6 +159,7 @@ def run(cfg):
         "dt (original)": float(old_dt),
         'auto_dt': bool(cfg.plotting.auto_dt),
         'final dt': float(dt),
+        "spinup": cfg.plotting.spinup,
     }
 
     training_metadata = {
