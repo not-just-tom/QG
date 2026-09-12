@@ -14,11 +14,134 @@ import logging
 import matplotlib.animation as animation 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import numpy as np
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 #go to parent dir:
 PARENT_DIR = os.path.dirname(BASE_DIR)
 CONFIG_DEFAULT_PATH = os.path.join(PARENT_DIR, "config", "default.yaml")
-    
+
+
+def _trajectory_diagnostics(q_traj, model, out_dir, max_frames=64):
+    """Print scale diagnostics and save spatial turbulence diagnostics."""
+    os.makedirs(out_dir, exist_ok=True)
+    q_traj = np.asarray(q_traj)
+    frame_indices = np.linspace(
+        0, q_traj.shape[0] - 1, min(max_frames, q_traj.shape[0]), dtype=int
+    )
+    q_sample = q_traj[frame_indices]
+    layer_weights = np.asarray(model.Lz, dtype=float)
+    layer_weights /= layer_weights.sum()
+
+    velocities = []
+    for q_frame in q_sample:
+        state = model.set_initial(
+            model.real_to_spectral(q_frame),
+            _q_shape=(model.ny, model.nx),
+        )
+        full = model.get_full_state(state)
+        velocities.append((np.asarray(full.u), np.asarray(full.v)))
+
+    u = np.stack([item[0] for item in velocities])
+    v = np.stack([item[1] for item in velocities])
+    U_rms = float(np.sqrt(np.mean(u**2 + v**2)))
+    beta = float(model.beta)
+    epsilon = float(model.epsilon)
+    L_r = np.sqrt(U_rms / beta) if beta > 0 and U_rms > 0 else np.inf
+    L_beta = (epsilon / beta**3) ** 0.2 if epsilon > 0 and beta > 0 else np.inf
+    R_beta = L_beta / L_r if np.isfinite(L_beta) and np.isfinite(L_r) else np.inf
+
+    print("\n=== trajectory diagnostics ===")
+    print(f"U_rms = {U_rms:.6g}")
+    print(f"beta = {beta:.6g}")
+    print(f"epsilon (model units) = {epsilon:.6g}")
+    print(f"L_R = sqrt(U_rms / beta) = {L_r:.6g}")
+    print(f"L_beta = (epsilon / beta^3)^(1/5) = {L_beta:.6g}")
+    print(f"R_beta = L_beta / L_R = {R_beta:.6g}")
+
+    q_weighted = np.tensordot(q_sample, layer_weights, axes=(1, 0))
+    q_weighted -= q_weighted.mean(axis=(-2, -1), keepdims=True)
+    corr = np.zeros((model.ny, model.nx), dtype=float)
+    for q_frame in q_weighted:
+        qh = np.fft.fft2(q_frame)
+        corr += np.fft.fftshift(np.fft.ifft2(np.abs(qh) ** 2).real)
+    corr /= len(q_weighted) * model.nx * model.ny
+
+    structure = np.zeros((3, model.ny, model.nx), dtype=float)
+    for frame_u, frame_v in zip(u, v):
+        for layer, weight in enumerate(layer_weights):
+            uh = np.fft.fft2(frame_u[layer])
+            vh = np.fft.fft2(frame_v[layer])
+
+            def correlation(left, right):
+                return np.fft.ifft2(left * np.conj(right)).real / (model.nx * model.ny)
+
+            uu = correlation(uh, uh)
+            vv = correlation(vh, vh)
+            uv = correlation(uh, vh)
+            vu = correlation(vh, uh)
+            mean_uu = np.mean(frame_u[layer] ** 2)
+            mean_vv = np.mean(frame_v[layer] ** 2)
+            mean_uv = np.mean(frame_u[layer] * frame_v[layer])
+            structure[0] += weight * 2.0 * (mean_uu - uu)
+            structure[1] += weight * (2.0 * mean_uv - uv - vu)
+            structure[2] += weight * 2.0 * (mean_vv - vv)
+    structure /= len(u)
+
+    energy_2d = np.zeros((model.ny, model.nx), dtype=float)
+    for frame_u, frame_v in zip(u, v):
+        for layer, weight in enumerate(layer_weights):
+            uh = np.fft.fft2(frame_u[layer]) / (model.nx * model.ny)
+            vh = np.fft.fft2(frame_v[layer]) / (model.nx * model.ny)
+            energy_2d += weight * 0.5 * (np.abs(uh) ** 2 + np.abs(vh) ** 2)
+    energy_2d /= len(u)
+
+    extent = (-model.Lx / 2, model.Lx / 2, -model.Ly / 2, model.Ly / 2)
+
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4), constrained_layout=True)
+    labels = [r"$S_{xx}$", r"$S_{xy}$", r"$S_{yy}$"]
+    for axis, component, label in zip(axes, structure, labels):
+        image = axis.imshow(
+            np.fft.fftshift(component),
+            origin="lower",
+            extent=extent,
+            cmap="magma",
+        )
+        axis.set_title(label)
+        axis.set_xlabel(r"$\Delta x$")
+        axis.set_ylabel(r"$\Delta y$")
+        fig.colorbar(image, ax=axis, shrink=0.8)
+    fig.savefig(os.path.join(out_dir, "debug_structure_tensor.png"), dpi=150)
+    plt.close(fig)
+
+    fig, axis = plt.subplots(figsize=(5, 4), constrained_layout=True)
+    image = axis.imshow(corr, origin="lower", extent=extent, cmap="RdBu_r")
+    axis.set_title(r"PV two-point correlation $C(\Delta x, \Delta y)$")
+    axis.set_xlabel(r"$\Delta x$")
+    axis.set_ylabel(r"$\Delta y$")
+    fig.colorbar(image, ax=axis)
+    fig.savefig(os.path.join(out_dir, "debug_q_two_point_correlation.png"), dpi=150)
+    plt.close(fig)
+
+    fig, axis = plt.subplots(figsize=(5, 4), constrained_layout=True)
+    image = axis.imshow(
+        np.fft.fftshift(np.log10(energy_2d + 1e-30)),
+        origin="lower",
+        extent=(
+            -np.pi * model.nx / model.Lx,
+            np.pi * model.nx / model.Lx,
+            -np.pi * model.ny / model.Ly,
+            np.pi * model.ny / model.Ly,
+        ),
+        cmap="viridis",
+    )
+    axis.set_title(r"2D kinetic-energy spectrum $\log_{10} E(k_x,k_y)$")
+    axis.set_xlabel(r"$k_x$")
+    axis.set_ylabel(r"$k_y$")
+    fig.colorbar(image, ax=axis, label=r"$\log_{10} E$")
+    fig.savefig(os.path.join(out_dir, "debug_energy_spectrum_2d.png"), dpi=150)
+    plt.close(fig)
+
+    print(f"Saved diagnostics to {out_dir}")
 
 def main(cfg):
     # load values
@@ -192,7 +315,10 @@ def main(cfg):
     # Only transfer the final result
     q_traj = jax.device_get(q_traj)
 
-    return q_traj, cadence
+    debug_out_dir = os.path.abspath(cfg.filepaths.out_dir)
+    _trajectory_diagnostics(q_traj, lr_model, debug_out_dir)
+
+    return q_traj
 
 def gif_that(q_state, out_file='plotting.gif', cadence=100):
     'just a simple plotting'

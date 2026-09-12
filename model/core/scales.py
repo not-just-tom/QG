@@ -39,7 +39,11 @@ def nondimensionalise(params: dict) -> tuple[dict, RhinesScales]:
     scaled["U1"] = float(params.get("U1", 0.0)) / velocity
     scaled["U2"] = float(params.get("U2", 0.0)) / velocity
     scaled["drag"] = float(params.get("drag", 0.0)) * time
-    scaled["epsilon"] = float(params.get("epsilon", 0.0)) * length**2 / velocity**2
+    scaled["epsilon"] = float(params.get("epsilon", 0.0)) * length / velocity**3
+    mode_min = float(params.get("kmin", 0.0))
+    mode_max = float(params.get("kmax", 0.0))
+    scaled["kmin"] = 2.0 * math.pi * mode_min / scaled["Lx"]
+    scaled["kmax"] = 2.0 * math.pi * mode_max / scaled["Lx"]
     if "dt" in params:
         scaled["dt"] = float(params["dt"]) / time
     return scaled, RhinesScales(length, velocity, time)

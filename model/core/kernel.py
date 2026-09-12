@@ -43,8 +43,10 @@ class Kernel(ABC):
 
         # stochastic forcing
         self.epsilon = epsilon
-        self.kmin = kmin*2*jnp.pi/Lx
-        self.kmax = kmax*2*jnp.pi/Lx
+        # kmin and kmax are model-coordinate wavenumbers. Dimensional mode
+        # numbers are converted by nondimensionalise before construction.
+        self.kmin = kmin
+        self.kmax = kmax
 
 
 

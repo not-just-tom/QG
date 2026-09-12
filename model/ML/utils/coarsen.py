@@ -46,8 +46,8 @@ def coarsen(hr_model, n_lr):
     # Ensure square grid at the target resolution
     param_dict["nx"] = n_lr
     param_dict["ny"] = n_lr
-    # un-mode the kmin/kmax values for low res input 
-    param_dict["kmin"] = hr_model.kmin * hr_model.Lx / (2*jnp.pi)
-    param_dict["kmax"] = hr_model.kmax * hr_model.Lx / (2*jnp.pi)
+    # Preserve the forcing annulus in model coordinates across resolutions.
+    param_dict["kmin"] = hr_model.kmin
+    param_dict["kmax"] = hr_model.kmax
     param_dict['dt'] = hr_model.dt * (hr_model.nx / n_lr)  # scale dt with resolution
     return cls(param_dict)
