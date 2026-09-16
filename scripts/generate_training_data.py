@@ -58,91 +58,7 @@ def _trajectory_diagnostics(q_traj, model, out_dir, max_frames=64):
     print(f"L_beta = (epsilon / beta^3)^(1/5) = {L_beta:.6g}")
     print(f"R_beta = L_beta / L_R = {R_beta:.6g}")
 
-    q_weighted = np.tensordot(q_sample, layer_weights, axes=(1, 0))
-    q_weighted -= q_weighted.mean(axis=(-2, -1), keepdims=True)
-    corr = np.zeros((model.ny, model.nx), dtype=float)
-    for q_frame in q_weighted:
-        qh = np.fft.fft2(q_frame)
-        corr += np.fft.fftshift(np.fft.ifft2(np.abs(qh) ** 2).real)
-    corr /= len(q_weighted) * model.nx * model.ny
-
-    structure = np.zeros((3, model.ny, model.nx), dtype=float)
-    for frame_u, frame_v in zip(u, v):
-        for layer, weight in enumerate(layer_weights):
-            uh = np.fft.fft2(frame_u[layer])
-            vh = np.fft.fft2(frame_v[layer])
-
-            def correlation(left, right):
-                return np.fft.ifft2(left * np.conj(right)).real / (model.nx * model.ny)
-
-            uu = correlation(uh, uh)
-            vv = correlation(vh, vh)
-            uv = correlation(uh, vh)
-            vu = correlation(vh, uh)
-            mean_uu = np.mean(frame_u[layer] ** 2)
-            mean_vv = np.mean(frame_v[layer] ** 2)
-            mean_uv = np.mean(frame_u[layer] * frame_v[layer])
-            structure[0] += weight * 2.0 * (mean_uu - uu)
-            structure[1] += weight * (2.0 * mean_uv - uv - vu)
-            structure[2] += weight * 2.0 * (mean_vv - vv)
-    structure /= len(u)
-
-    energy_2d = np.zeros((model.ny, model.nx), dtype=float)
-    for frame_u, frame_v in zip(u, v):
-        for layer, weight in enumerate(layer_weights):
-            uh = np.fft.fft2(frame_u[layer]) / (model.nx * model.ny)
-            vh = np.fft.fft2(frame_v[layer]) / (model.nx * model.ny)
-            energy_2d += weight * 0.5 * (np.abs(uh) ** 2 + np.abs(vh) ** 2)
-    energy_2d /= len(u)
-
-    extent = (-model.Lx / 2, model.Lx / 2, -model.Ly / 2, model.Ly / 2)
-
-    fig, axes = plt.subplots(1, 3, figsize=(13, 4), constrained_layout=True)
-    labels = [r"$S_{xx}$", r"$S_{xy}$", r"$S_{yy}$"]
-    for axis, component, label in zip(axes, structure, labels):
-        image = axis.imshow(
-            np.fft.fftshift(component),
-            origin="lower",
-            extent=extent,
-            cmap="magma",
-        )
-        axis.set_title(label)
-        axis.set_xlabel(r"$\Delta x$")
-        axis.set_ylabel(r"$\Delta y$")
-        fig.colorbar(image, ax=axis, shrink=0.8)
-    fig.savefig(os.path.join(out_dir, "debug_structure_tensor.png"), dpi=150)
-    plt.close(fig)
-
-    fig, axis = plt.subplots(figsize=(5, 4), constrained_layout=True)
-    image = axis.imshow(corr, origin="lower", extent=extent, cmap="RdBu_r")
-    axis.set_title(r"PV two-point correlation $C(\Delta x, \Delta y)$")
-    axis.set_xlabel(r"$\Delta x$")
-    axis.set_ylabel(r"$\Delta y$")
-    fig.colorbar(image, ax=axis)
-    fig.savefig(os.path.join(out_dir, "debug_q_two_point_correlation.png"), dpi=150)
-    plt.close(fig)
-
-    fig, axis = plt.subplots(figsize=(5, 4), constrained_layout=True)
-    image = axis.imshow(
-        np.fft.fftshift(np.log10(energy_2d + 1e-30)),
-        origin="lower",
-        extent=(
-            -np.pi * model.nx / model.Lx,
-            np.pi * model.nx / model.Lx,
-            -np.pi * model.ny / model.Ly,
-            np.pi * model.ny / model.Ly,
-        ),
-        cmap="viridis",
-    )
-    axis.set_title(r"2D kinetic-energy spectrum $\log_{10} E(k_x,k_y)$")
-    axis.set_xlabel(r"$k_x$")
-    axis.set_ylabel(r"$k_y$")
-    fig.colorbar(image, ax=axis, label=r"$\log_{10} E$")
-    fig.savefig(os.path.join(out_dir, "debug_energy_spectrum_2d.png"), dpi=150)
-    plt.close(fig)
-
-    print(f"Saved diagnostics to {out_dir}")
-
+    
 def main(cfg):
     # load values
     dt = cfg.plotting.dt
@@ -194,18 +110,20 @@ def main(cfg):
     lr_model = coarsen(hr_model.model, params['nx'])
     low_res_dt = dt * ratio
 
-    lr_init_state = lr_model.initialise(key, n_jets=n_jets, verbose=False)
-    lr_rhines_length, lr_u_rms = lr_model.rhines_length(lr_init_state)
-    tau_eddy = lr_rhines_length / (lr_u_rms + 1e-12)
+    tau_eddy = lr_model.estimate_tau_eddy(
+        n_jets=n_jets,
+        seed=seed,
+        n_probes=8,
+    )
     logger.info(
         'Fine timestep is %.2gs and coarsened timestep is %.2gs. '
-        'Model spinup for %.2f days (~%.2g eddy turnover times). '
+        'Model spinup for %.2f eddy turnover times (~%.2g high-res steps). '
         'Training horizon is %d low-res steps (~%.2f days). '
         'Validation plotting window is %d steps (~%.2f days).',
         dt * hr_physics_model.time_scale,
         low_res_dt * hr_physics_model.time_scale,
         spinup,
-        float(tau_eddy * hr_physics_model.time_scale) / (24.0 * 3600.0),
+        spinup * tau_eddy / dt,
         nsteps,
         nsteps * low_res_dt * hr_physics_model.time_scale / (24.0 * 3600.0),
         validation_rollout,
@@ -261,7 +179,11 @@ def main(cfg):
 
         return traj_q
     dummy_key = jax.random.PRNGKey(0)
-    lr_template = lr_model.initialise(dummy_key)
+    lr_template = lr_model.initialise(
+        dummy_key,
+        n_jets=n_jets,
+        pseudo=(n_jets is not None),
+    )
 
     ratio = int(hr_model.model.nx / lr_model.nx)
 
@@ -270,9 +192,8 @@ def main(cfg):
         cfg.plotting.nsteps,
     )
 
-    spinup_time = hr_model.model.seconds_to_model_time(
-        cfg.plotting.spinup * 24 * 3600
-    )
+    spinup_time = cfg.plotting.spinup * tau_eddy
+    print(f"tau_eddy: {tau_eddy}")
     print(f"Spinup time in model units: {spinup_time}")
     spinup = int(spinup_time // hr_model.stepper.dt)
     print(f"model hr dt: {hr_model.stepper.dt}")

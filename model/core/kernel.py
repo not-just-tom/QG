@@ -388,7 +388,7 @@ class Kernel(ABC):
             State with forcing added to dqhdt
         """
         # Compute wind forcing based on model parameters
-        wind_forcing = 0 # ill do this later 
+        wind_forcing = 0 # fix: do this later 
         dqhdt = state.dqhdt + wind_forcing
         return state.update(dqhdt=dqhdt)
     

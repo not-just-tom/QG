@@ -15,7 +15,8 @@ class RhinesScales:
 
 def nondimensionalise(params: dict) -> tuple[dict, RhinesScales]:
     """Convert dimensional QG parameters to Rhines-scaled parameters."""
-    if not params.get("nondimensional", False):
+    nondim = params.get("nondimensional", True) # there isn't a nondim in default.yaml, so true unless explicitly set in coarsen.
+    if not nondim:
         return dict(params), RhinesScales(1.0, 1.0, 1.0)
 
     n_jets = params.get("n_jets")

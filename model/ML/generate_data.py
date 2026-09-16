@@ -19,11 +19,20 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
     # Timing parameters
     n_total = cfg.ml.n_train + cfg.ml.n_test + 1 # one for validation
     batch_size = 21 # hardcoded bc it was confusing me. It's just the number of trajs generated in batches
-    spinup_time = hr_model.model.seconds_to_model_time(cfg.plotting.spinup * 24 * 3600)
-    spinup = int(spinup_time // hr_model.stepper.dt)
     # Prepare low-resolution template and ratio for coarsening
     dummy_key = jax.random.PRNGKey(0)
-    lr_template = lr_model.initialise(dummy_key)
+    lr_template = lr_model.initialise(
+        dummy_key,
+        n_jets=params.get("n_jets"),
+        pseudo=(params.get("n_jets") is not None),
+    )
+    tau_eddy = lr_model.estimate_tau_eddy(
+        n_jets=params.get("n_jets"),
+        seed=int(params.get("seed", 0)),
+        n_probes=8,
+    )
+    spinup_time = cfg.plotting.spinup * tau_eddy
+    spinup = int(spinup_time // hr_model.stepper.dt)
     ratio = int(float(hr_model.model.nx) / float(lr_model.nx))
     nsteps = max(int(timing_metadata.get("nsteps")), cfg.plotting.nsteps) # ensure we generate at least as many steps as needed for plotting diagnostics, even if timing metadata is shorter.
     logger.info(

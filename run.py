@@ -136,18 +136,20 @@ def run(cfg):
     low_res_dt = dt * ratio
     steps_per_day = int(hr_physics_model.seconds_to_model_time(24 * 3600) // low_res_dt)
 
-    lr_init_state = lr_model.initialise(key, n_jets=n_jets, verbose=False)
-    lr_rhines_length, lr_u_rms = lr_model.rhines_length(lr_init_state)
-    tau_eddy = lr_rhines_length / (lr_u_rms + 1e-12)
+    tau_eddy = hr_physics_model.estimate_tau_eddy(
+        n_jets=n_jets,
+        seed=seed,
+        n_probes=8,
+    )
     logger.info(
         'Fine timestep is %.2gs and coarsened timestep is %.2gs. '
-        'Model spinup for %.2f days (~%.2g eddy turnover times). '
+        'Model spinup for %.2f eddy turnover times (~%.2g high-res steps). '
         'Training horizon is %d low-res steps (~%.2f days). '
         'Validation plotting window is %d steps (~%.2f days).',
         dt * hr_physics_model.time_scale,
         low_res_dt * hr_physics_model.time_scale,
         spinup,
-        float(tau_eddy * hr_physics_model.time_scale) / (24.0 * 3600.0),
+        spinup * tau_eddy / dt,
         nsteps,
         nsteps * low_res_dt * hr_physics_model.time_scale / (24.0 * 3600.0),
         validation_rollout,

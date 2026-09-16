@@ -43,6 +43,10 @@ def coarsen(hr_model, n_lr):
     for a in candidate_attrs:
         if hasattr(hr_model, a):
             param_dict[a] = getattr(hr_model, a)
+    # The model attributes above are already in the model's internal units.
+    # Re-running the dimensional-to-Rhines conversion would scale them twice.
+    param_dict["nondimensional"] = False
+    param_dict["n_jets"] = hr_model.params.get("n_jets")
     # Ensure square grid at the target resolution
     param_dict["nx"] = n_lr
     param_dict["ny"] = n_lr
