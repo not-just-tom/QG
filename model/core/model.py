@@ -174,7 +174,7 @@ class QGM(Kernel):
     def _get_dealias_filter(self, alpha=36, p=8) -> jnp.ndarray:
         """Apply a precomputed dealias mask from the grid if available.
         """
-        # fall back to precomputed dealias mask when using default params
+        # fix: fall back to precomputed dealias mask when using default params
         if alpha == 36 and p == 8:
             return self._dealias_mask
         return jnp.exp(-alpha * (self.Kmag / jnp.max(self.Kmag)) ** p)
@@ -343,33 +343,6 @@ class QGM(Kernel):
         ph = jnp.moveaxis(ph_last, -1, layer_axis)
         return ph
 
-    def _forcing_energy_response(self):
-        """Return kinetic-energy response for each forced layer."""
-
-        # _A layout is (output_layer, forcing_layer, kx, ky).
-        n_output, n_forcing = self._A.shape[:2]
-
-        if n_output != self.nz or n_forcing != self.nz:
-            raise ValueError(
-                f"Unexpected inversion-matrix shape: A.shape={self._A.shape}, "
-                f"nz={self.nz}"
-            )
-
-        # Equal energy weighting for each output layer.
-        layer_weights = jnp.ones(
-            (n_output,),
-            dtype=jnp.asarray(self._A).real.dtype,
-        )
-        layer_weights = layer_weights / jnp.sum(layer_weights)
-
-        response = jnp.einsum(
-            "o,ofkl->fkl",
-            layer_weights,
-            jnp.abs(self._A) ** 2,
-        )
-
-        return self.K2[None, ...] * response
-
     def rhines_length(self, state: states.State):
         """Estimate Rhines length from a `State` by computing U_rms and Lr = sqrt(U/beta).
 
@@ -426,21 +399,6 @@ class QGM(Kernel):
         # Return a JAX scalar so this function remains safe under jit/vmap.
         dt = jnp.asarray(cfl, dtype=U_rms.dtype) * jnp.asarray(self.dx, dtype=U_rms.dtype) / (jnp.abs(U_rms) + 1e-12)
         return dt
-
-    def estimate_kolmogorov_length(self, state: states.State):
-        """Estimate a Kolmogorov lengthscale from a `State` by computing the enstrophy dissipation rate.
-
-        Returns Lk as a JAX scalar (trace-safe under jit/vmap).
-        """
-        q = state.q
-        # Compute enstrophy dissipation rate: epsilon = nu * <|grad q|^2>
-        grad_qx = jnp.gradient(q, axis=-1) / self.dx
-        grad_qy = jnp.gradient(q, axis=-2) / self.dy
-        grad_q_sq = grad_qx ** 2 + grad_qy ** 2
-        epsilon = self.drag * jnp.mean(grad_q_sq)
-        # Estimate Kolmogorov lengthscale: Lk ~ (nu^3 / epsilon)^(1/4)
-        Lk = (self.drag ** 3 / (epsilon + 1e-12)) ** 0.25
-        return Lk
 
     @classmethod
     def from_params(cls, params):

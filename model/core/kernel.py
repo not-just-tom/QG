@@ -248,7 +248,7 @@ class Kernel(ABC):
             K2 = jnp.array(self.K2, dtype=qh.dtype)
             K2 = jnp.where(K2 == 0, 1.0, K2)
             ph = -qh / K2
-            ph = ph.at[..., 0].set(0.0)
+            ph = ph.at[..., 0, 0].set(0.0)
 
             # ensure wavenumber arrays broadcast correctly to spectral shape
             uh = -jnp.expand_dims(1j * self.ky, (0, -1)) * ph
@@ -308,20 +308,14 @@ class Kernel(ABC):
         """Apply stochastic forcing.
 
         Annulus with inner and outer radii specified by Fourier mode number,
-        with total kinetic-energy input defined by ``epsilon``. The stored
-        wavenumbers are in the model's current coordinates, so this remains
-        consistent after nondimensionalisation.
+        with total kinetic-energy input defined by ``epsilon``. 
 
-                
         Parameters
         ----------
         state : states.FullState
             The current full state
         key : jax.Array, optional
-            PRNG key for generating random forcing.
-        epsilon : float
-            New implementation, defining energy input rather than forcing amplitude.
-            
+            PRNG key for generating random forcing, split into subkeys for each step of the stepper. 
         Returns
         -------
         states.FullState

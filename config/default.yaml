@@ -11,24 +11,25 @@ params:
   Lx: 1000000
   beta: 1e-11
   n_jets: 3 # number of jets in the regime, used for non dimensionalisation
-  nz: 2
-  # multi-layer model parameters (only used if nz>1)
-  Lz: 500 # depth of top layer. 
-  drag: 1.0e-8 # Ekman drag coeff
-  Ld: 33333 # deformation radius
-  delta: 1 # ratio between top/bottom layer depth
-  U1: 0.0025
-  U2: 0.0
+  nz: 1
   hr_nx: 512
   # Stochastic forcing parameters
   kmin: 4.0   # the wavelenth MODE of inner ring forcing 
   kmax: 7.0   # the wavelenth MODE of outer ring forcing 
-  epsilon: 1e-22 # 0.0 for no stochastic forcing 
+  epsilon: 1e-17 # 0.0 for no stochastic forcing 
+  # multi-layer model parameters (only used if nz>1)
+  Lz: 500 # depth of top layer. 
+  drag: 5.0e-10 # Ekman drag coeff
+  Ld: 33333 # deformation radius
+  delta: 1 # ratio between top/bottom layer depth
+  U1: 0.01
+  U2: 0.0
+
 
 plotting:
-  nsteps: 200
+  nsteps: 2000
   dt: 1000
-  spinup: 20 # in eddy turnover times
+  spinup: 0 # in eddy turnover times
   cadence: 10
   validation_rollout: 10000
   plot: ['loss', 'ke_spectrum', 'pv_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
