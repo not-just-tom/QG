@@ -134,22 +134,6 @@ class QGM(Kernel):
         
         base_state = super().initialise(key, n_jets)
         return base_state
-
-        # =============This is all legacy i dont wanna remove just yet ==================
-        U_target = self.beta * (self.Ly / (jnp.pi * n_jets))**2
-        U_rms = self.rhines_length(base_state)[1].astype(float) #  not using rhines here despite the name - just U_rms functionality
-
-        scaler = U_target / (U_rms + 1e-12)
-        qh = base_state.qh * scaler
-                    
-        # Compute suggested dt only for debugging/logging to avoid extra work in vmapped init.
-        scaled_state = base_state.update(qh=qh)
-        if verbose:
-            suggest_dt = self.estimate_cfl_dt(scaled_state)
-            suggest_dx = self.estimate_kolmogorov_length(scaled_state)
-            logger.info(f"Suggested initial dt for stability: {float(suggest_dt):.3f}")
-            logger.info(f'Suggested initial lengthscale for DNS simulation {float(suggest_dx):.3f}')
-        return scaled_state
     
     def set_initial(self, qh, _q_shape=None) -> states.State: 
         """Set the initial state from a given spectral PV array `qh`."""
@@ -356,40 +340,6 @@ class QGM(Kernel):
         safe_beta = jnp.where(beta == 0, jnp.inf, beta)
         Lr = jnp.sqrt(U_rms / safe_beta)
         return Lr, U_rms
-
-    def estimate_tau_eddy(self, *, n_jets=None, seed=None, n_probes=8):
-        """Return a robust eddy-turnover time from several short probe states.
-
-        A single random initial condition can give a very noisy `U_rms`, which in turn
-        makes `tau_eddy = L_r / U_rms` unstable. Using several independent initial
-        conditions and taking the median is much more robust without requiring a full
-        long rollout.
-        """
-        if n_probes < 1:
-            raise ValueError("n_probes must be at least 1")
-        if seed is None:
-            seed = getattr(self, "seed", 0)
-        if n_jets is None:
-            n_jets = self.params.get("n_jets", None)
-
-        key = jax.random.PRNGKey(int(seed))
-        probe_keys = jax.random.split(key, n_probes)
-        taus = []
-        for probe_key in probe_keys:
-            state = self.initialise(
-                probe_key,
-                n_jets=n_jets,
-                pseudo=(n_jets is not None),
-            )
-            Lr, U_rms = self.rhines_length(state)
-            tau = jnp.where(U_rms > 0.0, Lr / (U_rms + 1e-12), jnp.inf)
-            taus.append(tau)
-
-        tau_stack = jnp.asarray(taus)
-        finite = tau_stack[jnp.isfinite(tau_stack)]
-        if finite.size == 0:
-            raise ValueError("All probe states produced non-finite tau_eddy estimates")
-        return float(jnp.median(finite))
 
     def estimate_cfl_dt(self, state: states.State, cfl=0.1):
         """Estimate a stable `dt` based on CFL: dt = courant_no. * x_lengthscale/abs(U)

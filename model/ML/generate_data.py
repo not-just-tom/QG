@@ -11,7 +11,7 @@ from zarr.codecs import BloscCodec
 
 logger = logging.getLogger(__name__)
 
-def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir):
+def generate_train_data(cfg, params, tau_eddy, timing_metadata, hr_model, lr_model, hr_dir):
     '''Generate zarr training data from the high-res `hr_model` and coarsen
     on-the-fly using `lr_model` as the low-resolution physics template, and lower res dt.
     Saves metadata and trajectories into `hr_dir`.
@@ -25,11 +25,6 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
         dummy_key,
         n_jets=params.get("n_jets"),
         pseudo=(params.get("n_jets") is not None),
-    )
-    tau_eddy = lr_model.estimate_tau_eddy(
-        n_jets=params.get("n_jets"),
-        seed=int(params.get("seed", 0)),
-        n_probes=8,
     )
     spinup_time = cfg.plotting.spinup * tau_eddy
     spinup = int(spinup_time // hr_model.stepper.dt)
@@ -99,10 +94,8 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
         clevel=3,  # lower level = faster
         shuffle="bitshuffle",
     )
-    
 
     rng = jax.random.PRNGKey(int(params.get("seed", 0)))
-
     existing = list(traj_group.array_keys())
     if existing:
         n_generated = (
@@ -116,21 +109,6 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
         f"Found {len(existing)} existing trajectories. "
         f"Starting from index {n_generated}"
     )
-
-    # If spinup>0, define a jitted routine to step the high-res model
-    if spinup > 0:
-        @functools.partial(jax.jit, static_argnames=["spinup"])
-        def _spinup_state(init_state, spinup):
-            def _step(carry, _x):
-                next_state = hr_model.step_model(carry)
-                return next_state, None
-            final_state, _ = jax.lax.scan(_step, init_state, None, length=spinup)
-            return final_state
-
-        # Vectorise the spinup across the batch; `_spinup_state` already
-        # has `spinup` as a static arg via `static_argnames`, so a plain
-        # `vmap` over the batch axis is sufficient.
-        _spinup_batched = jax.vmap(_spinup_state, in_axes=(0, None))
 
     # Prefer balanced, band-limited initial conditions when available.
     n_jets = params.get('n_jets', None)
@@ -152,7 +130,7 @@ def generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, hr_dir
 
         # Run spinup on each initial state if requested
         if spinup > 0:
-            init_states = _spinup_batched(init_states, spinup)
+            init_states = hr_model.spinup(init_states, spinup)
 
         # Generate batch: one coarsened sample per coarse step.
         traj_batch = batched_traj(init_states, nsteps)

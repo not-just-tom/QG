@@ -29,7 +29,7 @@ params:
 plotting:
   nsteps: 2000
   dt: 1000
-  spinup: 0 # in eddy turnover times
+  spinup: 1 # in eddy turnover times
   cadence: 10
   validation_rollout: 10000
   plot: ['loss', 'ke_spectrum', 'pv_spectrum', 'ke_spectrum_movie', 'zero', 'domain']

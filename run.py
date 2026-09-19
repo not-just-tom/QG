@@ -136,11 +136,7 @@ def run(cfg):
     low_res_dt = dt * ratio
     steps_per_day = int(hr_physics_model.seconds_to_model_time(24 * 3600) // low_res_dt)
 
-    tau_eddy = hr_physics_model.estimate_tau_eddy(
-        n_jets=n_jets,
-        seed=seed,
-        n_probes=8,
-    )
+    tau_eddy = hr_model.estimate_tau_eddy(n_jets=n_jets, seed=seed, n_probes=6)
     logger.info(
         'Fine timestep is %.2gs and coarsened timestep is %.2gs. '
         'Model spinup for %.2f eddy turnover times (~%.2g high-res steps). '
@@ -185,7 +181,7 @@ def run(cfg):
         os.makedirs(run_dir, exist_ok=False)
         if cfg.ml.enabled == True:
             try:
-                generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, run_dir)
+                generate_train_data(cfg, params, tau_eddy, timing_metadata, hr_model, lr_model, run_dir)
             except Exception:
                 logger.exception("Failed to generate training data; cleaning up and exiting.")
                 if os.path.exists(run_dir):
@@ -196,7 +192,7 @@ def run(cfg):
             cfg['ml']['n_train'] = 0 
             cfg['ml']['n_test'] = 0 # leaves the one validation traj
             try: 
-                generate_train_data(cfg, params, timing_metadata, hr_model, lr_model, run_dir) # just validations for plots
+                generate_train_data(cfg, params, tau_eddy, timing_metadata, hr_model, lr_model, run_dir) # just validations for plots
             except Exception:
                 logger.exception("Failed to generate trajectory; cleaning up and exiting.")
                 if os.path.exists(run_dir):
@@ -328,7 +324,7 @@ def run(cfg):
         fake_cfg = cfg.copy()
         fake_cfg.ml.n_train = max(0, n_epochs - len(all_traj_indices))
         fake_cfg.ml.n_test = -1 # negative to remove the validation epoch added in generate_train_data:)
-        generate_train_data(fake_cfg, params, timing_metadata, hr_model, lr_model, run_dir)
+        generate_train_data(fake_cfg, params, tau_eddy, timing_metadata, hr_model, lr_model, run_dir)
 
     if os.environ.get('GENERATE_ONLY') == '1':
         logger.info("Generate-only flag set; exiting now.")

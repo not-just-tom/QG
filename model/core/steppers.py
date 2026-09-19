@@ -4,6 +4,7 @@ import abc
 import jax
 import jax.numpy as jnp
 import model.utils.pytree as Pytree
+import functools
 
 
 P = typing.TypeVar("P")
@@ -195,6 +196,62 @@ class SteppedModel:
             stepper_state.state
         )
 
+    def spinup(self, init_states, spinup_count):
+        batch_size = init_states.qh.shape[0]
+        seed = self.model.seed
+
+        keys = jax.random.split(
+            jax.random.PRNGKey(int(seed)),
+            batch_size,
+        )
+        init_states = jax.vmap(
+                self.initialise_stepper_state,
+                in_axes=(0, 0),
+            )(init_states, keys)
+        
+        @functools.partial(jax.jit, static_argnames=["spinup_count"])
+        def _spinup_state(init_state, spinup_count):
+            def _step(carry, _x):
+                next_state = self.step_model(carry)
+                return next_state, None
+            final_state, _ = jax.lax.scan(_step, init_state, None, length=spinup_count)
+            return final_state
+
+        # Vectorise the spinup across the batch; `_spinup_state` already
+        # has `spinup` as a static arg via `static_argnames`, so a plain
+        # `vmap` over the batch axis is sufficient.
+        _spinup_batched = jax.vmap(_spinup_state, in_axes=(0, None))
+        return _spinup_batched(init_states, spinup_count)
+
+    def estimate_tau_eddy(self, n_jets=None, seed=None, n_probes=3):
+        """Return a robust eddy-turnover time from several short probe states.
+
+        We take n_probes (chose to be 6 for proper run rn) initial conditions, and rolls them out 1000 steps
+        to get a more robust estimate for spinup length. 
+        """
+        if n_jets is None:
+            n_jets = self.params.get("n_jets", None)
+
+        key = jax.random.PRNGKey(int(seed))
+        probe_keys = jax.random.split(key, n_probes)
+        initialise_probe = functools.partial(
+            self.model.initialise,
+            n_jets=n_jets,
+            pseudo=(n_jets is not None),
+        )
+        init_states = jax.vmap(initialise_probe)(probe_keys) #fix: im not sure psuedo false is actually used anywhere despite being default
+        states = self.spinup(init_states, 1000) # fix: decide if this 1000 hardcoded is fine 
+        taus = []
+
+        Lr, U_rms = jax.vmap(self.model.rhines_length)(states.state)
+        tau = jnp.where(U_rms > 0.0, Lr / (U_rms + 1e-12), jnp.inf)
+        taus.append(tau)
+
+        tau_stack = jnp.asarray(taus)
+        finite = tau_stack[jnp.isfinite(tau_stack)]
+        if finite.size == 0:
+            raise ValueError("All probe states produced non-finite tau_eddy estimates")
+        return float(jnp.median(finite))
 
 def _nostep_tree_map(func, tree, *rest):
     def wrap_nostep_update(leaf, update, *args, **kwargs):

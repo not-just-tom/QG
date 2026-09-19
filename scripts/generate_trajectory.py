@@ -2,6 +2,8 @@
 Generate a single trajectory (coarsened) according to default configs, saves to disk, and plots it. 
 """
 import os
+import importlib
+
 from model.core.steppers import SteppedModel, AB3Stepper
 from model.core.model import QGM
 from model.utils.logging import configure_logging
@@ -110,11 +112,7 @@ def main(cfg):
     lr_model = coarsen(hr_model.model, params['nx'])
     low_res_dt = dt * ratio
 
-    tau_eddy = lr_model.estimate_tau_eddy(
-        n_jets=n_jets,
-        seed=seed,
-        n_probes=8,
-    )
+    tau_eddy = hr_model.estimate_tau_eddy(n_jets=n_jets, seed=seed, n_probes=6)
     logger.info(
         'Fine timestep is %.2gs and coarsened timestep is %.2gs. '
         'Model spinup for %.2f eddy turnover times (~%.2g high-res steps). '
