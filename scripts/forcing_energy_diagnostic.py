@@ -8,6 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
 
 
+import inspect
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
@@ -68,6 +69,15 @@ def main():
     plt.tight_layout()
     plt.savefig(args.output, dpi=150)
     plt.close()
+
+
+    print("QGM source:", inspect.getsourcefile(QGM))
+    print("JAX:", jax.__version__, "backend:", jax.default_backend())
+    print("x64:", jax.config.read("jax_enable_x64"))
+    print("nx, ny, dt:", model.nx, model.ny, model.dt)
+    print("epsilon:", model.epsilon)
+    print("kmin, kmax:", model.kmin, model.kmax)
+    print(inspect.getsource(model._invert))
 
 
 if __name__ == "__main__":

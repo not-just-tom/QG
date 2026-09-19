@@ -16,7 +16,7 @@ params:
   # Stochastic forcing parameters
   kmin: 4.0   # the wavelenth MODE of inner ring forcing 
   kmax: 7.0   # the wavelenth MODE of outer ring forcing 
-  epsilon: 1e-17 # 0.0 for no stochastic forcing 
+  epsilon: 1e-18 # 0.0 for no stochastic forcing 
   # multi-layer model parameters (only used if nz>1)
   Lz: 500 # depth of top layer. 
   drag: 5.0e-10 # Ekman drag coeff
