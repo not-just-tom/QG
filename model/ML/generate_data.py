@@ -124,7 +124,7 @@ def generate_train_data(cfg, params, tau_eddy, timing_metadata, hr_model, lr_mod
         rng, subkey = jax.random.split(rng)
         keys = jax.random.split(subkey, current_batch)
 
-        init_states = jax.vmap(functools.partial(hr_model.initialise, **init_kwargs))(keys)
+        init_states = jax.vmap(functools.partial(hr_model.model.initialise, **init_kwargs))(keys)
         
         logger.info(f"Initialised batch of {current_batch} trajectories")
 
