@@ -23,18 +23,18 @@ def nondimensionalise(params: dict) -> tuple[dict, RhinesScales]:
     if n_jets is None or n_jets <= 0:
         raise ValueError("n_jets must be positive when nondimensional=True")
 
-    ly = float(params.get("Ly", params.get("Lx")))
+    lx = float(params.get("Lx", 0))
     beta = float(params.get("beta"))
-    if ly <= 0 or beta <= 0:
-        raise ValueError("Ly and beta must be positive for Rhines scaling")
+    if lx <= 0 or beta <= 0:
+        raise ValueError("Lx and beta must be positive for Rhines scaling")
 
-    length = ly / (math.pi * float(n_jets))
+    length = lx 
     velocity = beta * length**2 / (math.pi * float(n_jets))**2
     time = length / velocity
 
     scaled = dict(params)
-    scaled["Lx"] = float(params.get("Lx", ly)) / length
-    scaled["Ly"] = ly / length
+    scaled["Lx"] = float(params.get("Lxy", lx)) / length
+    scaled["Ly"] = lx / length
     scaled["beta"] = n_jets**2 * math.pi**2
     scaled["Ld"] = float(params["Ld"]) / length
     scaled["U1"] = float(params.get("U1", 0.0)) / velocity

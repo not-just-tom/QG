@@ -9,7 +9,7 @@ params:
   seed: 42
   nx: 32
   Lx: 1000000
-  beta: 1e-11
+  beta: 1e-13
   n_jets: 3 # number of jets in the regime, used for non dimensionalisation
   nz: 1
   hr_nx: 512
@@ -29,8 +29,8 @@ params:
 plotting:
   nsteps: 2000
   dt: 1000
-  spinup: 1 # in eddy turnover times
-  cadence: 10
+  spinup: 0 # in eddy turnover times
+  cadence: 5
   validation_rollout: 10000
   plot: ['loss', 'ke_spectrum', 'pv_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
   auto_dt: false
@@ -38,7 +38,7 @@ plotting:
 
 ml:
   enabled: true # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
-  model_type: zero
+  model_type: fno
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 10

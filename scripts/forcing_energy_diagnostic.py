@@ -37,6 +37,26 @@ def main():
     params["dt"] = float(cfg.plotting.dt)
     model = QGM(params)
 
+    # Audit the discrete Fourier annulus before measuring its energy response.
+    # The YAML values are mode numbers; QGM stores the corresponding
+    # nondimensional angular wavenumbers used by Kmag.
+    forcing_mask = (model.Kmag >= model.kmin) & (model.Kmag <= model.kmax)
+    active_k = np.asarray(model.Kmag[forcing_mask])
+    active_modes = active_k * float(model.Lx) / (2.0 * np.pi)
+    expected_kmin = 2.0 * np.pi * float(params["kmin"]) / float(model.Lx)
+    expected_kmax = 2.0 * np.pi * float(params["kmax"]) / float(model.Lx)
+
+    print("Forcing annulus audit")
+    print("requested mode bounds:", params["kmin"], params["kmax"])
+    print("model-coordinate bounds:", model.kmin, model.kmax)
+    print("expected scaled bounds:", expected_kmin, expected_kmax)
+    print("active Fourier modes (radius):", active_modes.min(), active_modes.max())
+    print("active Fourier coefficients:", active_modes.size)
+    if not np.isclose(model.kmin, expected_kmin) or not np.isclose(model.kmax, expected_kmax):
+        raise RuntimeError("QGM forcing bounds do not match the requested mode bounds")
+    if active_modes.size == 0:
+        raise RuntimeError("Forcing annulus contains no Fourier coefficients at this resolution")
+
     zero_qh = jnp.zeros(
         (model.nz, model.ny, model.nx // 2 + 1), dtype=jnp.complex64
     )
