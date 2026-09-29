@@ -133,6 +133,12 @@ class QGM(Kernel):
             raise ValueError("n_jets must be specified for pseudo random initialisation.")
         
         base_state = super().initialise(key, n_jets)
+        if n_jets is not None:
+            full_state = self.get_full_state(base_state)
+            velocity_rms = jnp.sqrt(jnp.mean(full_state.u**2 + full_state.v**2))
+            base_state = base_state.update(
+                qh=base_state.qh / jnp.maximum(velocity_rms, jnp.finfo(velocity_rms.dtype).tiny)
+            )
         return base_state
     
     def set_initial(self, qh, _q_shape=None) -> states.State: 
@@ -275,6 +281,8 @@ class QGM(Kernel):
 
     @property
     def Qy1(self):
+        if self.nz == 1:
+            return self.beta
         return self.beta + self.F1 * (self.U1 - self.U2)
 
     @property

@@ -48,8 +48,6 @@ class Kernel(ABC):
         self.kmin = kmin
         self.kmax = kmax
 
-
-
     def dealias(self, state: states.State) -> states.State:
         # describe this 
         return state.update(qh=self._dealias*state.qh)
@@ -325,37 +323,36 @@ class Kernel(ABC):
             raise ValueError("Forcing key must be provided for stochastic forcing.")
         
         mask = (self.Kmag >= self.kmin) & (self.Kmag <= self.kmax)
+        mask = mask[None, ...] # broadcast to all layers
 
-        # rfft stores only the non-negative x wavenumbers. Interior modes
-        # represent two full-spectrum modes and therefore carry twice the
-        # spectral energy of the x=0/Nyquist boundaries.
         rfft_weight = 2.0 * jnp.ones((self.nk,))
-        rfft_weight = rfft_weight.at[0].set(1.0)
+        rfft_weight = rfft_weight.at[0].set(1.0) # interior Fourier modes carry +kx and -kx so have twice the energy of the Nyquist boundaries.
         if self.nx % 2 == 0:
             rfft_weight = rfft_weight.at[-1].set(1.0)
         rfft_weight = rfft_weight.reshape((1, self.nk))
 
-        # With orthonormal FFTs, mean kinetic energy is divided by the number
-        # of physical grid points. Give every forcing layer the same share of
-        # epsilon, while accounting for its response through PV inversion.
-        energy_response = self._forcing_energy_response()
+
+        energy_response = self._forcing_energy_response() #accounting for KE response through PV inversion.
+
+        # for each layer E_layer​=1/(2*nx*ny)​​∑​weight(kx​)energy_response​(k) for kx/ky pairs in annulus mask
         energy_per_layer = (
             0.5
             / (self.nx * self.ny)
-            * jnp.sum(mask[None, ...] * rfft_weight[None, ...] * energy_response, axis=(-2, -1))
+            * jnp.sum(mask * rfft_weight[None, ...] * energy_response, axis=(-2, -1))
         )
+        
+        # this is σ_l^2​=ϵ/(n_z*​E_layer)​​ to ensure total energy is epsilon
         forcing_variance = jnp.where(
             energy_per_layer > 0,
             self.epsilon / (self.nz * energy_per_layer),
             0.0,
-        )
+        ) 
 
-        # Generate white noise in physical space before transforming it. This
-        # preserves the Hermitian symmetry required by a real irfft field.
+        # Generate white noise in physical space to ensure preservation the Hermitian symmetry
         noise = jax.random.normal(forcing_key, (self.nz, self.ny, self.nx))
-        noise_h = self.real_to_spectral(noise)
+        noise_h = self.real_to_spectral(noise) # fix: potentially avoidable if generate spectral directly but have to be careful about Hermitian symmetry
         forcing_qh = (
-            mask[None, ...]
+            mask
             * jnp.sqrt(forcing_variance)[:, None, None]
             * noise_h
             * jnp.sqrt(self.dt)

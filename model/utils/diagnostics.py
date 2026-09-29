@@ -5,6 +5,7 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 import importlib
 import model.utils.physics_ops
 importlib.reload(model.utils.physics_ops)
+from model.core.model import QGM
 from model.utils.physics_ops import (
     invert_pv_to_psi,
     velocity_from_psi,
@@ -63,6 +64,24 @@ def _pick_frame(arr, idx, layer=0):
     if arr.ndim == 2:
         return arr
     return arr[idx] if arr.shape[0] > 1 else arr[0]
+
+
+def _get_reference_model(trajs, grid):
+    """Resolve the QG model whose scaling defines the plotted wavenumbers."""
+    model = trajs.get("model")
+    if model is not None:
+        return model
+
+    params = dict(trajs.get("params") or {})
+    params.setdefault("nx", grid.nx)
+    params.setdefault("ny", grid.ny)
+    params.setdefault("nz", getattr(grid, "nz", 1))
+    return QGM(params)
+
+
+def _get_reference_wavenumbers(trajs, grid):
+    model = _get_reference_model(trajs, grid)
+    return model.beta, model.kmin, model.kmax, 1.0 / model.Ld, model.nz
 
 
 # ============================================================
@@ -138,18 +157,7 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
         if q_pred is not None:
             q_pred = q_pred[10:]
 
-        # stuff for wavelength calcs
-        beta = trajs['params'].get('n_jets', None)**2 *np.pi**2 # nondim beta formula
-        kmin = trajs['params'].get('kmin', None)
-        kmax = trajs['params'].get('kmax', None)
-        Lx = trajs['params'].get('Lx', None)
-        Ld = trajs['params'].get('Ld', None)
-        n_jets = trajs['params'].get('n_jets', None)
-        length_scale = Lx / (np.pi * n_jets) # converting between dimensional params and nondim plots. 
-
-        k_min = 2*kmin*np.pi/grid.Lx
-        k_max = 2*kmax*np.pi/grid.Lx
-        k_deformation = length_scale / Ld # equiv to scaling dimensional wavenumber
+        beta, k_min, k_max, k_deformation, nz = _get_reference_wavenumbers(trajs, grid)
         kx_max = np.pi / grid.dx
         ky_max = np.pi / grid.dy
         k_nyquist = np.sqrt(kx_max**2 + ky_max**2) # maximum meaningful wavenumber 
@@ -207,8 +215,9 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
         # instantaneous lines
         Ez0 = E_zero[frame_indices[0]]
         ln_zero, = ax.loglog(k[1:], Ez0[1:], label="Zero", color="C2", linestyle="--")
-        ax.axvline(k_deformation, ymin=0, ymax=1, color='red', linestyle="--")
-        ax.text(k_deformation,1e-14,'k_deformation',rotation=270, color='k')
+        if nz>1:
+            ax.axvline(k_deformation, ymin=0, ymax=1, color='red', linestyle="--")
+            ax.text(k_deformation,1e-14,'k_deformation',rotation=270, color='k')
         k_Rhines = rhines_wavenumber(q_truth[frame_indices[0]])
         rhines_line = ax.axvline(k_Rhines, ymin=0, ymax=1, color='red', linestyle="--")
         rhines_label = ax.text(k_Rhines,1e-14,'k_Rhines',rotation=270, color='k')
@@ -260,18 +269,7 @@ class KESpectrumDiagnostic(Diagnostic):
         q_pred  = _sanitize_numeric_array(trajs.get("pred"))
         zero = _sanitize_numeric_array(trajs.get("zero"))
 
-        # stuff for wavelength calcs
-        beta = trajs['params'].get('n_jets', None)**2 *np.pi**2 # nondimensional beta calc
-        kmin = trajs['params'].get('kmin', None)
-        kmax = trajs['params'].get('kmax', None)
-        Lx = trajs['params'].get('Lx', None)
-        Ld = trajs['params'].get('Ld', None)
-        n_jets = trajs['params'].get('n_jets', None)
-        length_scale = Lx / (np.pi * n_jets) # converting between dimensional params and nondim plots. 
-
-        k_min = 2*kmin*np.pi/grid.Lx
-        k_max = 2*kmax*np.pi/grid.Lx
-        k_deformation = length_scale / Ld # equiv to scaling dimensional wavenumber
+        beta, k_min, k_max, k_deformation, nz = _get_reference_wavenumbers(trajs, grid)
         kx_max = np.pi / grid.dx
         ky_max = np.pi / grid.dy
         k_nyquist = np.sqrt(kx_max**2 + ky_max**2) # maximum meaningful wavenumber 
@@ -338,9 +336,9 @@ class KESpectrumDiagnostic(Diagnostic):
                 ax.fill_between(k[1:], (E_pred_avg - E_pred_std)[1:], (E_pred_avg + E_pred_std)[1:], color="C1", alpha=0.08)
         except Exception:
             pass
-
-        ax.axvline(k_deformation, ymin=0, ymax=1, color='red', linestyle="--")
-        ax.text(k_deformation,1e-3,'k_deformation',rotation=270, color='k')
+        if nz>1:
+            ax.axvline(k_deformation, ymin=0, ymax=1, color='red', linestyle="--")
+            ax.text(k_deformation,1e-3,'k_deformation',rotation=270, color='k')
         ax.axvline(k_Rhines, ymin=0, ymax=1, color='red', linestyle="--")
         ax.text(k_Rhines,1e-3,'k_Rhines',rotation=270, color='k')
         ax.axvline(k_min, ymin=0, ymax=1, color='red', linestyle="--")
@@ -890,6 +888,98 @@ class EnergyDiagnostic(Diagnostic):
 
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
+
+
+class ZonalDiagnostic(Diagnostic):
+    name = "zonal"
+
+    def run(self, trajs, out_path, cadence=10):
+        grid = trajs.get("grid")
+        if grid is None:
+            raise KeyError("zonal requires 'grid' in trajectories")
+
+        def zonal_mean_u(values, key):
+            q = _sanitize_numeric_array(values)
+            if q is None:
+                return None
+            q = np.asarray(q)
+            if q.ndim == 2:
+                q = q[None, None, ...]
+            elif q.ndim == 3:
+                q = q[:, None, ...]
+            if q.ndim != 4:
+                raise ValueError(f"{key} must have shape (time, layer, y, x)")
+            psi = invert_pv_to_psi(q, grid)
+            u, _ = velocity_from_psi(psi, grid)
+            return u.mean(axis=-1)
+
+        truth = zonal_mean_u(_get_traj_array(trajs, "truth", "q"), "truth")
+        if truth is None:
+            raise KeyError("zonal_mean_velocity requires 'truth' or 'q' in trajectories")
+
+        comparisons = [("Truth", truth, "k", "-")]
+        for key, label, color, linestyle in (
+            ("pred", "Closure adjusted", "C1", "--"),
+            ("zero", "Without closure", "C2", ":"),
+        ):
+            values = zonal_mean_u(trajs.get(key), key)
+            if values is not None:
+                comparisons.append((label, values, color, linestyle))
+
+        nt, nz, ny = truth.shape
+        dt = trajs.get("dt")
+        dt = float(dt) if dt is not None else 1.0
+        time_edges = np.arange(nt + 1) * dt
+        y_edges = np.arange(ny + 1) * grid.dy
+        y_centers = (np.arange(ny) + 0.5) * grid.dy
+
+        fig, axes = plt.subplots(
+            nz,
+            2,
+            squeeze=False,
+            figsize=(12, 3.5 * nz),
+            constrained_layout=True,
+        )
+        for layer in range(nz):
+            ax_hovmoller, ax_profile = axes[layer]
+            field = truth[:, layer, :]
+            limit = float(np.nanpercentile(np.abs(field), 99))
+            if not np.isfinite(limit) or limit == 0:
+                limit = 1.0
+
+            image = ax_hovmoller.pcolormesh(
+                time_edges,
+                y_edges,
+                field.T,
+                shading="auto",
+                cmap="RdBu_r",
+                vmin=-limit,
+                vmax=limit,
+            )
+            fig.colorbar(image, ax=ax_hovmoller, label="Zonal-mean u")
+            ax_hovmoller.set_title(f"Truth, layer {layer}: zonal-mean velocity")
+            ax_hovmoller.set_xlabel("Time (model units)" if dt != 1.0 else "Time step")
+            ax_hovmoller.set_ylabel("y")
+            ax_hovmoller.grid(False)
+
+            for label, values, color, linestyle in comparisons:
+                if layer < values.shape[1]:
+                    ax_profile.plot(
+                        values[:, layer, :].mean(axis=0),
+                        y_centers,
+                        color=color,
+                        linestyle=linestyle,
+                        label=label,
+                    )
+            ax_profile.set_title(f"Time-mean zonal velocity, layer {layer}")
+            ax_profile.set_xlabel("Zonal-mean u")
+            ax_profile.set_ylabel("y")
+            ax_profile.grid(True, alpha=0.3)
+            ax_profile.legend()
+
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+
 
 # ============================================================
 # CFL condition over time
@@ -1505,6 +1595,7 @@ _REGISTRY = {
     'quad': QuadGifDiagnostic,
     'zero': ZeroComparisonDiagnostic,
     'energy': EnergyDiagnostic,
+    'zonal': ZonalDiagnostic,
     'cfl': CFLDiagnostic,
     "domain": DomainDiagnostic,
     "sgs_spectrum": SGSSpectralDiagnostic,

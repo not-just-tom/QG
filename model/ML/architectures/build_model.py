@@ -3,6 +3,7 @@ import model.ML.architectures.zero
 import model.ML.architectures.cnn
 import model.ML.architectures.unet
 import model.ML.architectures.fno
+import model.ML.architectures.rno
 import model.ML.architectures.diffusion
 import model.ML.architectures.resnet
 import model.ML.architectures.mlp
@@ -13,6 +14,7 @@ importlib.reload(model.ML.architectures.zero)
 importlib.reload(model.ML.architectures.cnn)
 importlib.reload(model.ML.architectures.unet)
 importlib.reload(model.ML.architectures.fno)
+importlib.reload(model.ML.architectures.rno)
 importlib.reload(model.ML.architectures.diffusion)
 importlib.reload(model.ML.architectures.resnet)
 importlib.reload(model.ML.architectures.mlp)
@@ -23,6 +25,7 @@ from model.ML.architectures.cnn import CNN
 from model.ML.architectures.zero import ZeroModel
 from model.ML.architectures.unet import UNet
 from model.ML.architectures.fno import FNO
+from model.ML.architectures.rno import RNO
 from model.ML.architectures.diffusion import Diffusion
 from model.ML.architectures.resnet import ResNet
 from model.ML.architectures.mlp import MLP
@@ -162,6 +165,7 @@ def build_closure(cfg=None, loaded_leaves=None):
         "cnn": CNN,
         'unet': UNet,
         'fno': FNO,
+        'rno': RNO,
         'diffusion': Diffusion,
         'resnet': ResNet,
         'mlp': MLP,

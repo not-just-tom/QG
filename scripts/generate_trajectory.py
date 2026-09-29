@@ -98,7 +98,7 @@ def main(cfg):
         logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
         raw_model = QGM({**params, "nx": params['hr_nx']})
         init_state = raw_model.initialise(key, n_jets=n_jets, verbose=True)
-        dt = float(raw_model.estimate_cfl_dt(init_state))
+        dt = float(raw_model.estimate_cfl_dt(init_state, cfl=float(cfg.plotting.cfl)))
         params["dt"] = dt * raw_model.time_scale
 
     # instantiate the model

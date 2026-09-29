@@ -57,8 +57,20 @@ def velocity_from_psi(psi: np.ndarray, grid) -> tuple[np.ndarray, np.ndarray]:
         (u, v): each the same shape as *psi*.
     """
     psi = np.asarray(psi, dtype=float)
-    u = np.gradient(psi, float(grid.dy), axis=-2)
-    v = -np.gradient(psi, float(grid.dx), axis=-1)
+    ny, nx = psi.shape[-2:]
+    psi_hat = np.fft.rfftn(psi, axes=(-2, -1))
+    kx = 2.0 * np.pi * np.fft.rfftfreq(nx, d=float(grid.dx))
+    ky = 2.0 * np.pi * np.fft.fftfreq(ny, d=float(grid.dy))
+    u = np.fft.irfftn(
+        1j * ky.reshape((1,) * (psi.ndim - 2) + (ny, 1)) * psi_hat,
+        s=(ny, nx),
+        axes=(-2, -1),
+    )
+    v = np.fft.irfftn(
+        -1j * kx.reshape((1,) * (psi.ndim - 2) + (1, kx.size)) * psi_hat,
+        s=(ny, nx),
+        axes=(-2, -1),
+    )
     return u, v
 
 
