@@ -134,7 +134,7 @@ def run(cfg):
     # build low-resolution physics model (coarsened from high-res physics)
     lr_model = coarsen(hr_model.model, params['nx'])
     low_res_dt = dt * ratio
-    steps_per_day = int(hr_physics_model.seconds_to_model_time(24 * 3600) // low_res_dt)
+    steps_per_day = hr_physics_model.seconds_to_model_time(24 * 3600) // low_res_dt
 
     tau_eddy = hr_model.estimate_tau_eddy(n_jets=n_jets, seed=seed, n_probes=6)
     logger.info(
@@ -368,7 +368,7 @@ def run(cfg):
     start_time = time.time()
 
     for day_idx, current_days in enumerate(window_days):
-        best_stage_loss = 100000 #just large number to start off with covering all loss types.
+        best_stage_loss = 100000 #just a large number to start off with covering all loss types.
         epochs_without_improvement=0 # resets each stage
         current_batch_steps = current_days * steps_per_day
         current_n_samples   = nsteps // current_batch_steps
