@@ -14,7 +14,6 @@ def build_loss(loss):
         "mse": MSELoss,
         "mae": MAELoss,
         "spectral": SpectralEnergyLoss,
-        "strain": RateOfStrainLoss,
         "multistep": MultiStepStatisticsLoss,
         "maddison": maddison_loss,
     }
@@ -91,81 +90,6 @@ def SpectralEnergyLoss(residual_q, lr_model):
     spectral_loss = jnp.mean(log_energy ** 2)
     
     return spectral_loss
-
-
-def RateOfStrainLoss(residual_q, lr_model):
-    """Rate of strain loss: L1 norm of strain rate tensor differences.
-    
-    LS = sum_ij |S_ij,s - S_ij,s^τ|
-    
-    where S_ij = 0.5(∂u_i/∂x_j + ∂u_j/∂x_i) is the rate of strain tensor.
-    
-    This ensures the network output carries information necessary for accurate
-    energy transfer computation in the next step.
-    
-    Args:
-        residual_q: Error in q (physical space). Shape: (batch, nsteps, nz, ny, nx) 
-                    or (nsteps, nz, ny, nx)
-        lr_model: Low-resolution model
-    
-    Returns:
-        Per-sample loss if batch dimension present, otherwise scalar.
-    """
-    # Convert residual_q to spectral space
-    # rfftn will handle the multi-dimensional input correctly
-    residual_qh = jnp.fft.rfftn(residual_q, axes=(-2, -1), norm='ortho')
-    
-    # Get grid spacing for derivative computation
-    grid = lr_model.get_grid()
-    dy = jnp.asarray(grid.dy, dtype=residual_qh.dtype)
-    dx = jnp.asarray(grid.dx, dtype=residual_qh.dtype)
-    
-    # Get wavenumber grids from model if available, otherwise compute
-    if hasattr(lr_model, '_ky') and hasattr(lr_model, '_kx'):
-        ky = lr_model._ky
-        kx = lr_model._kx
-    else:
-        # Compute wavenumber grids
-        ny = residual_q.shape[-2]
-        nx = residual_q.shape[-1]
-        kx = jnp.fft.rfftfreq(nx, d=dx / (2 * jnp.pi))
-        ky = jnp.fft.fftfreq(ny, d=dy / (2 * jnp.pi))
-    
-    # Create meshgrid for wavenumbers
-    # ky has shape (ny,), kx has shape (nx//2+1,)
-    # After meshgrid: KY has shape (ny, nx//2+1), KX has shape (ny, nx//2+1)
-    KY, KX = jnp.meshgrid(ky, kx, indexing='ij')
-    
-    # Compute velocity from streamfunction via inversion
-    # For QG: u = -∂ψ/∂y, v = ∂ψ/∂x
-    # In spectral: uh = -i*ky*psih, vh = i*kx*psih
-    # Broadcast KY and KX to match residual_qh dimensions
-    residual_uh = -1j * KY * residual_qh
-    residual_vh = 1j * KX * residual_qh
-    
-    # Transform to physical space
-    ny = residual_q.shape[-2]
-    nx = residual_q.shape[-1]
-    residual_u = jnp.fft.irfftn(residual_uh, axes=(-2, -1), norm='ortho', s=(ny, nx))
-    residual_v = jnp.fft.irfftn(residual_vh, axes=(-2, -1), norm='ortho', s=(ny, nx))
-    
-    # Compute spatial derivatives via finite differences
-    # Using central differences on last two dimensions (y, x)
-    du_dx = (jnp.roll(residual_u, -1, axis=-1) - jnp.roll(residual_u, 1, axis=-1)) / (2 * dx)
-    du_dy = (jnp.roll(residual_u, -1, axis=-2) - jnp.roll(residual_u, 1, axis=-2)) / (2 * dy)
-    dv_dx = (jnp.roll(residual_v, -1, axis=-1) - jnp.roll(residual_v, 1, axis=-1)) / (2 * dx)
-    dv_dy = (jnp.roll(residual_v, -1, axis=-2) - jnp.roll(residual_v, 1, axis=-2)) / (2 * dy)
-    
-    # Compute rate of strain tensor: S_ij = 0.5(∂u_i/∂x_j + ∂u_j/∂x_i)
-    S_xx = du_dx  # S_xx = ∂u/∂x
-    S_yy = dv_dy  # S_yy = ∂v/∂y
-    S_xy = 0.5 * (du_dy + dv_dx)  # S_xy = 0.5(∂u/∂y + ∂v/∂x)
-    
-    # Compute L1 norm of strain rate (sum of absolute values)
-    strain_loss = jnp.mean(jnp.abs(S_xx) + jnp.abs(S_yy) + jnp.abs(S_xy))
-    
-    return strain_loss
-
 
 def MultiStepStatisticsLoss(residual_q, lr_model):
     """Multi-step statistics loss: match averaged quantities over unrolled steps.

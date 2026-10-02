@@ -97,7 +97,7 @@ def run(cfg):
     end_curriculum = int(cfg.ml.end_curriculum)
     steps_per_curriculum = int(cfg.ml.steps_per_curriculum)
     if start_curriculum < 1 or end_curriculum < start_curriculum:
-        raise ValueError("Curriculum months must satisfy 1 <= start_month <= end_month")
+        raise ValueError("Curriculum preiods must satisfy 1 <= start_curriculum <= end_curriculum")
     window_curriculums = list(range(start_curriculum, end_curriculum + 1))
     total_curriculum_epochs = len(window_curriculums) * n_epochs
 
@@ -124,7 +124,7 @@ def run(cfg):
         logger.info("Auto-setting initial dt using CFL condition on a sample initial state.")
         raw_model = QGM({**params, "nx": params['hr_nx']})
         init_state = raw_model.initialise(key, n_jets=n_jets, verbose=True)
-        dt = float(raw_model.estimate_cfl_dt(init_state))
+        dt = float(raw_model.estimate_cfl_dt(init_state, cfl=float(cfg.plotting.cfl)))
         params["dt"] = dt * raw_model.time_scale
 
     # instantiate the model
@@ -531,10 +531,9 @@ def run(cfg):
                     "training": training_metadata.get("training", {}),
                     "curriculum": {
                         "steps_per_curriculum": steps_per_curriculum,
-                        "start_month": start_curriculum,
-                        "end_month": end_curriculum,
+                        "start_curriculum": start_curriculum,
                         "n_epochs": n_epochs,
-                        "current_day": current_curriculum,
+                        "current_curriculum": current_curriculum,
                         "stage_epoch": stage_epoch + 1,
                     },
                 }

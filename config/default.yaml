@@ -29,7 +29,7 @@ params:
 plotting:
   nsteps: 2000
   dt: 2000
-  spinup: 1 # in eddy turnover times
+  spinup: 20 # in eddy turnover times
   cadence: 10
   validation_rollout: 10000
   plot: ['loss', 'ke_spectrum', 'pv_spectrum', 'quad', 'zero', 'domain']
@@ -41,10 +41,10 @@ ml:
   model_type: resnet
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
-  n_train: 10
-  n_test: 4
+  n_train: 4
+  n_test: 1
   start_curriculum: 1     # initial window length in steps
-  end_curriculum: 5       # final window length in steps
+  end_curriculum: 1       # final window length in steps
   steps_per_curriculum: 40 # number of steps in a curriculum before the next round
   batch_size: 10 # number of samples in a training batch per update <--------------------------- is this used?
   patience: 20
