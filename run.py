@@ -169,7 +169,6 @@ def run(cfg):
             "n_train": int(n_train),
             "n_test": int(n_test),
             "start_curriculum": start_curriculum,
-            "end_curriculum": end_curriculum,
             "steps_per_curriculum": steps_per_curriculum,
             "model_arch": OmegaConf.to_container(cfg['architectures'][model_type], resolve=True),
         }
