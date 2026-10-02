@@ -288,6 +288,40 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
             length=n_intervals,
         )
 
+        teacher_latent = forced_model.model.initialise_param_state(
+            base_state,
+            closure_params,
+        ).param_aux.value
+
+        def _teacher_forced_step(latent_state, q):
+            qh = jnp.fft.rfftn(q, axes=(-2, -1), norm='ortho').astype(template_state.qh.dtype)
+            state = lr_model.set_initial(qh)
+            sgs_increment, next_latent = closure_adapter.predict(
+                state,
+                closure_params,
+                latent_state,
+                lr_model,
+            )
+            resolved_tendency_h = lr_model.get_updates(state).qh
+            resolved_tendency = jnp.fft.irfftn(
+                resolved_tendency_h,
+                axes=(-2, -1),
+                norm='ortho',
+                s=real_shape,
+            )
+            return next_latent, (sgs_increment, resolved_tendency)
+
+        _, (teacher_forced_sgs, resolved_tendency) = jax.lax.scan(
+            _teacher_forced_step,
+            teacher_latent,
+            truth_traj[:n_intervals],
+        )
+        target_sgs = (
+            truth_traj[1:n_intervals + 1]
+            - truth_traj[:n_intervals]
+            - dt * resolved_tendency
+        )
+
         # Reconstruct trajectories in physical space
         qh0 = jnp.fft.rfftn(
             truth_traj[0],
@@ -374,6 +408,10 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
             "zero": jax.device_get(zero),
 
             "sgs": jax.device_get(sgs_increment),
+
+            "teacher_forced_sgs": jax.device_get(teacher_forced_sgs),
+
+            "target_sgs": jax.device_get(target_sgs),
 
             "truth": jax.device_get(truth_traj),
         }

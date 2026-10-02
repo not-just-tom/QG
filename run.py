@@ -93,10 +93,13 @@ def run(cfg):
     gc_every_batches = int(getattr(cfg.ml, 'gc_every_batches', 10))
 
     # curriculum stuff
-    start_days        = cfg.ml.start_days
-    end_days          = cfg.ml.end_days
-    window_days       = list(range(start_days, end_days + 1))
-    total_curriculum_epochs = len(window_days) * n_epochs
+    start_curriculum = int(cfg.ml.start_curriculum)
+    end_curriculum = int(cfg.ml.end_curriculum)
+    steps_per_curriculum = int(cfg.ml.steps_per_curriculum)
+    if start_curriculum < 1 or end_curriculum < start_curriculum:
+        raise ValueError("Curriculum months must satisfy 1 <= start_month <= end_month")
+    window_curriculums = list(range(start_curriculum, end_curriculum + 1))
+    total_curriculum_epochs = len(window_curriculums) * n_epochs
 
     logger = configure_logging(level=cfg.filepaths.log_level, out_file="../logs/run.log")
     logger = logging.getLogger(__name__)
@@ -126,7 +129,7 @@ def run(cfg):
 
     # instantiate the model
     hr_physics_model = QGM({**params, "nx": params['hr_nx']})
-    dt = float(hr_physics_model.dt)
+    dt = float(hr_physics_model.dt) #fix:check this is wrong
     hr_model = SteppedModel(
         model=hr_physics_model,
         stepper=AB3Stepper(dt=dt),
@@ -134,7 +137,6 @@ def run(cfg):
     # build low-resolution physics model (coarsened from high-res physics)
     lr_model = coarsen(hr_model.model, params['nx'])
     low_res_dt = dt * ratio
-    steps_per_day = hr_physics_model.seconds_to_model_time(24 * 3600) // low_res_dt
 
     tau_eddy = hr_model.estimate_tau_eddy(n_jets=n_jets, seed=seed, n_probes=6)
     logger.info(
@@ -166,6 +168,9 @@ def run(cfg):
             "prefetch": int(prefetch),
             "n_train": int(n_train),
             "n_test": int(n_test),
+            "start_curriculum": start_curriculum,
+            "end_curriculum": end_curriculum,
+            "steps_per_curriculum": steps_per_curriculum,
             "model_arch": OmegaConf.to_container(cfg['architectures'][model_type], resolve=True),
         }
     }
@@ -367,24 +372,24 @@ def run(cfg):
     rng = jax.random.PRNGKey(seed + 1)
     start_time = time.time()
 
-    for day_idx, current_days in enumerate(window_days):
+    for curriculum_idx, current_curriculum in enumerate(window_curriculums):
         best_stage_loss = 100000 #just a large number to start off with covering all loss types.
         epochs_without_improvement=0 # resets each stage
-        current_batch_steps = current_days * steps_per_day
+        current_batch_steps = current_curriculum * steps_per_curriculum
         current_n_samples   = nsteps // current_batch_steps
         stage_batch_size = batch_size
-        if current_days >= 14:
+        if current_curriculum >= 14:
             stage_batch_size = max(1, batch_size // 4)
-        elif current_days >= 7:
+        elif current_curriculum >= 7:
             stage_batch_size = max(1, batch_size // 2)
         if current_n_samples < 1:
             logger.warning(
                 "Window %d days (%d steps) >= nsteps=%d; stopping curriculum early.",
-                current_days, current_batch_steps, nsteps,
+                current_curriculum, current_batch_steps, nsteps,
             )
             break
 
-        stage_start_epoch = day_idx * n_epochs
+        stage_start_epoch = curriculum_idx * n_epochs
         stage_resume_epoch = min(max(0, epoch_counter - stage_start_epoch), n_epochs)
 
         # Split once per stage for deterministic per-stage shuffle.
@@ -399,7 +404,7 @@ def run(cfg):
         if stage_resume_epoch >= n_epochs:
             logger.info(
                 "Skipping curriculum stage %d/%d : already completed.",
-                day_idx + 1, len(window_days),
+                curriculum_idx + 1, len(window_curriculums),
             )
             continue
 
@@ -410,7 +415,7 @@ def run(cfg):
 
         logger.info(
             "Curriculum stage %d/%d | window = %d days (%d steps, %d samples/traj, batch_size=%d) | sub-epoch %d/%d",
-            day_idx + 1, len(window_days), current_days, current_batch_steps, current_n_samples, stage_batch_size,
+            curriculum_idx + 1, len(window_curriculums), current_curriculum, current_batch_steps, current_n_samples, stage_batch_size,
             stage_resume_epoch + 1, n_epochs,
         )
 
@@ -506,7 +511,7 @@ def run(cfg):
             logger.info(
                 "Stage %d/%d | sub-epoch %d/%d | global epoch %d/%d | "
                 "mean_train=%.4E | mean_test=%.4E | mean_zero=%.4E",
-                day_idx + 1, len(window_days),
+                curriculum_idx + 1, len(window_curriculums),
                 stage_epoch + 1, n_epochs,
                 epoch_counter, total_curriculum_epochs,
                 train_mean, test_mean, zero_mean,
@@ -525,11 +530,11 @@ def run(cfg):
                     "model_type": model_type,
                     "training": training_metadata.get("training", {}),
                     "curriculum": {
-                        "steps_per_day": steps_per_day,
-                        "start_days": start_days,
-                        "end_days": end_days,
+                        "steps_per_curriculum": steps_per_curriculum,
+                        "start_month": start_curriculum,
+                        "end_month": end_curriculum,
                         "n_epochs": n_epochs,
-                        "current_day": current_days,
+                        "current_day": current_curriculum,
                         "stage_epoch": stage_epoch + 1,
                     },
                 }
@@ -537,11 +542,11 @@ def run(cfg):
                     json.dump(meta, f, indent=4)
                 logger.info(
                     "Saved curriculum checkpoint: stage %d/%d | sub-epoch %d/%d",
-                    day_idx + 1, len(window_days), stage_epoch + 1, n_epochs,
+                    curriculum_idx + 1, len(window_curriculums), stage_epoch + 1, n_epochs,
                 )
             except Exception:
                 logger.exception(
-                    "Failed to save checkpoint at stage %d sub-epoch %d", day_idx + 1, stage_epoch + 1
+                    "Failed to save checkpoint at stage %d sub-epoch %d", curriculum_idx + 1, stage_epoch + 1
                 )
 
             # patience clause
@@ -561,8 +566,8 @@ def run(cfg):
         window_zero_mean = float(np.mean(window_zero_epoch_means)) if window_test_epoch_means else float('nan')
         logger.info(
             "Completed window %d/%d: mean train=%.4E | mean test=%.4E | mean zero = %.4E over %d epochs",
-            day_idx + 1,
-            len(window_days),
+            curriculum_idx + 1,
+            len(window_curriculums),
             window_train_mean,
             window_test_mean,
             window_zero_mean,

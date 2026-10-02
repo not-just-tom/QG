@@ -17,7 +17,7 @@ params:
   # Stochastic forcing parameters
   kmin: 5.5   # the wavelenth MODE of inner ring forcing 
   kmax: 6.0   # the wavelenth MODE of outer ring forcing 
-  epsilon: 1e-17 # 0.0 for no stochastic forcing 
+  epsilon: 1e-15 # 0.0 for no stochastic forcing 
   # multi-layer model parameters (only used if nz>1)
   Lz: 500 # depth of top layer. 
   drag: 1e-10 # Ekman drag coeff
@@ -28,23 +28,24 @@ params:
 
 plotting:
   nsteps: 2000
-  dt: 10
-  spinup: 10 # in eddy turnover times
+  dt: 2000
+  spinup: 1 # in eddy turnover times
   cadence: 10
   validation_rollout: 10000
-  plot: ['loss', 'ke_spectrum', 'pv_spectrum', 'ke_spectrum_movie', 'zero', 'domain']
+  plot: ['loss', 'ke_spectrum', 'pv_spectrum', 'quad', 'zero', 'domain']
   auto_dt: false
-  cfl: 0.2
+  cfl: 0.5
 
 ml:
   enabled: true # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
-  model_type: rno
+  model_type: resnet
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 10
   n_test: 4
-  start_days: 5      # initial window length in days
-  end_days: 5        # final window length in days
+  start_curriculum: 1     # initial window length in steps
+  end_curriculum: 5       # final window length in steps
+  steps_per_curriculum: 40 # number of steps in a curriculum before the next round
   batch_size: 10 # number of samples in a training batch per update <--------------------------- is this used?
   patience: 20
   prefetch: 3       # prefetch a few batches to aid efficiency

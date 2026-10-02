@@ -1135,55 +1135,53 @@ class SGSSpectralDiagnostic(Diagnostic):
             raise KeyError("sgs_spectrum diagnostic requires 'grid' in trajectories")
 
         sgs_target = trajs.get("target_sgs")
-        sgs_pred = trajs.get("sgs")
+        sgs_rollout = trajs.get("sgs")
         sgs_teacher = trajs.get("teacher_forced_sgs")
+        sgs_pred = sgs_teacher if sgs_teacher is not None else sgs_rollout
         
         if sgs_target is None or sgs_pred is None:
-            raise KeyError("sgs_spectrum requires 'target_sgs' and 'sgs' in trajectories")
+            raise KeyError(
+                "sgs_spectrum requires 'target_sgs' and either "
+                "'teacher_forced_sgs' or 'sgs' in trajectories"
+            )
 
         sgs_target_np = np.asarray(sgs_target)
         sgs_pred_np = np.asarray(sgs_pred)
-        sgs_teacher_np = np.asarray(sgs_teacher) if sgs_teacher is not None else None
+        sgs_rollout_np = np.asarray(sgs_rollout) if sgs_rollout is not None else None
 
         # Ensure same length
         nt = min(sgs_target_np.shape[0], sgs_pred_np.shape[0])
         sgs_target_np = sgs_target_np[:nt]
         sgs_pred_np = sgs_pred_np[:nt]
-        if sgs_teacher_np is not None:
-            sgs_teacher_np = sgs_teacher_np[:nt]
+        if sgs_rollout_np is not None:
+            sgs_rollout_np = sgs_rollout_np[:nt]
 
         def compute_2d_spectrum(field_2d):
-            """Compute isotropic power spectrum of a 2D field"""
-            if field_2d.ndim == 3:
-                field_2d = field_2d[0]  # Take first layer if multi-layer
-            
-            # FFT
-            fft = np.fft.fft2(field_2d)
+            """Compute isotropic power, averaging over all head/layer axes."""
+            field_2d = np.asarray(field_2d, dtype=float)
+            fft = np.fft.fft2(field_2d, axes=(-2, -1))
             power = np.abs(fft) ** 2
-            
-            # Get wavenumber grid
-            ny, nx = field_2d.shape
-            kx = np.fft.fftfreq(nx, d=grid.dx)
-            ky = np.fft.fftfreq(ny, d=grid.dy)
+            if power.ndim > 2:
+                power = power.mean(axis=tuple(range(power.ndim - 2)))
+
+            ny, nx = field_2d.shape[-2:]
+            kx = 2 * np.pi * np.fft.fftfreq(nx, d=grid.dx)
+            ky = 2 * np.pi * np.fft.fftfreq(ny, d=grid.dy)
             kx_grid, ky_grid = np.meshgrid(kx, ky)
             k_mag = np.sqrt(kx_grid**2 + ky_grid**2)
-            
-            # Bin by radial wavenumber
-            k_max = np.sqrt((nx/2)**2 + (ny/2)**2) / max(grid.Lx, grid.Ly)
-            k_bins = np.linspace(0, k_max, min(nx, ny) // 2)
+
+            dk = min(2 * np.pi / grid.Lx, 2 * np.pi / grid.Ly)
+            k_bins = np.arange(0, k_mag.max() + dk, dk)
+            if k_bins.size < 2:
+                k_bins = np.array([0.0, dk])
             k_centers = (k_bins[:-1] + k_bins[1:]) / 2
-            
             spectrum = np.zeros(len(k_centers))
             counts = np.zeros(len(k_centers))
-            
             for i in range(len(k_centers)):
                 mask = (k_mag >= k_bins[i]) & (k_mag < k_bins[i+1])
                 spectrum[i] = np.sum(power[mask])
                 counts[i] = np.sum(mask)
-            
-            # Normalize
             spectrum = np.where(counts > 0, spectrum / counts, 0)
-            
             return k_centers, spectrum
 
         def compute_time_avg_spectrum(sgs_array):
@@ -1198,8 +1196,8 @@ class SGSSpectralDiagnostic(Diagnostic):
         k, spec_target_avg, spec_target_std = compute_time_avg_spectrum(sgs_target_np)
         _, spec_pred_avg, spec_pred_std = compute_time_avg_spectrum(sgs_pred_np)
         
-        if sgs_teacher_np is not None:
-            _, spec_teacher_avg, spec_teacher_std = compute_time_avg_spectrum(sgs_teacher_np)
+        if sgs_rollout_np is not None:
+            _, spec_rollout_avg, spec_rollout_std = compute_time_avg_spectrum(sgs_rollout_np)
 
         # Create comprehensive plot
         fig = plt.figure(figsize=(16, 10))
@@ -1215,24 +1213,24 @@ class SGSSpectralDiagnostic(Diagnostic):
         ax_transfer = fig.add_subplot(gs[1, 2])
 
         # Main spectrum plot
-        ax_spectrum.loglog(k[1:], spec_target_avg[1:], 'k-', linewidth=2, label='Target SGS')
-        ax_spectrum.fill_between(k[1:], 
-                                 (spec_target_avg - spec_target_std)[1:],
-                                 (spec_target_avg + spec_target_std)[1:],
+        ax_spectrum.loglog(k, spec_target_avg, 'k-', linewidth=2, label='Interval SGS target')
+        ax_spectrum.fill_between(k,
+                                 spec_target_avg - spec_target_std,
+                                 spec_target_avg + spec_target_std,
                                  color='k', alpha=0.15)
         
-        ax_spectrum.loglog(k[1:], spec_pred_avg[1:], 'C1--', linewidth=2, label='Rollout SGS')
-        ax_spectrum.fill_between(k[1:], 
-                                 (spec_pred_avg - spec_pred_std)[1:],
-                                 (spec_pred_avg + spec_pred_std)[1:],
-                                 color='C1', alpha=0.15)
+        ax_spectrum.loglog(k, spec_pred_avg, 'C2:', linewidth=2, label='Teacher-forced closure')
+        ax_spectrum.fill_between(k,
+                                 spec_pred_avg - spec_pred_std,
+                                 spec_pred_avg + spec_pred_std,
+                                 color='C2', alpha=0.15)
         
-        if sgs_teacher_np is not None:
-            ax_spectrum.loglog(k[1:], spec_teacher_avg[1:], 'C2:', linewidth=2, label='Teacher SGS')
-            ax_spectrum.fill_between(k[1:], 
-                                     (spec_teacher_avg - spec_teacher_std)[1:],
-                                     (spec_teacher_avg + spec_teacher_std)[1:],
-                                     color='C2', alpha=0.15)
+        if sgs_rollout_np is not None:
+            ax_spectrum.loglog(k, spec_rollout_avg, 'C1--', linewidth=2, label='Rollout SGS')
+            ax_spectrum.fill_between(k,
+                                     spec_rollout_avg - spec_rollout_std,
+                                     spec_rollout_avg + spec_rollout_std,
+                                     color='C1', alpha=0.15)
         
         ax_spectrum.set_xlabel('Wavenumber k')
         ax_spectrum.set_ylabel('SGS Forcing Power')
@@ -1242,11 +1240,11 @@ class SGSSpectralDiagnostic(Diagnostic):
 
         # Spectral ratio (how well does prediction match target at each scale?)
         ratio = np.where(spec_target_avg > 1e-20, spec_pred_avg / spec_target_avg, 1.0)
-        ax_ratio.semilogx(k[1:], ratio[1:], 'C1-', linewidth=2)
+        ax_ratio.semilogx(k, ratio, 'C2-', linewidth=2)
         ax_ratio.axhline(1.0, color='k', linestyle='--', alpha=0.5, label='Perfect match')
         ax_ratio.fill_between(k[1:], 0.8, 1.2, color='green', alpha=0.1, label='±20%')
         ax_ratio.set_xlabel('Wavenumber k')
-        ax_ratio.set_ylabel('Predicted / Target')
+        ax_ratio.set_ylabel('Teacher-forced / Target')
         ax_ratio.set_title('Spectral Amplitude Ratio', fontsize=11, fontweight='bold')
         ax_ratio.grid(True, which='both', alpha=0.3)
         ax_ratio.legend()
@@ -1256,11 +1254,11 @@ class SGSSpectralDiagnostic(Diagnostic):
         error_sgs = sgs_pred_np - sgs_target_np
         _, spec_error_avg, spec_error_std = compute_time_avg_spectrum(error_sgs)
         
-        ax_error_spec.loglog(k[1:], spec_target_avg[1:], 'k-', linewidth=2, alpha=0.5, label='Target')
-        ax_error_spec.loglog(k[1:], spec_error_avg[1:], 'r-', linewidth=2, label='Error')
+        ax_error_spec.loglog(k, spec_target_avg, 'k-', linewidth=2, alpha=0.5, label='Target')
+        ax_error_spec.loglog(k, spec_error_avg, 'r-', linewidth=2, label='Error')
         ax_error_spec.set_xlabel('Wavenumber k')
         ax_error_spec.set_ylabel('Power')
-        ax_error_spec.set_title('Error Spectrum\n(Target - Predicted)', fontsize=11, fontweight='bold')
+        ax_error_spec.set_title('Error Spectrum\n(Teacher-forced - Target)', fontsize=11, fontweight='bold')
         ax_error_spec.grid(True, which='both', alpha=0.3)
         ax_error_spec.legend()
 
@@ -1293,7 +1291,7 @@ class SGSSpectralDiagnostic(Diagnostic):
         ax_correlation.axhline(1, color='k', linestyle='--', alpha=0.3)
         ax_correlation.set_xlabel('Time Step')
         ax_correlation.set_ylabel('Spatial Correlation')
-        ax_correlation.set_title('SGS Correlation\n(Target vs Rollout)', fontsize=11, fontweight='bold')
+        ax_correlation.set_title('SGS Correlation\n(Target vs Teacher-forced)', fontsize=11, fontweight='bold')
         ax_correlation.grid(True, alpha=0.3)
         ax_correlation.set_ylim([-1, 1])
 
@@ -1304,7 +1302,10 @@ class SGSSpectralDiagnostic(Diagnostic):
         rms_error = np.sqrt(np.mean(error_sgs**2, axis=(1, 2, 3)))
         
         ax_transfer.plot(np.arange(nt), rms_target, 'k-', linewidth=2, label='Target RMS')
-        ax_transfer.plot(np.arange(nt), rms_pred, 'C1--', linewidth=2, label='Rollout RMS')
+        ax_transfer.plot(np.arange(nt), rms_pred, 'C2:', linewidth=2, label='Teacher-forced RMS')
+        if sgs_rollout_np is not None:
+            rms_rollout = np.sqrt(np.mean(sgs_rollout_np**2, axis=(1, 2, 3)))
+            ax_transfer.plot(np.arange(nt), rms_rollout, 'C1--', linewidth=2, label='Rollout RMS')
         ax_transfer.plot(np.arange(nt), rms_error, 'r:', linewidth=2, label='Error RMS')
         ax_transfer.set_xlabel('Time Step')
         ax_transfer.set_ylabel('RMS SGS Forcing')
@@ -1586,6 +1587,152 @@ class ParetoValidationDiagnostic(Diagnostic):
         )
         plt.close(fig)
 
+
+class SGSDiagnostic(Diagnostic):
+    """Animate closure-head increments against interval-mean inferred SGS targets."""
+    name = "sgs"
+    output = "gif"
+
+    def run(self, trajs, out_path, cadence):
+        prediction = np.asarray(trajs.get("teacher_forced_sgs"), dtype=float)
+        target = np.asarray(trajs.get("target_sgs"), dtype=float)
+        rollout = trajs.get("sgs")
+        rollout = np.asarray(rollout, dtype=float) if rollout is not None else prediction
+        if prediction.shape != target.shape:
+            raise ValueError(
+                "teacher_forced_sgs and target_sgs must have matching shapes; "
+                f"got {prediction.shape} and {target.shape}"
+            )
+        if rollout.shape != target.shape:
+            raise ValueError(
+                "sgs and target_sgs must have matching shapes; "
+                f"got {rollout.shape} and {target.shape}"
+            )
+        if prediction.ndim != 4:
+            raise ValueError(
+                "SGS contributions must have shape (time, heads, y, x); "
+                f"got {prediction.shape}"
+            )
+        if prediction.shape[0] == 0:
+            raise ValueError("No SGS contribution frames are available")
+
+        n_heads = prediction.shape[1]
+        frame_indices = np.arange(0, prediction.shape[0], max(1, int(cadence)))
+        if frame_indices[-1] != prediction.shape[0] - 1:
+            frame_indices = np.append(frame_indices, prediction.shape[0] - 1)
+        fig, axes = plt.subplots(
+            n_heads,
+            4,
+            figsize=(16, max(4, 3.8 * n_heads)),
+            squeeze=False,
+        )
+        head_statistics = []
+        all_fields = np.concatenate((target.ravel(), prediction.ravel(), rollout.ravel()))
+        field_scale = max(float(np.nanpercentile(np.abs(all_fields), 99)), 1e-12)
+        all_differences = prediction - target
+        difference_scale = max(
+            float(np.nanpercentile(np.abs(all_differences), 99)), 1e-12
+        )
+        images = []
+
+        for head in range(n_heads):
+            predicted_head = prediction[:, head]
+            target_head = target[:, head]
+            valid = np.isfinite(predicted_head) & np.isfinite(target_head)
+            predicted_values = predicted_head[valid]
+            target_values = target_head[valid]
+            correlation = (
+                float(np.corrcoef(predicted_values, target_values)[0, 1])
+                if predicted_values.size > 1
+                and np.std(predicted_values) > 0
+                and np.std(target_values) > 0
+                else float("nan")
+            )
+            rmse = (
+                float(np.sqrt(np.mean((predicted_values - target_values) ** 2)))
+                if predicted_values.size
+                else float("nan")
+            )
+            head_statistics.append((predicted_values, target_values, correlation, rmse))
+
+            target_image = axes[head, 0].imshow(
+                target[0, head], origin="lower", cmap="RdBu_r",
+                vmin=-field_scale, vmax=field_scale,
+            )
+            axes[head, 0].set_title(f"Head {head}: interval-mean SGS target")
+            fig.colorbar(target_image, ax=axes[head, 0], fraction=0.046)
+            images.append(target_image)
+
+            prediction_image = axes[head, 1].imshow(
+                prediction[0, head], origin="lower", cmap="RdBu_r",
+                vmin=-field_scale, vmax=field_scale,
+            )
+            axes[head, 1].set_title(f"Head {head}: closure head addition")
+            fig.colorbar(prediction_image, ax=axes[head, 1], fraction=0.046)
+            images.append(prediction_image)
+
+            rollout_image = axes[head, 2].imshow(
+                rollout[0, head], origin="lower", cmap="RdBu_r",
+                vmin=-field_scale, vmax=field_scale,
+            )
+            axes[head, 2].set_title(f"Head {head}: rollout-applied addition")
+            fig.colorbar(rollout_image, ax=axes[head, 2], fraction=0.046)
+            images.append(rollout_image)
+
+            error_image = axes[head, 3].imshow(
+                all_differences[0, head], origin="lower", cmap="RdBu_r",
+                vmin=-difference_scale, vmax=difference_scale,
+            )
+            axes[head, 3].set_title(
+                f"Head {head}: error (r={correlation:.3f}, RMSE={rmse:.2e})"
+            )
+            fig.colorbar(error_image, ax=axes[head, 3], fraction=0.046)
+            images.append(error_image)
+
+        all_prediction = np.concatenate(
+            [item[0] for item in head_statistics if item[0].size]
+        ) if any(item[0].size for item in head_statistics) else np.array([])
+        all_target = np.concatenate(
+            [item[1] for item in head_statistics if item[1].size]
+        ) if any(item[1].size for item in head_statistics) else np.array([])
+        if all_prediction.size:
+            overall_corr = (
+                float(np.corrcoef(all_prediction, all_target)[0, 1])
+                if all_prediction.size > 1
+                and np.std(all_prediction) > 0
+                and np.std(all_target) > 0
+                else float("nan")
+            )
+        else:
+            overall_corr = float("nan")
+        print(f"Teacher-forced SGS correlation across heads: {overall_corr:.6f}")
+        for head, (_, _, correlation, rmse) in enumerate(head_statistics):
+            print(f"  Head {head}: Pearson r={correlation:.6f}")
+            print(f"  Head {head}: RMSE={rmse:.6e}")
+
+        for ax in axes.flat:
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+        title = fig.suptitle("")
+
+        def update(frame_index):
+            frame = frame_indices[frame_index]
+            for head in range(n_heads):
+                images[head * 4].set_data(target[frame, head])
+                images[head * 4 + 1].set_data(prediction[frame, head])
+                images[head * 4 + 2].set_data(rollout[frame, head])
+                images[head * 4 + 3].set_data(all_differences[frame, head])
+            title.set_text(f"Closure SGS additions vs interval target (frame {frame})")
+            return (*images, title)
+
+        fig.tight_layout()
+        animation = FuncAnimation(
+            fig, update, frames=len(frame_indices), interval=180, blit=False
+        )
+        animation.save(out_path, writer=PillowWriter(fps=5))
+        plt.close(fig)
+
 _REGISTRY = {
     "loss": LossDiagnostic,
     "ke_spectrum": KESpectrumDiagnostic,
@@ -1599,6 +1746,7 @@ _REGISTRY = {
     'cfl': CFLDiagnostic,
     "domain": DomainDiagnostic,
     "sgs_spectrum": SGSSpectralDiagnostic,
+    "sgs": SGSDiagnostic,
     "multi_model_comparison": MultiModelComparisonDiagnostic,
     "multi_model_loss": MultiModelLossDiagnostic,
     "pareto_validation": ParetoValidationDiagnostic,
