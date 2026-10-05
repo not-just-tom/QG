@@ -1495,19 +1495,9 @@ class ParetoValidationDiagnostic(Diagnostic):
             mean_val_loss = np.mean(test_loss)
 
             residuals = np.asarray(result["residuals"])
-
-            # shape:
-            # (n_traj, nt, nz, ny, nx)
-
-            mse_t = np.mean(
-                residuals ** 2,
-                axis=(-3, -2, -1)
-            )
-
-            mse_t = np.mean(
-                mse_t,
-                axis=0
-            )
+            if residuals.ndim < 2:
+                continue
+            mse_t = np.mean(residuals ** 2, axis=tuple(range(1, residuals.ndim)))
 
             baseline = max(mse_t[0], 1e-12)
             threshold = threshold_factor * baseline
@@ -1521,7 +1511,7 @@ class ParetoValidationDiagnostic(Diagnostic):
 
             xs.append(mean_val_loss)
             ys.append(survival_steps)
-            labels.append(model_name[-2:])
+            labels.append(model_name)
 
         xs = np.asarray(xs)
         ys = np.asarray(ys)
@@ -1585,6 +1575,190 @@ class ParetoValidationDiagnostic(Diagnostic):
             dpi=150,
             bbox_inches="tight",
         )
+        plt.close(fig)
+
+
+class MultiModelValidationDiagnostic(Diagnostic):
+    """Compare rollout error over time for all configured models."""
+    name = "multi_model_validation"
+    output = "png"
+
+    def run(self, trajs, out_path, cadence):
+        truth = np.asarray(trajs.get("truth"))
+        model_names = trajs.get("model_names", [])
+        if truth.size == 0 or not model_names:
+            print("No model validation results available")
+            return
+
+        fig, ax = plt.subplots(figsize=(9, 5))
+        plotted = False
+        for model_name in model_names:
+            prediction = trajs.get(f"pred_{model_name}")
+            if prediction is None:
+                continue
+            prediction = np.asarray(prediction)
+            n_common = min(truth.shape[0], prediction.shape[0])
+            if n_common == 0:
+                continue
+            residual = prediction[:n_common] - truth[:n_common]
+            rmse = np.sqrt(np.mean(residual ** 2, axis=tuple(range(1, residual.ndim))))
+            ax.plot(np.arange(n_common), rmse, label=model_name)
+            plotted = True
+
+        if not plotted:
+            plt.close(fig)
+            print("No comparable model predictions available")
+            return
+        ax.set_xlabel("Validation step")
+        ax.set_ylabel("PV RMSE")
+        ax.set_title("Validation Rollout Error by Model")
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+
+
+class MultiModelPVRolloutDiagnostic(Diagnostic):
+    """Animate truth and all model PV rollouts on synchronized frames."""
+    name = "multi_model_pv_rollout"
+    output = "gif"
+
+    def run(self, trajs, out_path, cadence):
+        truth = _prepare_array(_sanitize_numeric_array(trajs.get("truth")))
+        model_names = trajs.get("model_names", [])
+        predictions = {}
+        if truth is not None:
+            for model_name in model_names:
+                prediction = _prepare_array(
+                    _sanitize_numeric_array(trajs.get(f"pred_{model_name}"))
+                )
+                if prediction is not None:
+                    predictions[model_name] = prediction
+
+        if truth is None or not predictions:
+            print("No comparable model PV rollouts available")
+            return
+
+        arrays = [truth, *predictions.values()]
+        if any(array.ndim != 4 for array in arrays):
+            raise ValueError("PV rollouts must have shape (time, layer, y, x)")
+        n_steps = min(array.shape[0] for array in arrays)
+        n_layers = min(array.shape[1] for array in arrays)
+        if n_steps == 0 or n_layers == 0:
+            print("No PV rollout frames available")
+            return
+
+        truth = truth[:n_steps, :n_layers]
+        predictions = {
+            name: prediction[:n_steps, :n_layers]
+            for name, prediction in predictions.items()
+        }
+        scale = float(np.nanpercentile(np.abs(truth), 99.5))
+        if not np.isfinite(scale) or scale == 0:
+            scale = 1.0
+
+        panels = []
+        for layer in range(n_layers):
+            panels.append((f"Truth, layer {layer}", truth[:, layer]))
+            panels.extend(
+                (f"{name}, layer {layer}", prediction[:, layer])
+                for name, prediction in predictions.items()
+            )
+
+        ncols = min(4, len(panels))
+        nrows = int(np.ceil(len(panels) / ncols))
+        fig, axes = plt.subplots(
+            nrows,
+            ncols,
+            figsize=(4 * ncols, 3.5 * nrows),
+            squeeze=False,
+        )
+        axes_flat = axes.flat
+        images = []
+        used_axes = []
+        for ax, (label, trajectory) in zip(axes_flat, panels):
+            image = ax.imshow(
+                trajectory[0],
+                origin="lower",
+                cmap="RdBu_r",
+                vmin=-scale,
+                vmax=scale,
+                animated=True,
+            )
+            ax.set_title(label)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            images.append(image)
+            used_axes.append(ax)
+
+        for ax in list(axes_flat)[len(panels):]:
+            ax.set_visible(False)
+        fig.colorbar(images[0], ax=used_axes, shrink=0.8, label="PV")
+
+        frame_indices = np.arange(0, n_steps, max(1, int(cadence)))
+        if frame_indices[-1] != n_steps - 1:
+            frame_indices = np.append(frame_indices, n_steps - 1)
+        title = fig.suptitle("")
+
+        def update(frame_index):
+            frame = frame_indices[frame_index]
+            for image, (_, trajectory) in zip(images, panels):
+                image.set_data(trajectory[frame])
+            title.set_text(f"PV rollout comparison, step {frame}")
+            return (*images, title)
+
+        fig.tight_layout()
+        animation = FuncAnimation(
+            fig,
+            update,
+            frames=len(frame_indices),
+            interval=180,
+            blit=False,
+        )
+        animation.save(out_path, writer=PillowWriter(fps=5))
+        plt.close(fig)
+
+
+class ModelPerformanceDiagnostic(Diagnostic):
+    """Summarize held-out test loss and rollout MSE for each model."""
+    name = "model_performance"
+    output = "png"
+
+    def run(self, trajs, out_path, cadence):
+        results = trajs.get("model_results", {})
+        rows = []
+        for model_name, result in results.items():
+            losses = np.asarray(result.get("loss_history", {}).get("test", []), dtype=float)
+            losses = losses[np.isfinite(losses)]
+            residuals = np.asarray(result.get("residuals", []), dtype=float)
+            if residuals.size == 0:
+                continue
+            mse = float(np.mean(residuals ** 2))
+            test_loss = float(np.mean(losses)) if losses.size else np.nan
+            rows.append((model_name, test_loss, mse))
+
+        if not rows:
+            print("No model performance metrics available")
+            return
+
+        names = [row[0] for row in rows]
+        positions = np.arange(len(names))
+        fig, axes = plt.subplots(1, 2, figsize=(max(10, 1.5 * len(names)), 5))
+        for ax, values, title, ylabel in (
+            (axes[0], [row[1] for row in rows], "Mean Test Loss", "Loss"),
+            (axes[1], [row[2] for row in rows], "Validation Rollout MSE", "MSE"),
+        ):
+            ax.bar(positions, values)
+            ax.set_xticks(positions, names, rotation=35, ha="right")
+            ax.set_title(title)
+            ax.set_ylabel(ylabel)
+            ax.grid(True, axis="y", alpha=0.3)
+            if np.all(np.asarray(values)[np.isfinite(values)] > 0):
+                ax.set_yscale("log")
+
+        fig.tight_layout()
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
 
 
@@ -1749,6 +1923,9 @@ _REGISTRY = {
     "sgs": SGSDiagnostic,
     "multi_model_comparison": MultiModelComparisonDiagnostic,
     "multi_model_loss": MultiModelLossDiagnostic,
+    "multi_model_validation": MultiModelValidationDiagnostic,
+    "multi_model_pv_rollout": MultiModelPVRolloutDiagnostic,
+    "model_performance": ModelPerformanceDiagnostic,
     "pareto_validation": ParetoValidationDiagnostic,
 }
 

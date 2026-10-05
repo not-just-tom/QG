@@ -619,9 +619,24 @@ def run(cfg):
     }
     trajectories["grid"] = lr_model.get_grid()
     trajectories["params"] = params
+
+    truth = np.asarray(trajectories["truth"])
+    prediction = np.asarray(trajectories["pred"])
+    n_common = min(truth.shape[0], prediction.shape[0])
+    residuals = prediction[:n_common] - truth[:n_common]
+    mse = float(np.mean(np.square(residuals)))
+    comparison_result = {
+        "mse": mse,
+        "loss_history": trajectories["loss_history"],
+        "residuals": residuals,
+        "truth": truth[:n_common],
+        "pred": prediction[:n_common],
+        "grid": trajectories["grid"],
+    }
     
     if os.environ.get('HPC_RUN', '0') == '1':
-        print("hello you have skipped the plotting")
+        print("HPC mode: skipped plotting")
+        return mse
     else:
         outbase = os.path.join(cfg.filepaths.out_dir)
         out_dir, found = find_output_dir(outbase, params, model_type, metadata=meta, id=str(id))
@@ -630,6 +645,8 @@ def run(cfg):
         else:
             os.makedirs(out_dir, exist_ok=True)
         Plotter(cfg, trajectories=trajectories, out_dir=out_dir, cadence=cadence).plot()
+
+    return comparison_result
 
 
 # ============================================================================================
@@ -666,10 +683,9 @@ def main():
     # Convert to plain python containers for sweep detection (OmegaConf keeps ListConfig/DictConfig types)
     cfg_plain = OmegaConf.to_container(base_cfg, resolve=True)
     model_types = cfg_plain.get('ml', {}).get('model_type')
-    if isinstance(model_types, list) and len(model_types)>1:
-        pass
-    else:
+    if not isinstance(model_types, list):
         model_types = [model_types]
+    comparison_results = {}
     for model_type in model_types:
         archs = cfg_plain.get('architectures', {})
         arch_cfg = archs.get(model_type, {}) if archs else {}
@@ -683,7 +699,9 @@ def main():
             if args.dry_run:
                 print('No sweep axes found; would run single job with provided config.')
                 return
-            run(model_run)
+            result = run(model_run)
+            if isinstance(result, dict) and os.environ.get('HPC_RUN', '0') != '1':
+                comparison_results[model_type] = result
         else:
             # Build lists for sweep axes
             lists = [arch_cfg[k] for k in sweep_keys]
@@ -720,11 +738,19 @@ def main():
 
                 # run() will return a scalar metric when in HPC mode; otherwise None
                 try:
-                    metric = run(cfg_run)
+                    run_result = run(cfg_run)
+                    metric = run_result.get('mse') if isinstance(run_result, dict) else run_result
                 except Exception:
                     # If a single sweep job fails, log and continue to next combo
                     logging.getLogger(__name__).exception("Sweep run failed for combo %s", dict(zip(sweep_keys, combo)))
                     metric = None
+                    run_result = None
+
+                if isinstance(run_result, dict) and os.environ.get('HPC_RUN', '0') != '1':
+                    label = model_type
+                    if len(lists) > 0:
+                        label = f"{model_type} {dict(zip(sweep_keys, combo))}"
+                    comparison_results[label] = run_result
 
                 if os.environ.get('HPC_RUN', '0') == '1':
                     results.append({
@@ -743,6 +769,43 @@ def main():
                 print('\nTop 5 runs by validation MSE:')
                 for i, r in enumerate(filtered[:5], 1):
                     print(f"{i}. mse={r['mse']:.6E} -> {r['combo']} -> outdir={r['out_dir']}")
+
+    if (
+        len(model_types) > 1
+        and len(comparison_results) > 1
+        and not args.dry_run
+        and not args.generate_only
+        and os.environ.get('HPC_RUN', '0') != '1'
+    ):
+        comparison_trajs = {
+            "model_names": list(comparison_results),
+            "model_results": comparison_results,
+        }
+        first_result = next(iter(comparison_results.values()))
+        comparison_trajs["truth"] = first_result["truth"]
+        comparison_trajs["grid"] = first_result["grid"]
+        for model_name, result in comparison_results.items():
+            comparison_trajs[f"pred_{model_name}"] = result["pred"]
+            comparison_trajs[f"loss_history_{model_name}"] = result["loss_history"]
+
+        comparison_cfg = OmegaConf.create(OmegaConf.to_container(base_cfg, resolve=True))
+        comparison_cfg.plotting.plot = [
+            "multi_model_comparison",
+            "multi_model_loss",
+            "multi_model_validation",
+            "multi_model_pv_rollout",
+            "model_performance",
+            "pareto_validation",
+        ]
+        comparison_out = os.path.join(
+            comparison_cfg.filepaths.out_dir,
+            "model_comparison",
+        )
+        Plotter(
+            comparison_cfg,
+            trajectories=comparison_trajs,
+            out_dir=comparison_out,
+        ).plot()
 
 
 
