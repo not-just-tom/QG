@@ -31,18 +31,18 @@ plotting:
   dt: 2000
   spinup: 20 # in eddy turnover times
   cadence: 10
-  validation_rollout: 10000
-  plot: ['model_performance', 'multi_model_validation', 'loss', 'ke_spectrum', 'pv_spectrum', 'quad', 'zero', 'domain']
+  validation_rollout: 250
+  plot: []
   auto_dt: false
   cfl: 0.5
 
 ml:
   enabled: true # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
-  model_type: ['resnet', 'cnn', 'mlp', 'leith', 'fno', 'zero'] # can be a list
+  model_type: ['resnet','leith', 'cnn', 'fno', 'zero'] # can be a list
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
-  n_train: 4
-  n_test: 1
+  n_train: 7
+  n_test: 3
   start_curriculum: 1     # initial window length in steps
   end_curriculum: 1       # final window length in steps
   steps_per_curriculum: 40 # number of steps in a curriculum before the next round
@@ -123,7 +123,7 @@ architectures:
     closure_scale: 0.2 #[0.05, 0.1, 0.2, 0.4] 
   leith:
     leith_coeff: 5
-    loss: spectral
+    loss: mae
   biharmonic:
     smag_coeff: 5
     loss: mae

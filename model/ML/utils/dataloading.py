@@ -356,18 +356,26 @@ class ZarrDataLoader:
         self.z_root = zarr.open_group(self.zarr_path, mode="r")
         self.traj_group = self.z_root["trajectories"]
         self.metadata = dict(self.z_root.attrs)
+
+        self.validation_trajectory = None
+        self.validation_init_key = None
+        if "validation_trajectory" in self.z_root:
+            self.validation_trajectory, self.validation_init_key = self.load_validation()
         
         # Get list of trajectory names
         self.traj_names = sorted([k for k in self.traj_group.keys()])
         self.n_trajectories = len(self.traj_names)
         
-        if self.n_trajectories == 0:
+        if self.n_trajectories == 0 and self.validation_trajectory is None:
             raise ValueError(f"No trajectories found in {self.zarr_path}")
         
-        # Get shape info from first trajectory
-        first_traj = self.traj_group[self.traj_names[0]]
-        self.traj_shape = first_traj.shape  # (time_steps, layers, ny, nx)
-        self.dtype = first_traj.dtype
+        if self.n_trajectories:
+            first_traj = self.traj_group[self.traj_names[0]]
+            self.traj_shape = first_traj.shape  # (time_steps, layers, ny, nx)
+            self.dtype = first_traj.dtype
+        else:
+            self.traj_shape = self.validation_trajectory.shape
+            self.dtype = self.validation_trajectory.dtype
         
     def __len__(self) -> int:
         """Return number of trajectories."""
@@ -392,6 +400,20 @@ class ZarrDataLoader:
         traj_name = self.traj_names[idx]
         key = jnp.asarray(self.traj_group[traj_name].attrs['init_key'], dtype=jnp.uint32)
         return self.traj_group[traj_name][:], key
+
+    def load_validation(self):
+        """Load the separate validation trajectory and its initialization key."""
+        if "validation_trajectory" not in self.z_root:
+            raise FileNotFoundError(
+                f"No validation trajectory found in {self.zarr_path}"
+            )
+        validation = self.z_root["validation_trajectory"]
+        if "init_key" not in validation.attrs:
+            raise ValueError(
+                f"Validation trajectory in {self.zarr_path} has no initialization key"
+            )
+        key = jnp.asarray(validation.attrs["init_key"], dtype=jnp.uint32)
+        return validation[:], key
     
     def get_trajectory_window(
         self, 

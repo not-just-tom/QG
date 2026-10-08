@@ -232,7 +232,9 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
     def _validation_epoch(truth_traj, cfg, closure):
 
         truth_traj = jnp.asarray(truth_traj)
-        nsteps_cfg = int(getattr(cfg.plotting, "nsteps", truth_traj.shape[0] - 1))
+        nsteps_cfg = int(
+            getattr(cfg.plotting, "validation_rollout", truth_traj.shape[0] - 1)
+        )
         n_intervals = min(nsteps_cfg, int(truth_traj.shape[0]) - 1)
 
         forced_model, closure_params, closure_static, closure_adapter = load_forced_model(
@@ -418,5 +420,4 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
         return result
 
     return _validation_epoch
-
 

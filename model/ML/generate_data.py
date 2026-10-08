@@ -17,7 +17,7 @@ def generate_train_data(cfg, params, tau_eddy, timing_metadata, hr_model, lr_mod
     Saves metadata and trajectories into `hr_dir`.
     '''
     # Timing parameters
-    n_total = cfg.ml.n_train + cfg.ml.n_test + 1 # one for validation
+    n_total = cfg.ml.n_train + cfg.ml.n_test
     batch_size = 21 # hardcoded bc it was confusing me. It's just the number of trajs generated in batches
     # Prepare low-resolution template and ratio for coarsening
     dummy_key = jax.random.PRNGKey(0)
@@ -165,6 +165,144 @@ def generate_train_data(cfg, params, tau_eddy, timing_metadata, hr_model, lr_mod
 
     logger.info("Finished generating all trajectories")
     logger.info(f"Saved to {zarr_path}")
-    
 
-    
+
+def _generate_validation_trajectory(cfg, params, tau_eddy, hr_model, lr_model, init_key):
+    """Generate one deterministic validation trajectory."""
+    validation_rollout = int(cfg.plotting.validation_rollout)
+    if validation_rollout <= 0:
+        raise ValueError("plotting.validation_rollout must be positive")
+
+    dummy_key = jax.random.PRNGKey(0)
+    lr_template = lr_model.initialise(
+        dummy_key,
+        n_jets=params.get("n_jets"),
+        pseudo=(params.get("n_jets") is not None),
+    )
+    ratio = int(float(hr_model.model.nx) / float(lr_model.nx))
+    if ratio <= 0 or ratio * lr_model.nx != hr_model.model.nx:
+        raise ValueError("High- and low-resolution model sizes must have an integer ratio")
+
+    @functools.partial(jax.jit, static_argnames=["validation_rollout"])
+    def generate_trajectory(init_state, validation_rollout):
+        """Generate coarsened trajectory with one coarsen per coarse sample."""
+        def _coarsen_state(step_state):
+            state = step_state.state
+            # Galerkin truncation to low-res spectral coefficients
+            nk = lr_template.qh.shape[-2] // 2
+            trunc = jnp.concatenate(
+                [
+                    state.qh[:, :nk, :nk + 1],
+                    state.qh[:, -nk:, :nk + 1],
+                ],
+                axis=-2,
+            )
+            filtered = trunc * lr_model._dealias / ratio
+            lr_state = lr_template.update(qh=filtered)
+            return lr_state.q
+
+        def step(carry, _x):
+            # Advance ratio high-res steps, then emit one low-res sample.
+            def _hr_step(inner_carry, _):
+                return hr_model.step_model(inner_carry), None
+
+            next_state, _ = jax.lax.scan(_hr_step, carry, None, length=ratio)
+            return next_state, _coarsen_state(next_state)
+
+        _, traj_q = jax.lax.scan(step, init_state, None, length=validation_rollout)
+        return traj_q
+
+    n_jets = params.get("n_jets")
+    init_kwargs = {"n_jets": int(n_jets), "pseudo": True} if n_jets is not None else {}
+    init_states = jax.vmap(
+        functools.partial(hr_model.model.initialise, **init_kwargs)
+    )(jax.random.split(init_key, 1))
+    spinup_time = cfg.plotting.spinup * tau_eddy
+    spinup_steps = int(spinup_time // hr_model.stepper.dt)
+    spun_up_states = hr_model.spinup(init_states, spinup_steps)
+    init_state = jax.tree_util.tree_map(lambda value: value[0], spun_up_states)
+    logger.info("Spun up validation initial state for %d high-res steps", spinup_steps)
+    trajectory = jax.device_get(generate_trajectory(init_state, validation_rollout))
+    if not np.all(np.isfinite(trajectory)):
+        raise ValueError("Generated validation trajectory contains non-finite values")
+    return np.asarray(trajectory, dtype=np.float32)
+
+
+def _validation_init_key(params):
+    """Use a stable key independent of the training trajectory keys."""
+    seed = int(params.get("seed", 0))
+    return jax.random.fold_in(jax.random.PRNGKey(seed), 0x5A17)
+
+
+def generate_validation(cfg, params, tau_eddy, hr_model, lr_model, hr_dir):
+    """Create the dataset's separate, fixed validation trajectory."""
+    zarr_path = os.path.join(hr_dir, "trajectories.zarr")
+    z_root = zarr.open_group(zarr_path, mode="a")
+    if "validation_trajectory" in z_root:
+        raise ValueError(
+            "Validation trajectory already exists; use extend_validation to lengthen it"
+        )
+
+    init_key = _validation_init_key(params)
+    trajectory = _generate_validation_trajectory(
+        cfg, params, tau_eddy, hr_model, lr_model, init_key
+    )
+    compressor = BloscCodec(cname="zstd", clevel=3, shuffle="bitshuffle")
+    z_root.create_array(
+        "validation_trajectory",
+        data=trajectory,
+        chunks=(min(128, trajectory.shape[0]), *trajectory.shape[1:]),
+        compressors=[compressor],
+        attributes={"init_key": np.asarray(init_key).tolist()},
+    )
+    logger.info(
+        "Saved validation trajectory with %d steps to %s",
+        trajectory.shape[0],
+        zarr_path,
+    )
+
+
+def extend_validation(cfg, params, tau_eddy, hr_model, lr_model, hr_dir):
+    """Extend the fixed validation trajectory without changing its existing prefix."""
+    zarr_path = os.path.join(hr_dir, "trajectories.zarr")
+    z_root = zarr.open_group(zarr_path, mode="a")
+    if "validation_trajectory" not in z_root:
+        return generate_validation(cfg, params, tau_eddy, hr_model, lr_model, hr_dir)
+
+    validation_array = z_root["validation_trajectory"]
+    target_steps = int(cfg.plotting.validation_rollout)
+    current_steps = validation_array.shape[0]
+    if target_steps <= current_steps:
+        return
+    if target_steps <= 0:
+        raise ValueError("plotting.validation_rollout must be positive")
+
+    attrs = dict(validation_array.attrs)
+    if "init_key" not in attrs:
+        raise ValueError(
+            "Cannot extend validation trajectory because its initialization key is missing"
+        )
+    init_key = jnp.asarray(attrs["init_key"], dtype=jnp.uint32)
+    full_trajectory = _generate_validation_trajectory(
+        cfg, params, tau_eddy, hr_model, lr_model, init_key
+    )
+    if full_trajectory.shape[0] != target_steps:
+        raise RuntimeError(
+            f"Generated {full_trajectory.shape[0]} validation steps; expected {target_steps}"
+        )
+    existing_prefix = np.asarray(validation_array[:])
+    if not np.allclose(
+        full_trajectory[:current_steps], existing_prefix, rtol=1e-6, atol=1e-7
+    ):
+        raise RuntimeError(
+            "Regenerated validation trajectory does not match its saved prefix; "
+            "refusing to change the held-out data"
+        )
+
+    validation_array.resize((target_steps, *validation_array.shape[1:]))
+    validation_array[current_steps:] = full_trajectory[current_steps:]
+    logger.info(
+        "Extended validation trajectory from %d to %d steps",
+        current_steps,
+        target_steps,
+    )

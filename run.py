@@ -44,7 +44,7 @@ from model.ML.train import make_train_epoch, make_test_epoch, make_validation_ep
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import coarsen
 from model.ML.utils.loss import build_loss
-from model.ML.generate_data import generate_train_data
+from model.ML.generate_data import generate_train_data, generate_validation, extend_validation
 from model.ML.utils.dataloading import find_existing_closure, find_existing_data, ZarrDataLoader, checkpointer, prefetch_generator
 from model.utils.logging import configure_logging
 from model.utils.plotting import find_output_dir, gif_that, Plotter
@@ -53,6 +53,7 @@ from model.core.model import QGM
 import logging
 import functools
 import jax
+import jax.numpy as jnp
 import os
 import json
 import time
@@ -176,16 +177,47 @@ def run(cfg):
 
     run_dir, found = find_existing_data(DATA_DIR, params, timing_metadata)
     if found == True: 
-        logger.info(f"Found existing data with matching parameters at {run_dir}, loading trajectories from there.")
         data_loader = ZarrDataLoader(run_dir)
-        if cfg.ml.enabled == False:
-            truth_traj, init_key = data_loader.get_trajectory(0) # shape (time, layers, ny, nx)
-    elif found == False:
+        available_trajectories = min(n_epochs, len(data_loader))
+        if available_trajectories:
+            traj, _ = data_loader.get_trajectory(available_trajectories - 1)
+            extra_steps = nsteps - traj.shape[0]
+        else:
+            extra_steps = 0
+        if extra_steps > 0:
+            logger.info(f"Found existing data with matching parameters at {run_dir}, but it has insufficient length. Loading trajectories and generating additional steps to reach desired length.")
+            for i in range(available_trajectories): # extend each available train/test trajectory
+                traj, _ = data_loader.get_trajectory(i)
+                extra_steps = nsteps - traj.shape[0]
+                if extra_steps > 0:
+                    @functools.partial(jax.jit, static_argnames=["nsteps"])
+                    def extend_trajectory(init_state, nsteps):
+                        def step(carry, _):
+                            next_state = hr_model.step_model(carry)
+                            return next_state, next_state.qh
+                        _, traj_q = jax.lax.scan(step, init_state, None, length=nsteps)
+                        return traj_q
+
+                    last_state = jax.device_put(traj[-1])
+                    extra_traj_q = extend_trajectory(last_state, extra_steps)
+                    extra_traj_q = jax.device_get(extra_traj_q)
+                    full_traj_q = np.concatenate([traj, extra_traj_q], axis=0)
+                    data_loader.save_trajectory(i, full_traj_q)
+                    data_loader = ZarrDataLoader(run_dir) # dunno if it updates automatically so put this line here lol
+        else:
+            logger.info(f"Found existing data with matching parameters at {run_dir}, loading trajectories from there.")
+        if data_loader.validation_trajectory is None:
+            generate_validation(cfg, params, tau_eddy, hr_model, lr_model, run_dir)
+        elif data_loader.validation_trajectory.shape[0] < validation_rollout:
+            extend_validation(cfg, params, tau_eddy, hr_model, lr_model, run_dir)
+        data_loader = ZarrDataLoader(run_dir)
+    else:
         logger.info(f"No existing data found, generating new dataset at {run_dir}")
         os.makedirs(run_dir, exist_ok=False)
         if cfg.ml.enabled == True:
             try:
                 generate_train_data(cfg, params, tau_eddy, timing_metadata, hr_model, lr_model, run_dir)
+                generate_validation(cfg, params, tau_eddy, hr_model, lr_model, run_dir)
             except Exception:
                 logger.exception("Failed to generate training data; cleaning up and exiting.")
                 if os.path.exists(run_dir):
@@ -194,37 +226,16 @@ def run(cfg):
             data_loader = ZarrDataLoader(run_dir)
         else:
             cfg['ml']['n_train'] = 0 
-            cfg['ml']['n_test'] = 0 # leaves the one validation traj
+            cfg['ml']['n_test'] = 0
             try: 
                 generate_train_data(cfg, params, tau_eddy, timing_metadata, hr_model, lr_model, run_dir) # just validations for plots
+                generate_validation(cfg, params, tau_eddy, hr_model, lr_model, run_dir)
             except Exception:
                 logger.exception("Failed to generate trajectory; cleaning up and exiting.")
                 if os.path.exists(run_dir):
                     import shutil
                     shutil.rmtree(run_dir)
             data_loader = ZarrDataLoader(run_dir)
-    else: # the case where nsteps too short so we load s and restart from end state to the desired number of steps
-        raise NotImplementedError("The case where existing data is found but has insufficient length is kinda broken. Please generate a new dataset with sufficient length.")
-        logger.info(f"Found existing data with matching parameters at {run_dir}, but it has insufficient length. Loading trajectories and generating additional steps to reach desired length.")
-        data_loader = ZarrDataLoader(run_dir)
-        for i in range(len(data_loader)):
-            traj, _ = data_loader.get_trajectory(i)
-            last_state = jax.device_put(traj[-1])
-            extra_steps = nsteps - traj.shape[0]
-            if extra_steps > 0:
-                @functools.partial(jax.jit, static_argnames=["nsteps"])
-                def extend_trajectory(init_state, nsteps):
-                    def step(carry, _):
-                        next_state = hr_model.step_model(carry)
-                        return next_state, next_state.qh
-
-                    _, traj_q = jax.lax.scan(step, init_state, None, length=nsteps)
-                    return traj_q
-
-                extra_traj_q = extend_trajectory(last_state, extra_steps)
-                extra_traj_q = jax.device_get(extra_traj_q)
-                full_traj_q = np.concatenate([traj, extra_traj_q], axis=0)
-                data_loader.save_trajectory(i, full_traj_q)
 
     trajectories = {}
     trajectories['grid'] = lr_model.get_grid()
@@ -232,6 +243,8 @@ def run(cfg):
     
     if cfg.ml.enabled == False:
         # just plot
+        truth_traj = data_loader.validation_trajectory[:validation_rollout]
+        init_key = data_loader.validation_init_key
         outbase = os.path.join(cfg.filepaths.out_dir)
         out_dir, found = find_output_dir(outbase, params, model_type, timing_metadata=timing_metadata,  training_metadata=training_metadata)
         if found:
@@ -273,7 +286,6 @@ def run(cfg):
         except Exception:
             logger.exception("Failed to load checkpoint; will build a new closure")
             loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = None, None, None, None
-
         if ckpt_meta is not None:
             saved_epoch = int(ckpt_meta.get('epoch', 0))
             saved_n_epochs = int(ckpt_meta.get('n_epochs', n_epochs))
@@ -322,13 +334,15 @@ def run(cfg):
     test_epoch = make_test_epoch(lr_model, low_res_dt, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
 
     # Prepare trajectory indices
-    all_traj_indices = list(range(len(data_loader)))
+    all_traj_indices = list(range(min(n_epochs, len(data_loader))))
     if len(all_traj_indices) < n_epochs:
         logger.info(f"Not enough trajectories in dataset for requested train/test split. Generating more")
         fake_cfg = cfg.copy()
         fake_cfg.ml.n_train = max(0, n_epochs - len(all_traj_indices))
-        fake_cfg.ml.n_test = -1 # negative to remove the validation epoch added in generate_train_data:)
+        fake_cfg.ml.n_test = 0
         generate_train_data(fake_cfg, params, tau_eddy, timing_metadata, hr_model, lr_model, run_dir)
+        data_loader = ZarrDataLoader(run_dir)
+        all_traj_indices = list(range(len(data_loader)))
 
     if os.environ.get('GENERATE_ONLY') == '1':
         logger.info("Generate-only flag set; exiting now.")
@@ -588,12 +602,17 @@ def run(cfg):
     # ================================================================================================
     # === validation & diagnostics ===================================================================
     # ================================================================================================
-    truth_traj, init_key = data_loader.get_trajectory(n_epochs-1)  # shape (time, layers, ny, nx)
+    truth_traj = data_loader.validation_trajectory[:validation_rollout]
+    init_key = data_loader.validation_init_key
     logger.info(
         "Requested validation rollout is %d steps (~%.2f days).",
         validation_rollout,
-        validation_rollout * low_res_dt / (24.0 * 3600.0),
+        validation_rollout * low_res_dt * hr_physics_model.time_scale / (24.0 * 3600.0),
     )
+    if validation_rollout>end_curriculum:
+        logger.warning(
+        "The validation rollout (%d steps) extends past the limits of the model's training horizon (%d steps).",
+        validation_rollout, end_curriculum*steps_per_curriculum)
 
     try:
         loaded_leaves, loaded_optim, ckpt_meta, loaded_loss_history = checkpointer(None, None, model_dir, save=False)
@@ -624,9 +643,28 @@ def run(cfg):
     prediction = np.asarray(trajectories["pred"])
     n_common = min(truth.shape[0], prediction.shape[0])
     residuals = prediction[:n_common] - truth[:n_common]
-    mse = float(np.mean(np.square(residuals)))
+    rollout_residuals = jnp.asarray(prediction[1:n_common] - truth[1:n_common])
+    if rollout_residuals.shape[0] == 0:
+        raise ValueError("Validation rollout must contain at least one predicted step")
+    validation_loss_rollout = jax.device_get(
+        jax.vmap(
+            lambda residual: jnp.mean(
+                loss_fn(residual[None, None, ...], lr_model)
+            )
+        )(rollout_residuals)
+    )
+    validation_loss = float(
+        jax.device_get(
+            jnp.mean(loss_fn(rollout_residuals[None, ...], lr_model))
+        )
+    )
+    loss_name = cfg["architectures"][model_type]["loss"]
+    trajectories["loss_rollout"] = validation_loss_rollout
+    trajectories["loss_name"] = loss_name
     comparison_result = {
-        "mse": mse,
+        "validation_loss": validation_loss,
+        "validation_loss_rollout": validation_loss_rollout,
+        "loss_name": loss_name,
         "loss_history": trajectories["loss_history"],
         "residuals": residuals,
         "truth": truth[:n_common],
@@ -636,7 +674,7 @@ def run(cfg):
     
     if os.environ.get('HPC_RUN', '0') == '1':
         print("HPC mode: skipped plotting")
-        return mse
+        return validation_loss
     else:
         outbase = os.path.join(cfg.filepaths.out_dir)
         out_dir, found = find_output_dir(outbase, params, model_type, metadata=meta, id=str(id))
@@ -739,7 +777,7 @@ def main():
                 # run() will return a scalar metric when in HPC mode; otherwise None
                 try:
                     run_result = run(cfg_run)
-                    metric = run_result.get('mse') if isinstance(run_result, dict) else run_result
+                    metric = run_result.get('validation_loss') if isinstance(run_result, dict) else run_result
                 except Exception:
                     # If a single sweep job fails, log and continue to next combo
                     logging.getLogger(__name__).exception("Sweep run failed for combo %s", dict(zip(sweep_keys, combo)))
@@ -782,19 +820,25 @@ def main():
             "model_results": comparison_results,
         }
         first_result = next(iter(comparison_results.values()))
-        comparison_trajs["truth"] = first_result["truth"]
+        comparison_steps = int(base_cfg.plotting.validation_rollout)
+        comparison_trajs["truth"] = first_result["truth"][:comparison_steps]
         comparison_trajs["grid"] = first_result["grid"]
         for model_name, result in comparison_results.items():
-            comparison_trajs[f"pred_{model_name}"] = result["pred"]
+            comparison_trajs[f"pred_{model_name}"] = result["pred"][:comparison_steps]
+            comparison_trajs[f"loss_rollout_{model_name}"] = result[
+                "validation_loss_rollout"
+            ]
+            comparison_trajs[f"loss_name_{model_name}"] = result["loss_name"]
             comparison_trajs[f"loss_history_{model_name}"] = result["loss_history"]
 
         comparison_cfg = OmegaConf.create(OmegaConf.to_container(base_cfg, resolve=True))
+        comparison_cfg.plotting.nsteps = comparison_steps
         comparison_cfg.plotting.plot = [
-            "multi_model_comparison",
-            "multi_model_loss",
-            "multi_model_validation",
-            "multi_model_pv_rollout",
-            "model_performance",
+            "ke_comparison",
+            "multi_loss",
+            "loss_rollout",
+            "pv_rollout",
+            "pv_final_snapshot",
             "pareto_validation",
         ]
         comparison_out = os.path.join(
