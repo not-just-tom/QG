@@ -32,20 +32,20 @@ plotting:
   spinup: 20 # in eddy turnover times
   cadence: 10
   validation_rollout: 250
-  plot: []
+  plot: ["loss", "ke_spectrum", 'domain', 'pv_spectrum']
   auto_dt: false
   cfl: 0.5
 
 ml:
   enabled: true # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
-  model_type: ['resnet','leith', 'cnn', 'fno', 'zero'] # can be a list
+  model_type: ['fno', 'resnet'] # can be a list
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
-  n_train: 7
-  n_test: 3
+  n_train: 10
+  n_test: 4
   start_curriculum: 1     # initial window length in steps
   end_curriculum: 1       # final window length in steps
-  steps_per_curriculum: 40 # number of steps in a curriculum before the next round
+  steps_per_curriculum: 20 # number of steps in a curriculum before the next round
   batch_size: 10 # number of samples in a training batch per update <--------------------------- is this used?
   patience: 20
   prefetch: 3       # prefetch a few batches to aid efficiency
@@ -67,15 +67,18 @@ architectures:
     depth: 4
     closure_scale: 0.2
   fno:
-    learning_rate: 0.0005 #[0.0001, 0.0005]
-    loss: mae
-    width: 32 #[16, 32, 64]
-    ymodes: 16 #[8, 16]
-    xmodes: 32 #[8, 16, 32]
-    projection_width: 128
-    depth: 4 #[2, 4, 6]
+    learning_rate: 0.00001 #[0.0001, 0.0005]
+    loss: 'maddison'
+    width: 32
+    ymodes: 16
+    xmodes: 16
+    projection_width: 64
+    depth: 2
     activation: gelu
-    closure_scale: 0.2 
+    physics_features: false
+    spectral_init_power: 0.3
+    spectral_lr_multiplier: 1.0
+    closure_scale: 0.05
   diffusion:
     loss: mae
     cutoff: 16.0

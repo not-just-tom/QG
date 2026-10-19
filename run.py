@@ -5,6 +5,7 @@ warnings.filterwarnings(
     category=UserWarning,
     module=r"jax\\._src\\.numpy\\.array_methods",
 )
+import copy
 import importlib 
 import os
 from omegaconf import OmegaConf
@@ -40,7 +41,7 @@ importlib.reload(model.ML.architectures.build_model)
 importlib.reload(model.ML.utils.dataloading)
 importlib.reload(model.ML.train)
 importlib.reload(model.utils.plotting)
-from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch
+from model.ML.train import make_train_epoch, make_test_epoch, make_validation_epoch, time_model_rollout
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.coarsen import coarsen
 from model.ML.utils.loss import build_loss
@@ -274,6 +275,20 @@ def run(cfg):
 
     # Build training/sweep metadata to avoid accidentally reusing closures from different sweeps
     model_dir, found, id= find_existing_closure(MODEL_DIR, params, timing_metadata, model_type, training_metadata)
+    total_time_to_train_seconds = 0.0
+    metadata_path = os.path.join(model_dir, "metadata.json")
+    saved_metadata = None
+    if found and os.path.exists(metadata_path):
+        with open(metadata_path, "r") as f:
+            saved_metadata = json.load(f)
+        total_time_to_train_seconds = float(saved_metadata.get("time_to_train_seconds", 0.0))
+    meta = saved_metadata or {
+        "parameters": params,
+        "timing": timing_metadata,
+        "model_type": model_type,
+        "training": training_metadata.get("training", {}),
+    }
+
     start_epoch = 0
     loaded_leaves = None
     loaded_optim = None
@@ -295,13 +310,42 @@ def run(cfg):
 
     closure = build_closure(cfg, loaded_leaves)
 
-    # Set up optimiser - might be needed to make more complex if we want to do things like learning rate scheduling
-    if cfg.ml.optimiser=='Adam':
-        optim = optax.chain(optax.clip_by_global_norm(1.0), optax.adam(learning_rate))
-    elif cfg.ml.optimiser=='AdamW':
-        optim = optax.chain(optax.clip_by_global_norm(1.0), optax.adamw(learning_rate))
-    else:
+    # Give FNO spectral weights a separate learning rate to counter their
+    # weaker gradients at higher modes.
+    if cfg.ml.optimiser not in ('Adam', 'AdamW'):
         raise ValueError(f"Unsupported optimiser: {cfg.ml.optimiser}. Supported options are 'Adam' and 'AdamW'.")
+    optimizer_factory = optax.adam if cfg.ml.optimiser == 'Adam' else optax.adamw
+    optimizer_transforms = {"base": optimizer_factory(learning_rate)}
+    if model_type == 'fno':
+        spectral_lr_multiplier = float(
+            cfg['architectures'][model_type].get('spectral_lr_multiplier', 5.0)
+        )
+        if spectral_lr_multiplier <= 0:
+            raise ValueError("FNO spectral_lr_multiplier must be positive")
+        def label_parameters(params):
+            return jax.tree_util.tree_map_with_path(
+                lambda path, leaf: (
+                    (
+                        "spectral"
+                        if any(
+                            getattr(key, "name", None) == "spec_layers"
+                            for key in path
+                        )
+                        else "base"
+                    )
+                    if eqx.is_array(leaf)
+                    else None
+                ),
+                params,
+            )
+
+        optimizer_transforms["spectral"] = optimizer_factory(
+            learning_rate * spectral_lr_multiplier
+        )
+        optimizer = optax.multi_transform(optimizer_transforms, label_parameters)
+    else:
+        optimizer = optimizer_transforms["base"]
+    optim = optax.chain(optax.clip_by_global_norm(1.0), optimizer)
     
     # Initialise optimiser state from template and, if available, map saved optimiser leaves into it
     template_optim_state = optim.init(eqx.filter(closure, eqx.is_array))
@@ -381,9 +425,7 @@ def run(cfg):
         test_mean_losses.extend([float('nan')] * (epoch_counter - len(test_mean_losses)))
     if len(zero_mean_losses) < epoch_counter:
         zero_mean_losses.extend([float('nan')] * (epoch_counter - len(zero_mean_losses)))
-
     rng = jax.random.PRNGKey(seed + 1)
-    start_time = time.time()
 
     for curriculum_idx, current_curriculum in enumerate(window_curriculums):
         best_stage_loss = 100000 #just a large number to start off with covering all loss types.
@@ -440,6 +482,7 @@ def run(cfg):
             train_losses_accum = []
             test_losses_accum = []
             zero_losses_accum = []
+            current_time_to_train_seconds = 0.0
             batch_counter = 0
             train_rng, test_rng, rng = jax.random.split(rng, 3)
             shuffled = shuffled[1:] + shuffled[:1] # move all indice in shuffled forward one
@@ -459,10 +502,13 @@ def run(cfg):
                 windows = windows.astype(np.float32)
                 chunk = windows.reshape((1, windows.shape[0], current_batch_steps) + windows.shape[2:])
                 chunk = jax.device_put(chunk)
+                train_call_start = time.perf_counter()
                 if model_type == "diffusion":
                     closure, optim_state, losses, discard_flags, max_cfls = train_epoch(chunk, closure, optim_state, train_rng)
                 else:
                     closure, optim_state, losses, discard_flags, max_cfls = train_epoch(chunk, closure, optim_state)
+                jax.block_until_ready(losses)
+                current_time_to_train_seconds += time.perf_counter() - train_call_start
                 discard_flags = np.asarray(discard_flags).reshape(-1)
                 losses = np.asarray(losses).reshape(-1)
                 max_cfls = np.asarray(max_cfls).reshape(-1)
@@ -545,13 +591,20 @@ def run(cfg):
                     "curriculum": {
                         "steps_per_curriculum": steps_per_curriculum,
                         "start_curriculum": start_curriculum,
+                        "end_curriculum": end_curriculum,
                         "n_epochs": n_epochs,
                         "current_curriculum": current_curriculum,
                         "stage_epoch": stage_epoch + 1,
                     },
+                    "time_to_train_seconds": (
+                        total_time_to_train_seconds + current_time_to_train_seconds
+                    ),
                 }
-                with open(os.path.join(model_dir, "metadata.json"), "w") as f:
+                total_time_to_train_seconds = meta["time_to_train_seconds"]
+                tmp_metadata_path = metadata_path + ".tmp"
+                with open(tmp_metadata_path, "w") as f:
                     json.dump(meta, f, indent=4)
+                os.replace(tmp_metadata_path, metadata_path)
                 logger.info(
                     "Saved curriculum checkpoint: stage %d/%d | sub-epoch %d/%d",
                     curriculum_idx + 1, len(window_curriculums), stage_epoch + 1, n_epochs,
@@ -589,16 +642,6 @@ def run(cfg):
         if hasattr(jax, "clear_caches"):
             jax.clear_caches()
 
-    #log time taken to train in metadata
-    end_time = time.time()
-    elapsed = end_time - start_time
-    metadata_path = os.path.join(model_dir, "metadata.json")
-    with open(metadata_path, "r") as f:
-        meta = json.load(f)
-    meta["time_to_train_seconds"] = elapsed
-    with open(metadata_path, "w") as f:
-        json.dump(meta, f, indent=4)
-
     # ================================================================================================
     # === validation & diagnostics ===================================================================
     # ================================================================================================
@@ -623,6 +666,7 @@ def run(cfg):
     # Build validation function and run it on a held-out trajectory
     validation_epoch = make_validation_epoch(lr_model, low_res_dt, init_key, closure_scale=closure_scale)
     validation_results = validation_epoch(truth_traj, cfg, closure)
+    rollout_prediction_seconds = validation_results["rollout_prediction_seconds"]
     trajectories.update(validation_results)
 
     for k,v in trajectories.items():
@@ -653,17 +697,39 @@ def run(cfg):
             )
         )(rollout_residuals)
     )
+    validation_mae_rollout = jax.device_get(
+        jnp.mean(jnp.abs(rollout_residuals), axis=(1, 2, 3))
+    )
+    zero_prediction = jnp.asarray(trajectories["zero"][:n_common])
+    zero_rollout_residuals = zero_prediction[1:n_common] - jnp.asarray(
+        truth[1:n_common]
+    )
+    zero_validation_mae_rollout = jax.device_get(
+        jnp.mean(jnp.abs(zero_rollout_residuals), axis=(1, 2, 3))
+    )
     validation_loss = float(
         jax.device_get(
             jnp.mean(loss_fn(rollout_residuals[None, ...], lr_model))
         )
     )
+    validation_mae = float(jnp.mean(jnp.abs(rollout_residuals)))
+    zero_validation_mae = float(jnp.mean(jnp.abs(zero_rollout_residuals)))
     loss_name = cfg["architectures"][model_type]["loss"]
     trajectories["loss_rollout"] = validation_loss_rollout
     trajectories["loss_name"] = loss_name
     comparison_result = {
+        "model_type": model_type,
+        "training_horizon_steps": steps_per_curriculum * end_curriculum,
         "validation_loss": validation_loss,
+        "validation_mae": validation_mae,
         "validation_loss_rollout": validation_loss_rollout,
+        "validation_mae_rollout": validation_mae_rollout,
+        "zero_validation_mae": zero_validation_mae,
+        "zero_validation_mae_rollout": zero_validation_mae_rollout,
+        "zero_rollout_prediction_seconds": validation_results[
+            "zero_rollout_prediction_seconds"
+        ],
+        "rollout_prediction_seconds": rollout_prediction_seconds,
         "loss_name": loss_name,
         "loss_history": trajectories["loss_history"],
         "residuals": residuals,
@@ -676,6 +742,15 @@ def run(cfg):
         print("HPC mode: skipped plotting")
         return validation_loss
     else:
+        high_resolution_rollout_seconds = time_model_rollout(
+            hr_model,
+            key,
+            max(1, (n_common - 1) * int(params["hr_nx"] / params["nx"])),
+            **({"n_jets": n_jets, "pseudo": True} if n_jets is not None else {}),
+        )
+        comparison_result["high_resolution_rollout_seconds"] = (
+            high_resolution_rollout_seconds
+        )
         outbase = os.path.join(cfg.filepaths.out_dir)
         out_dir, found = find_output_dir(outbase, params, model_type, metadata=meta, id=str(id))
         if found:
@@ -751,8 +826,8 @@ def main():
             idx = 0
             results = []
             for combo in product(*lists):
-                # deep-copy base config to plain dict then modify
-                cfg_copy = OmegaConf.to_container(model_cfg, resolve=True)
+                # model_cfg is already a plain dict, so deep-copy it before mutation.
+                cfg_copy = copy.deepcopy(model_cfg)
                 if 'architectures' not in cfg_copy:
                     cfg_copy['architectures'] = {}
                 if model_type not in cfg_copy['architectures']:
@@ -840,6 +915,7 @@ def main():
             "pv_rollout",
             "pv_final_snapshot",
             "pareto_validation",
+            "pareto_rollout_accuracy",
         ]
         comparison_out = os.path.join(
             comparison_cfg.filepaths.out_dir,

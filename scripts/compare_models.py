@@ -11,6 +11,7 @@ import json
 import numpy as np
 import jax.numpy as jnp
 import importlib
+import time
 import zarr
 from omegaconf import OmegaConf
 import model.ML.train
@@ -27,7 +28,7 @@ importlib.reload(model.core.model)
 importlib.reload(model.core.grid)
 importlib.reload(model.utils.plotting)
 importlib.reload(model.utils.config)
-from model.ML.train import rollout_traj_errors
+from model.ML.train import rollout_traj_errors, time_model_rollout
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.dataloading import checkpointer, load_forced_model
 from model.utils.plotting import Plotter
@@ -182,6 +183,17 @@ def rollout_model(model_info, validation_trajs, n_trajs=5):
     
     closure = model_info["closure"]
     metadata = model_info["metadata"]
+    curriculum_metadata = metadata.get("curriculum", {})
+    steps_per_curriculum = curriculum_metadata.get("steps_per_curriculum")
+    end_curriculum = curriculum_metadata.get(
+        "end_curriculum", curriculum_metadata.get("current_curriculum")
+    )
+    if steps_per_curriculum is None or end_curriculum is None:
+        raise KeyError(
+            "Model metadata must include curriculum steps_per_curriculum "
+            "and end_curriculum to calculate the training horizon"
+        )
+    training_horizon_steps = int(steps_per_curriculum) * int(end_curriculum)
     
     # Build config from metadata
     cfg = build_config_from_metadata(metadata)
@@ -219,7 +231,8 @@ def rollout_model(model_info, validation_trajs, n_trajs=5):
     all_pred_qh = []
     all_target_qh = []
     max_cfls = []
-    
+
+    rollout_start = time.perf_counter()
     for i, traj in enumerate(eval_trajs):
         residual_q, max_cfl, target_qh, pred_qh = rollout_traj_errors(
             traj, forced_model, template_state, closure_params, lr_model, dt
@@ -234,11 +247,58 @@ def rollout_model(model_info, validation_trajs, n_trajs=5):
     all_pred_qh = jnp.stack(all_pred_qh, axis=0)
     all_target_qh = jnp.stack(all_target_qh, axis=0)
     max_cfls = jnp.array(max_cfls)
+    jax.block_until_ready(all_pred_qh)
+    rollout_prediction_seconds = (
+        time.perf_counter() - rollout_start
+    ) / len(eval_trajs)
     
     # Compute metrics
     mse_loss = jnp.mean(all_residuals ** 2)
     mae_loss = jnp.mean(jnp.abs(all_residuals))
     avg_cfl = jnp.mean(max_cfls)
+    per_step_mae = jnp.mean(
+        jnp.abs(all_residuals),
+        axis=(0, *range(2, all_residuals.ndim)),
+    )
+
+    from model.ML.architectures.zero import ZeroModel
+    zero_closure = ZeroModel()
+    zero_forced_model, zero_params, *_ = load_forced_model(
+        lr_model,
+        zero_closure,
+        dt,
+        trajs=eval_trajs,
+        closure_scale=1.0,
+    )
+    zero_residuals = []
+    zero_rollout_start = time.perf_counter()
+    for traj in eval_trajs:
+        zero_residual, _, _, _ = rollout_traj_errors(
+            traj,
+            zero_forced_model,
+            template_state,
+            zero_params,
+            lr_model,
+            dt,
+        )
+        zero_residuals.append(zero_residual)
+    zero_residuals = jnp.stack(zero_residuals, axis=0)
+    jax.block_until_ready(zero_residuals)
+    zero_rollout_prediction_seconds = (
+        time.perf_counter() - zero_rollout_start
+    ) / len(eval_trajs)
+    zero_per_step_mae = jnp.mean(
+        jnp.abs(zero_residuals),
+        axis=(0, *range(2, zero_residuals.ndim)),
+    )
+
+    n_jets = params.get("n_jets")
+    high_resolution_rollout_seconds = time_model_rollout(
+        hr_model,
+        jax.random.PRNGKey(int(params.get("seed", 0))),
+        (eval_trajs.shape[1] - 1) * int(params["hr_nx"] / params["nx"]),
+        **({"n_jets": int(n_jets), "pseudo": True} if n_jets is not None else {}),
+    )
     
     print(f"  MSE Loss: {mse_loss:.6f}")
     print(f"  MAE Loss: {mae_loss:.6f}")
@@ -254,8 +314,19 @@ def rollout_model(model_info, validation_trajs, n_trajs=5):
         "pred_qh": np.array(all_pred_qh),
         "target_qh": np.array(all_target_qh),
         "pred": np.array(pred),
+        "model_type": model_info["model_type"],
+        "training_horizon_steps": training_horizon_steps,
         "mse_loss": float(mse_loss),
         "mae_loss": float(mae_loss),
+        "validation_loss": float(mae_loss),
+        "validation_loss_rollout": np.asarray(per_step_mae),
+        "validation_mae_rollout": np.asarray(per_step_mae),
+        "zero_validation_mae": float(jnp.mean(jnp.abs(zero_residuals))),
+        "zero_validation_mae_rollout": np.asarray(zero_per_step_mae),
+        "zero_rollout_prediction_seconds": zero_rollout_prediction_seconds,
+        "loss_name": "mae",
+        "rollout_prediction_seconds": rollout_prediction_seconds,
+        "high_resolution_rollout_seconds": high_resolution_rollout_seconds,
         "max_cfls": np.array(max_cfls),
         "avg_cfl": float(avg_cfl),
     }
@@ -331,7 +402,12 @@ def compare_models(folder_dir, validation_data_path, output_dir, n_trajs=5):
     cfg_dict = first_model["metadata"].copy()
     cfg_dict["plotting"] = {
         "cadence": 10,
-        "plot": ["pareto_validation", "multi_model_comparison", "multi_model_loss"],
+        "plot": [
+            "pareto_validation",
+            "pareto_rollout_accuracy",
+            "multi_model_comparison",
+            "multi_model_loss",
+        ],
     }
     cfg = Config(cfg_dict)
     
@@ -394,4 +470,3 @@ if __name__ == "__main__":
         args.output_dir,
         args.n_trajs
     )
-

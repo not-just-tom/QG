@@ -120,8 +120,7 @@ class LossDiagnostic(Diagnostic):
         if zero.size:
             # plot average zero loss per curriculum stage
             x = np.arange(1, len(zero)+1)
-            arr = [np.mean(zero[x[i-1]:x[i]]) for i in np.arange(1, len(x), n_epochs)]
-            y = np.repeat(arr, n_epochs) 
+            y = np.repeat([np.mean(zero[i:i+n_epochs]) for i in range(0, len(zero), n_epochs)], n_epochs)
             ax.step(x, y, label="zero model", linestyle="--", color="C2")
 
         ax.set_title("Train / Test Loss")
@@ -158,9 +157,6 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
             q_pred = q_pred[10:]
 
         beta, k_min, k_max, k_deformation, nz = _get_reference_wavenumbers(trajs, grid)
-        kx_max = np.pi / grid.dx
-        ky_max = np.pi / grid.dy
-        k_nyquist = np.sqrt(kx_max**2 + ky_max**2) # maximum meaningful wavenumber 
 
         def rhines_wavenumber(frame):
             psi = invert_pv_to_psi(_sanitize_numeric_array(frame), grid)
@@ -270,9 +266,7 @@ class KESpectrumDiagnostic(Diagnostic):
         zero = _sanitize_numeric_array(trajs.get("zero"))
 
         beta, k_min, k_max, k_deformation, nz = _get_reference_wavenumbers(trajs, grid)
-        kx_max = np.pi / grid.dx
-        ky_max = np.pi / grid.dy
-        k_nyquist = np.sqrt(kx_max**2 + ky_max**2) # maximum meaningful wavenumber 
+        k_damping = 0.65 * np.pi / grid.dx
 
         # --- helper: compute spectrum from PV (time-averaged) ---
         def compute_avg_spectrum(q):
@@ -345,6 +339,12 @@ class KESpectrumDiagnostic(Diagnostic):
         ax.text(k_min,1e-3,'k_min',rotation=270, color='k')
         ax.axvline(k_max, ymin=0, ymax=1, color='red', linestyle="--")
         ax.text(k_max,1e-3,'k_max',rotation=270, color='k')
+        ax.axvline(
+            k_damping,
+            color="purple",
+            linestyle=":",
+            label="Exact-filter damping onset",
+        )
         #ax.axvline(k_nyquist, ymin=0, ymax=1, color='red', linestyle="--")
         #ax.text(k_nyquist,1e-14,'k_nyquist',rotation=270, color='k')
         ax.set_xlabel("k")
@@ -1351,12 +1351,12 @@ class MultiModelComparisonDiagnostic(Diagnostic):
             return k, E
         
         k, E_truth_avg = compute_avg_spectrum(q_truth)
+        k_damping = 0.65 * np.pi / grid.dx
         
         # Create plot
-        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+        fig, ax = plt.subplots(figsize=(8, 5))
         
         # Left plot: KE spectra
-        ax = axes[0]
         ax.loglog(k[1:], E_truth_avg[1:], label="Truth", color="black", linewidth=2)
         
         colors = plt.cm.tab10(np.linspace(0, 1, len(model_names)))
@@ -1371,6 +1371,13 @@ class MultiModelComparisonDiagnostic(Diagnostic):
                 
                 ax.loglog(k[1:], E_pred_avg[1:], label=model_name, 
                          color=colors[i], linestyle='--', alpha=0.8)
+
+        ax.axvline(
+            k_damping,
+            color="purple",
+            linestyle=":",
+            label="Exact-filter damping onset",
+        )
         
         ax.set_xlabel("Wavenumber k")
         ax.set_ylabel("E(k)")
@@ -1379,27 +1386,27 @@ class MultiModelComparisonDiagnostic(Diagnostic):
         ax.legend()
         
         # Right plot: Relative errors
-        ax = axes[1]
-        
-        for i, model_name in enumerate(model_names):
-            pred_key = f"pred_{model_name}"
-            q_pred = trajs.get(pred_key)
-            
-            if q_pred is not None:
-                q_pred = np.asarray(q_pred)
-                _, E_pred_avg = compute_avg_spectrum(q_pred)
-                
-                # Compute relative error
-                rel_error = np.abs(E_pred_avg - E_truth_avg) / (E_truth_avg + 1e-10)
-
-                ax.loglog(k[1:], rel_error[1:], label=model_name, 
-                         color=colors[i], alpha=0.8)
-        
-        ax.set_xlabel("Wavenumber k")
-        ax.set_ylabel("Relative Error")
-        ax.set_title("Relative Error in KE Spectrum")
-        ax.grid(True, which="both", alpha=0.3)
-        ax.legend()
+        # ax = axes[1]
+        #
+        # for i, model_name in enumerate(model_names):
+        #     pred_key = f"pred_{model_name}"
+        #     q_pred = trajs.get(pred_key)
+        #
+        #     if q_pred is not None:
+        #         q_pred = np.asarray(q_pred)
+        #         _, E_pred_avg = compute_avg_spectrum(q_pred)
+        #
+        #         # Compute relative error
+        #         rel_error = np.abs(E_pred_avg - E_truth_avg) / (E_truth_avg + 1e-10)
+        #
+        #         ax.loglog(k[1:], rel_error[1:], label=model_name,
+        #                   color=colors[i], alpha=0.8)
+        #
+        # ax.set_xlabel("Wavenumber k")
+        # ax.set_ylabel("Relative Error")
+        # ax.set_title("Relative Error in KE Spectrum")
+        # ax.grid(True, which="both", alpha=0.3)
+        # ax.legend()
         
         plt.tight_layout()
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
@@ -1545,39 +1552,71 @@ class ParetoValidationDiagnostic(Diagnostic):
         xs = []
         ys = []
         labels = []
-
-        threshold_factor = 10.0
+        zero_baseline_rollout = None
+        training_horizon_steps = None
 
         for model_name, result in results.items():
-
-            loss_rollout = np.asarray(result.get("validation_loss_rollout"))
-            if loss_rollout.ndim != 1 or loss_rollout.size == 0:
+            model_mae = np.asarray(result.get("validation_mae_rollout"))
+            zero_mae_rollout = np.asarray(
+                result.get("zero_validation_mae_rollout")
+            )
+            result_horizon_steps = int(result["training_horizon_steps"])
+            if result_horizon_steps <= 0:
                 raise ValueError(
-                    f"Model {model_name!r} has no per-step validation loss"
+                    f"Model {model_name!r} has an invalid training horizon"
+                )
+            if training_horizon_steps is None:
+                training_horizon_steps = result_horizon_steps
+            elif result_horizon_steps != training_horizon_steps:
+                raise ValueError(
+                    "Models must use the same maximum training horizon"
+                )
+            if model_mae.ndim != 1 or model_mae.size == 0:
+                raise ValueError(
+                    f"Model {model_name!r} has no per-step validation MAE"
+                )
+            if zero_mae_rollout.ndim != 1 or zero_mae_rollout.size == 0:
+                raise ValueError(
+                    f"Model {model_name!r} has no per-step zero-model MAE baseline"
+                )
+            if not np.all(np.isfinite(model_mae)) or not np.all(
+                np.isfinite(zero_mae_rollout)
+            ):
+                raise ValueError(
+                    f"Model {model_name!r} has non-finite validation MAE values"
+                )
+            if zero_mae_rollout.size < training_horizon_steps:
+                raise ValueError(
+                    f"Model {model_name!r} has only {zero_mae_rollout.size} "
+                    "zero-model validation steps; the training horizon is "
+                    f"{training_horizon_steps}"
                 )
 
-            mean_val_loss = float(result["validation_loss"])
-            baseline = max(float(loss_rollout[0]), 1e-12)
-            fail_idx = np.where(loss_rollout > threshold_factor * baseline)[0]
-
-            if len(fail_idx):
-                survival_steps = fail_idx[0] + 1
-            else:
-                survival_steps = len(loss_rollout)
-
-            xs.append(mean_val_loss)
+            zero_baseline = float(
+                np.max(zero_mae_rollout[:training_horizon_steps])
+            )
+            if zero_baseline_rollout is None:
+                zero_baseline_rollout = zero_mae_rollout
+            elif (
+                zero_mae_rollout.shape != zero_baseline_rollout.shape
+                or not np.allclose(zero_mae_rollout, zero_baseline_rollout)
+            ):
+                raise ValueError(
+                    "Models must use the same zero-model validation baseline"
+                )
+            survival_steps = int(
+                np.argmax(model_mae > zero_baseline)
+                if np.any(model_mae > zero_baseline)
+                else model_mae.size
+            )
+            xs.append(float(np.mean(model_mae)))
             ys.append(survival_steps)
-            labels.append(f"{model_name} ({result.get('loss_name', 'configured loss')})")
+            labels.append(model_name)
 
         xs = np.asarray(xs)
         ys = np.asarray(ys)
 
-        scatter = ax.scatter(
-            xs,
-            ys,
-            s=80,
-            alpha=0.8,
-        )
+        ax.scatter(xs, ys, s=80, alpha=0.8)
 
         for x, y, label in zip(xs, ys, labels):
             ax.annotate(
@@ -1588,38 +1627,31 @@ class ParetoValidationDiagnostic(Diagnostic):
                 fontsize=8,
             )
 
-        #
-        # Pareto front
-        #
-        order = np.argsort(xs)
-
-        pareto_x = []
-        pareto_y = []
-
-        best_survival = -np.inf
-
-        for idx in order:
-
-            if ys[idx] > best_survival:
-                pareto_x.append(xs[idx])
-                pareto_y.append(ys[idx])
-                best_survival = ys[idx]
+        pareto_indices = [
+            i for i in range(len(xs))
+            if not any(
+                xs[j] <= xs[i]
+                and ys[j] >= ys[i]
+                and (xs[j] < xs[i] or ys[j] > ys[i])
+                for j in range(len(xs))
+                if j != i
+            )
+        ]
+        pareto_indices.sort(key=lambda i: xs[i])
 
         ax.plot(
-            pareto_x,
-            pareto_y,
+            xs[pareto_indices],
+            ys[pareto_indices],
             "--",
             linewidth=2,
             label="Pareto Front",
         )
 
-        ax.set_xscale("log")
-
-        ax.set_xlabel("Mean Validation Loss (configured per model)")
+        ax.set_xlabel("Mean Validation MAE")
         ax.set_ylabel("Rollout Survival Time (steps)")
 
         ax.set_title(
-            "Pareto Comparison: Validation Loss vs Rollout Stability"
+            "Pareto Comparison: Error vs Survival Relative to Zero Model"
         )
 
         ax.grid(True, which="both", alpha=0.3)
@@ -1632,6 +1664,149 @@ class ParetoValidationDiagnostic(Diagnostic):
             bbox_inches="tight",
         )
         plt.close(fig)
+
+
+class ParetoRolloutAccuracyDiagnostic(Diagnostic):
+    """Compare rollout latency against accuracy relative to zero and HR references."""
+    name = "pareto_rollout_accuracy"
+    output = "png"
+
+    def run(self, trajs, out_path, cadence):
+        results = trajs.get("model_results", {})
+        if not results:
+            print("No model results available")
+            return
+
+        points = []
+        zero_result = next(
+            (
+                result
+                for result in results.values()
+                if result.get("model_type") == "zero"
+            ),
+            None,
+        )
+        zero_error_reference = float(
+            zero_result["validation_mae"]
+            if zero_result is not None
+            else next(iter(results.values()))["zero_validation_mae"]
+        )
+        if zero_result is not None and not np.isclose(
+            zero_error_reference, float(zero_result["zero_validation_mae"])
+        ):
+            raise ValueError(
+                "The explicit zero model does not match the physics-only zero rollout"
+            )
+        high_resolution_times = np.asarray(
+            [
+                result["high_resolution_rollout_seconds"]
+                for result in results.values()
+            ],
+            dtype=float,
+        )
+        if not np.all(np.isfinite(high_resolution_times)) or np.any(
+            high_resolution_times <= 0
+        ):
+            raise ValueError("Invalid high-resolution rollout timing baseline")
+        high_resolution_seconds = float(np.mean(high_resolution_times))
+        for model_name, result in results.items():
+            rollout_seconds = float(result["rollout_prediction_seconds"])
+            accuracy_error = float(result["validation_mae"])
+            zero_error = float(result["zero_validation_mae"])
+            if (
+                not np.isfinite(rollout_seconds)
+                or rollout_seconds <= 0
+                or not np.isfinite(accuracy_error)
+                or accuracy_error < 0
+                or not np.isfinite(zero_error)
+                or zero_error < 0
+            ):
+                raise ValueError(
+                    f"Model {model_name!r} has invalid rollout time or validation MAE"
+                )
+            if not np.isclose(zero_error, zero_error_reference):
+                raise ValueError(
+                    "Models must use the same zero-model accuracy baseline"
+                )
+            if zero_error_reference > 0:
+                accuracy_score = 1.0 - accuracy_error / zero_error_reference
+            else:
+                accuracy_score = 1.0 if accuracy_error == 0 else 0.0
+            points.append((rollout_seconds, accuracy_score, model_name))
+        points.append(
+            (high_resolution_seconds, 1.0, "High-resolution truth reference")
+        )
+
+        points.sort(key=lambda point: point[0])
+        fig, ax = plt.subplots(figsize=(8, 6))
+        times = np.asarray([point[0] for point in points])
+        accuracy_scores = np.asarray([point[1] for point in points])
+        high_resolution_index = next(
+            i for i, point in enumerate(points)
+            if point[2] == "High-resolution truth reference"
+        )
+        regular_indices = [
+            i for i in range(len(points)) if i != high_resolution_index
+        ]
+        ax.scatter(
+            times[regular_indices],
+            accuracy_scores[regular_indices],
+            s=80,
+            alpha=0.8,
+        )
+        ax.scatter(
+            [times[high_resolution_index]],
+            [accuracy_scores[high_resolution_index]],
+            marker="*",
+            s=180,
+            color="black",
+            label="High-resolution truth reference",
+            zorder=3,
+        )
+
+        for rollout_seconds, accuracy_score, model_name in points:
+            if model_name == "High-resolution truth reference":
+                continue
+            ax.annotate(
+                model_name,
+                (rollout_seconds, accuracy_score),
+                xytext=(5, 5),
+                textcoords="offset points",
+                fontsize=8,
+            )
+
+        pareto_indices = [
+            i for i in range(len(points))
+            if not any(
+                times[j] <= times[i]
+                and accuracy_scores[j] >= accuracy_scores[i]
+                and (
+                    times[j] < times[i]
+                    or accuracy_scores[j] > accuracy_scores[i]
+                )
+                for j in range(len(points))
+                if j != i
+            )
+        ]
+        pareto_indices.sort(key=lambda i: times[i])
+
+        ax.plot(
+            times[pareto_indices],
+            accuracy_scores[pareto_indices],
+            "--",
+            linewidth=2,
+            label="Pareto Front",
+        )
+        ax.set_xscale("log")
+        ax.set_xlabel("Mean rollout prediction time (seconds / trajectory)")
+        ax.set_ylabel("Accuracy improvement over zero-model MAE")
+        ax.set_title("Pareto Comparison: Rollout Latency vs Relative Accuracy")
+        ax.grid(True, which="both", alpha=0.3)
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+
 
 class MultiModelPVRolloutDiagnostic(Diagnostic):
     """Animate truth and all model PV rollouts on synchronized frames."""
@@ -1723,7 +1898,6 @@ class MultiModelPVRolloutDiagnostic(Diagnostic):
             title.set_text(f"PV rollout comparison, step {frame}")
             return (*images, title)
 
-        fig.tight_layout()
         animation = FuncAnimation(
             fig,
             update,
@@ -1981,6 +2155,7 @@ _REGISTRY = {
     "pv_rollout": MultiModelPVRolloutDiagnostic,
     "pv_final_snapshot": MultiModelPVFinalSnapshotDiagnostic,
     "pareto_validation": ParetoValidationDiagnostic,
+    "pareto_rollout_accuracy": ParetoRolloutAccuracyDiagnostic,
 }
 
 def build_diagnostic(name: str) -> Diagnostic:

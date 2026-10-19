@@ -6,6 +6,7 @@ and invokes `run.py --config <tmpfile>` for that single combination.
 
 Designed to be used with SLURM job arrays via `SLURM_ARRAY_TASK_ID`.
 """
+import copy
 import os
 import sys
 import argparse
@@ -44,8 +45,8 @@ def main():
         raise SystemExit(f"task-index {task_index} out of range (0..{total-1})")
 
     combo = combos[task_index]
-    # Build a copy of the config with the chosen combination applied
-    cfg_copy = OmegaConf.to_container(base_cfg, resolve=True)
+    # Build a copy of the config with the chosen combination applied.
+    cfg_copy = copy.deepcopy(cfg_plain)
     if 'architectures' not in cfg_copy:
         cfg_copy['architectures'] = {}
     if model_type not in cfg_copy['architectures']:

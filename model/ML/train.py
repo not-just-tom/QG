@@ -3,6 +3,7 @@ import jax
 import functools
 import equinox as eqx
 import importlib
+import time
 import model.ML.architectures.build_model
 import model.ML.utils.dataloading
 importlib.reload(model.ML.architectures.build_model)
@@ -56,6 +57,24 @@ def rollout_traj_errors(
     residual_q = jax.vmap(lambda x: jnp.fft.irfftn(x, axes=(-2, -1), norm='ortho', s=target_traj.shape[-2:]))(residual_qh)
 
     return residual_q, max_cfl, target_qh[1:], pred_qh
+
+
+def time_model_rollout(stepped_model, key, n_steps, **init_kwargs):
+    """Measure synchronized model-stepping time for a fixed number of steps."""
+    if n_steps <= 0:
+        raise ValueError("n_steps must be positive")
+
+    initial_state = stepped_model.initialise(key, **init_kwargs)
+
+    def step(state, _):
+        next_state = stepped_model.step_model(state)
+        return next_state, None
+
+    start = time.perf_counter()
+    final_state, _ = jax.lax.scan(step, initial_state, None, length=n_steps)
+    jax.block_until_ready(final_state.state.qh)
+    return time.perf_counter() - start
+
 
 def make_train_epoch(lr_model, dt, optim, loss_fn, cfl_limit=1.0, closure_scale=0.1):
     """Factory that returns a JIT-compiled `train_epoch` function bound to
@@ -283,12 +302,15 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
 
             return next_state, (dqh_total, dq)
 
+        rollout_start = time.perf_counter()
         _, (traj_dqh, sgs_increment_step) = jax.lax.scan(
             _step,
             init_stepper_state,
             None,
             length=n_intervals,
         )
+        jax.block_until_ready(traj_dqh)
+        rollout_prediction_seconds = time.perf_counter() - rollout_start
 
         teacher_latent = forced_model.model.initialise_param_state(
             base_state,
@@ -377,12 +399,15 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
             )
             return next_state, dqh_total
         
+        zero_rollout_start = time.perf_counter()
         _, zero_dqh = jax.lax.scan(
             _zero_step,
             init_zero_state,
             None,
             length=n_intervals,
         )
+        jax.block_until_ready(zero_dqh)
+        zero_rollout_prediction_seconds = time.perf_counter() - zero_rollout_start
         
         zero_qh_traj = jnp.concatenate(
             [
@@ -406,6 +431,8 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
 
         result = {
             "pred": jax.device_get(pred),
+            "rollout_prediction_seconds": rollout_prediction_seconds,
+            "zero_rollout_prediction_seconds": zero_rollout_prediction_seconds,
 
             "zero": jax.device_get(zero),
 
@@ -420,4 +447,3 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
         return result
 
     return _validation_epoch
-
