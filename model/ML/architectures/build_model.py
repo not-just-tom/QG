@@ -14,13 +14,13 @@ importlib.reload(model.ML.architectures.zero)
 importlib.reload(model.ML.architectures.cnn)
 importlib.reload(model.ML.architectures.unet)
 importlib.reload(model.ML.architectures.fno)
+importlib.reload(model.ML.architectures.gru)
 importlib.reload(model.ML.architectures.rno)
 importlib.reload(model.ML.architectures.diffusion)
 importlib.reload(model.ML.architectures.resnet)
 importlib.reload(model.ML.architectures.mlp)
 importlib.reload(model.ML.architectures.leith)
 importlib.reload(model.ML.architectures.biharmonic)
-importlib.reload(model.ML.architectures.gru)
 from model.ML.architectures.cnn import CNN
 from model.ML.architectures.zero import ZeroModel
 from model.ML.architectures.unet import UNet

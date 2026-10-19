@@ -9,7 +9,7 @@ dependencies:
   - pip=25.1
   - python=3.13.0
   - pyyaml=6.0.2
-  - scipy=1.15.3
+  - scipy=1.15.2
   - pip:
       - cmocean==4.0.3
       - equinox==0.13.2

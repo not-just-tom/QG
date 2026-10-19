@@ -92,7 +92,7 @@ def run(cfg):
     learning_rate = learning_rate = cfg['architectures'][model_type].get('learning_rate', 0)
     loss_fn = build_loss(cfg['architectures'][model_type].get('loss'))
     closure_scale = cfg['architectures'][model_type].get('closure_scale', 0.1)
-    gc_every_batches = int(getattr(cfg.ml, 'gc_every_batches', 10))
+    gc_every_batches = int(getattr(cfg.ml, 'gc_every_batches', 50))
 
     # curriculum stuff
     start_curriculum = int(cfg.ml.start_curriculum)
@@ -433,9 +433,9 @@ def run(cfg):
         current_batch_steps = current_curriculum * steps_per_curriculum
         current_n_samples   = nsteps // current_batch_steps
         stage_batch_size = batch_size
-        if current_curriculum >= 14:
+        if current_curriculum >= 56:
             stage_batch_size = max(1, batch_size // 4)
-        elif current_curriculum >= 7:
+        elif current_curriculum >= 28:
             stage_batch_size = max(1, batch_size // 2)
         if current_n_samples < 1:
             logger.warning(
