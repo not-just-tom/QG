@@ -80,7 +80,7 @@ class Kernel(ABC):
     def apply_exact_step_filter(self, state: states.State) -> states.State:
         """Apply optional exact post-step spectral damping.
 
-        Base kernels default to no-op; concrete models can override.
+        Disabled right now. 
         """
         return state
 

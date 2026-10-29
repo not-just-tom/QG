@@ -3,6 +3,8 @@ import model.ML.architectures.zero
 import model.ML.architectures.cnn
 import model.ML.architectures.unet
 import model.ML.architectures.fno
+import model.ML.architectures.afno
+import model.ML.architectures.bfno
 import model.ML.architectures.rno
 import model.ML.architectures.diffusion
 import model.ML.architectures.resnet
@@ -14,6 +16,8 @@ importlib.reload(model.ML.architectures.zero)
 importlib.reload(model.ML.architectures.cnn)
 importlib.reload(model.ML.architectures.unet)
 importlib.reload(model.ML.architectures.fno)
+importlib.reload(model.ML.architectures.afno)
+importlib.reload(model.ML.architectures.bfno)
 importlib.reload(model.ML.architectures.gru)
 importlib.reload(model.ML.architectures.rno)
 importlib.reload(model.ML.architectures.diffusion)
@@ -24,7 +28,9 @@ importlib.reload(model.ML.architectures.biharmonic)
 from model.ML.architectures.cnn import CNN
 from model.ML.architectures.zero import ZeroModel
 from model.ML.architectures.unet import UNet
-from model.ML.architectures.fno import FNO
+from model.ML.architectures.fno import FNO, MemoryState
+from model.ML.architectures.afno import AFNO
+from model.ML.architectures.bfno import BFNO
 from model.ML.architectures.rno import RNO
 from model.ML.architectures.diffusion import Diffusion
 from model.ML.architectures.resnet import ResNet
@@ -46,13 +52,23 @@ def _standardise(name):
 
 def init_latent_state(closure):
     if getattr(closure, "stateful", False):
-        hidden_channels = closure.hidden_channels
+        hidden_channels = getattr(closure, "hidden_channels", None)
+        field_channels = getattr(closure, "field_channels", None)
 
-        def init_state(state, model, params):
-            shape = (hidden_channels,) + state.q.shape[-2:]
-            hidden = jnp.zeros(shape, dtype=state.q.dtype)
-            return GRUHiddenState(hidden_state=hidden)
-
+        if hidden_channels is not None: #fix: janky way to differentiate between GRU and FNO
+            def init_state(state, model, params):
+                shape = (hidden_channels,) + state.q.shape[-2:]
+                hidden = jnp.zeros(shape, dtype=state.q.dtype)
+                return GRUHiddenState(hidden_state=hidden)
+        else: # FNO case
+            def init_state(state, model, params):
+                channels = field_channels or state.q.shape[0]
+                shape = (9 * channels,) + state.q.shape[-2:]
+                hidden = jnp.zeros(shape, dtype=state.q.dtype)
+                return MemoryState(
+                    history=hidden,
+                    initialized=jnp.asarray(False),
+                )
         return init_state
 
     def init_state(state, model, params):
@@ -165,6 +181,8 @@ def build_closure(cfg=None, loaded_leaves=None):
         "cnn": CNN,
         'unet': UNet,
         'fno': FNO,
+        'afno': AFNO,
+        'bfno': BFNO, # just a test for now
         'rno': RNO,
         'diffusion': Diffusion,
         'resnet': ResNet,

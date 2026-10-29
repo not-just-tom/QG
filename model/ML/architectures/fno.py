@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 import equinox as eqx
-from typing import Sequence, Optional
+import warnings
 
 class SpectralConv2d(eqx.Module):
     """
@@ -33,6 +33,8 @@ class SpectralConv2d(eqx.Module):
         self.out_channels = int(out_channels)
         self.xmodes = int(xmodes)
         self.ymodes = int(ymodes)
+        if self.xmodes <= 0 or self.ymodes <= 0:
+            raise ValueError("xmodes and ymodes must be positive")
         # Learnable scalar branch gate (init < 1 lets the net start as its local
         # path and bring the spectral branch in only where it helps).
         self.gate = jnp.asarray(gate_init, dtype=jnp.float32)
@@ -93,19 +95,38 @@ class SpectralConv2d(eqx.Module):
         return 1.0 + (kmag / self.kref) ** self.kpower
 
     def _spectral_coefficients(self, x):
-        # x expected shape: (C, H, W)
-        x = x[None, ...]
-        
+        if x.ndim not in (3, 4):
+            raise ValueError(
+                "SpectralConv2d expects shape (C, H, W) or (B, C, H, W)"
+            )
+        unbatched = x.ndim == 3
+        if unbatched:
+            x = x[None, ...]
+
         B, C, H, W = x.shape
-        
+        if C != self.in_channels:
+            raise ValueError(
+                f"Expected {self.in_channels} input channels, got {C}"
+            )
+
         # Compute Fourier coefficients using real FFT (more efficient for real inputs)
         x_ft = jnp.fft.rfft2(x, axes=(-2, -1))
-        
+
         # Output tensor in Fourier domain
-        out_ft = jnp.zeros((B, self.out_channels, H, W // 2 + 1), dtype=jnp.complex64)
-        
+        out_ft = jnp.zeros(
+            (B, self.out_channels, H, W // 2 + 1), dtype=x_ft.dtype
+        )
+
         # Multiply relevant Fourier modes
         # The final rFFT axis is x; the full FFT axis is y.
+        if self.ymodes > H // 2 or self.xmodes > W // 2 + 1:
+            warnings.warn(
+                f"Configured FNO modes (ymodes={self.ymodes}, "
+                f"xmodes={self.xmodes}) exceed the available grid modes "
+                f"(ymodes={H // 2}, xmodes={W // 2 + 1}); excess modes are unused.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
         y_modes = min(self.ymodes, H // 2)
         x_modes = min(self.xmodes, W // 2 + 1)
 
@@ -189,9 +210,14 @@ class SpectralConv2d(eqx.Module):
                         nyquist_value
                     )
         
-        return out_ft[0] * self._wavenumber_gain(H, W)[None, :, :]
+        out_ft = out_ft * self._wavenumber_gain(H, W)[None, None, :, :]
+        return out_ft[0] if unbatched else out_ft
 
     def __call__(self, x):
+        if x.ndim not in (3, 4):
+            raise ValueError(
+                "SpectralConv2d expects shape (C, H, W) or (B, C, H, W)"
+            )
         height, width = x.shape[-2:]
         x_ft = self._spectral_coefficients(x)
         return self.gate * jnp.fft.irfft2(
@@ -199,227 +225,194 @@ class SpectralConv2d(eqx.Module):
         )
 
 
-class FNO(eqx.Module):
+class MemoryState(eqx.Module):
+    """Rolling history of the nine snapshots preceding the current field.
+
+    history shape: (9 * C, H, W)
+    The current field supplied to the model completes the ten-step window.
     """
-    Fourier Neural Operator parameterisation
-    
-    Architecture:
-    - Lift input features -> `width` via a 1x1 conv
-    - Optionally augment PV inputs with streamfunction, Laplacian, and velocity
-      channels derived using the configured QG inversion.
-    - Repeat `n_layers` residual blocks of parallel spectral and local
-      convolutions.
-    - Project back to `out_channels` and add a linear local-stencil input skip
-      (circular `skip_kernel` x `skip_kernel` conv, no bias).
-    - Resolution-invariant via spectral operations
-    
-    Args:
-        width: Hidden channel dimension (default: 32)
-        xmodes: Number of Fourier modes in x-direction (default: 16)
-        ymodes: Number of Fourier modes in y-direction (default: 16)
-        depth: Number of Fourier layers (default: 4)
-        activation: activation function 
-        key: JAX PRNG key
-        cfg: Configuration object
-        physics_features: Add QG-inverted streamfunction, Laplacian, and velocity channels.
-        spectral_init_power: Radial power used to scale spectral-weight initialization.
-        skip_kernel: Odd kernel size of the linear input->output skip (1 = old pointwise skip).
-        spectral_gate_init: Initial value of each spectral layer's learnable scalar gate.
-        spectral_gain_power: kpower of the fixed gain 1 + (|k|/spectral_kref)^p (0 = off).
-        spectral_kref: Reference wavenumber (integer mode units) for that gain.
-    
-    Input/Output:
-        - Accepts (C,H,W)
-        - Returns same shape as input
+    history: jnp.ndarray
+    initialized: jnp.ndarray
+
+
+class OriginalFNO2d(eqx.Module):
+    """Creator-style 2D FNO, adapted to channels-first Equinox tensors.
+
+    Input:  (10*C, H, W), containing ten field snapshots.
+    Output: (C, H, W), normalized closure increment.
     """
     input_proj: eqx.nn.Conv2d
-    spec_layers: Sequence[SpectralConv2d]
-    w_layers: Sequence[eqx.nn.Conv2d]
+    spec_layers: tuple
+    w_layers: tuple
     proj1: eqx.nn.Conv2d
     proj2: eqx.nn.Conv2d
-    skip_proj: eqx.nn.Conv2d
-    activation: Optional[str]
-    n_layers: int
-    physics_features: bool
-    Lx: float
-    Ly: float
-    Ld: float
-    delta: float
+    activation: object
+    field_channels: int
+    depth: int = eqx.field(static=True)
 
     def __init__(
         self,
-        width: int = 32,
-        xmodes: int = 16,
-        ymodes: int = 16,
-        projection_width: int = 128,
-        depth: int = 4,
-        activation: Optional[str] = 'gelu',
+        field_channels,
+        xmodes=12,
+        ymodes=12,
+        width=20,
+        projection_width=128,
+        depth=4,
+        activation="gelu",
+        spectral_init_power=0.5,
         key=jax.random.PRNGKey(0),
-        cfg=None,
-        physics_features: bool = True,
-        spectral_init_power: float = 0.5,
-        skip_kernel: int = 5,
-        spectral_gate_init: float = 1.0,
-        spectral_gain_power: float = 0.0,
-        spectral_kref: float = 4.0,
-        **kwargs,
     ):
-        
-        in_channels = cfg.params.nz
-        out_channels = in_channels 
-        if in_channels not in (1, 2):
-            raise ValueError("FNO physics features support only nz=1 or nz=2")
-        self.physics_features = bool(physics_features)
-        raw_lx = float(cfg.params.Lx)
-        raw_ly = float(getattr(cfg.params, "Ly", raw_lx) or raw_lx)
-        length_scale = (
-            raw_ly if getattr(cfg.params, "nondimensional", True) else 1.0
-        )
-        self.Lx = raw_lx / length_scale
-        self.Ly = raw_ly / length_scale
-        self.Ld = float(cfg.params.Ld) / length_scale
-        self.delta = float(getattr(cfg.params, "delta", 1.0))
-        self.n_layers = depth
+        self.field_channels = int(field_channels)
+        self.depth = int(depth)
+        if self.depth <= 0:
+            raise ValueError("depth must be positive")
 
-        # set up activation
-        if isinstance(activation, str) and activation.lower() == "tanh":
-            self.activation = eqx.nn.Lambda(jnp.tanh)
-        elif isinstance(activation, str) and activation.lower() == "gelu":
-            self.activation = eqx.nn.Lambda(jax.nn.gelu)
-        elif isinstance(activation, str) and activation.lower() == "relu":
-            self.activation = eqx.nn.Lambda(jax.nn.relu)
-        elif isinstance(activation, str) and activation.lower() == "elu":
-            self.activation = eqx.nn.Lambda(jax.nn.elu)
-        elif isinstance(activation, str) and activation.lower() == "leaky_relu":
-            self.activation = eqx.nn.Lambda(jax.nn.leaky_relu)
-        else:
-            raise ValueError(f"Unsupported activation: {activation}")
-        
-        # Split keys for all layers
-        keys = jax.random.split(key, 2 * depth + 4)
-        k0 = keys[0]
-        
-        # Lifting layer: in_channels -> width
-        self.input_proj = eqx.nn.Conv2d(
-            in_channels * (5 if self.physics_features else 1),
-            width,
-            kernel_size=1,
-            key=k0,
-            padding_mode="CIRCULAR"
-        )
-
-        # Fourier layers
-        spec_layers = []
-        w_layers = []
-        for i in range(depth):
-            ks = keys[1 + i]
-            kw = keys[1 + depth + i]
-            spec_layers.append(
-                SpectralConv2d(
-                    width,
-                    width,
-                    xmodes,
-                    ymodes,
-                    key=ks,
-                    spectral_init_power=spectral_init_power,
-                    gate_init=spectral_gate_init,
-                    kref=spectral_kref,
-                    kpower=spectral_gain_power,
-                )
+        activation = str(activation).lower()
+        activation_functions = {
+            "gelu": jax.nn.gelu,
+            "relu": jax.nn.relu,
+            "elu": jax.nn.elu,
+            "tanh": jnp.tanh,
+            "leaky_relu": jax.nn.leaky_relu,
+        }
+        if activation not in activation_functions:
+            raise ValueError(
+                f"Unsupported activation {activation!r}; expected one of "
+                f"{sorted(activation_functions)}"
             )
-            w_layers.append(eqx.nn.Conv2d(
-                width, width, kernel_size=3, padding=1, key=kw,
-                padding_mode="CIRCULAR"
-            ))
+        keys = jax.random.split(key, 2 * self.depth + 3)
 
-        self.spec_layers = spec_layers
-        self.w_layers = w_layers
+        self.input_proj = eqx.nn.Conv2d(
+            in_channels=10 * self.field_channels,
+            out_channels=width,
+            kernel_size=1,
+            key=keys[0],
+            padding_mode="CIRCULAR",
+        )
 
-        # Projection layers: width -> projection_width -> out_channels
-        k_proj1 = keys[-2]
-        k_proj2 = keys[-1]
+        self.spec_layers = tuple(
+            SpectralConv2d(
+                width, width, xmodes, ymodes,
+                key=keys[1 + i],
+                gate_init=1.0,
+                kpower=0.0,
+                spectral_init_power=spectral_init_power,
+            )
+            for i in range(self.depth)
+        )
+
+        # The original architecture uses pointwise linear branches.
+        self.w_layers = tuple(
+            eqx.nn.Conv2d(
+                width, width, kernel_size=1,
+                key=keys[1 + self.depth + i],
+                padding_mode="CIRCULAR",
+            )
+            for i in range(self.depth)
+        )
+
         self.proj1 = eqx.nn.Conv2d(
-            width, projection_width, kernel_size=1, key=k_proj1,
-            padding_mode="CIRCULAR"
+            width, projection_width, kernel_size=1,
+            key=keys[-2],
+            padding_mode="CIRCULAR",
         )
         self.proj2 = eqx.nn.Conv2d(
-            projection_width, out_channels, kernel_size=1, key=k_proj2,
-            padding_mode="CIRCULAR"
+            projection_width, self.field_channels, kernel_size=1,
+            key=keys[-1],
+            padding_mode="CIRCULAR",
         )
-        if skip_kernel < 1 or skip_kernel % 2 != 1:
-            raise ValueError(f"skip_kernel must be a positive odd integer, got {skip_kernel}")
-        # Linear local-stencil path q -> closure. No bias: a constant offset would
-        # add a spatially uniform tendency that drifts the domain-mean PV.
-        self.skip_proj = eqx.nn.Conv2d(
-            in_channels, out_channels, kernel_size=skip_kernel,
-            padding=skip_kernel // 2, use_bias=False, key=keys[-3],
-            padding_mode="CIRCULAR"
+        self.activation = eqx.nn.Lambda(activation_functions[activation])
+
+    def __call__(self, history_and_current):
+        x = self.input_proj(history_and_current)
+
+        for i, (spec, local) in enumerate(
+            zip(self.spec_layers, self.w_layers)
+        ):
+            x = spec(x) + local(x)
+            if i < self.depth - 1:
+                x = self.activation(x)
+
+        x = self.activation(self.proj1(x))
+        return self.proj2(x)
+
+
+class FNO(eqx.Module):
+    """FNO with a rolling ten-snapshot input window."""
+
+    fno: OriginalFNO2d
+    field_channels: int
+
+    def __init__(
+        self,
+        cfg,
+        key=jax.random.PRNGKey(0), #fix: this
+        xmodes=12,
+        ymodes=12,
+        width=20,
+        projection_width=128,
+        depth=4,
+        activation="gelu",
+        spectral_init_power=0.5,
+        **kwargs,
+    ):
+        channels = int(cfg.params.nz)
+        self.field_channels = channels
+        self.fno = OriginalFNO2d(
+            field_channels=channels,
+            xmodes=xmodes,
+            ymodes=ymodes,
+            width=width,
+            projection_width=projection_width,
+            depth=depth,
+            activation=activation,
+            spectral_init_power=spectral_init_power,
+            key=key,
         )
 
-    def prepare_inputs(self, q):
-        """Return PV plus QG-derived physical-space feature channels."""
-        if not self.physics_features:
-            return q.astype(jnp.float32)
+    def init_state(self, q):
+        """Start with nine copies of the initial field."""
+        q = q.astype(jnp.float32)
+        history = jnp.concatenate([q] * 9, axis=0)
+        return MemoryState(history=history, initialized=jnp.asarray(True))
 
-        height, width = q.shape[-2:]
-        kx = 2.0 * jnp.pi * jnp.fft.rfftfreq(
-            width, d=self.Lx / width
-        )
-        ky = 2.0 * jnp.pi * jnp.fft.fftfreq(
-            height, d=self.Ly / height
-        )
-        k2 = ky[:, None] ** 2 + kx[None, :] ** 2
-        qh = jnp.fft.rfft2(q, axes=(-2, -1))
+    def __call__(self, q, aux):
+        q = q.astype(jnp.float32)
+        C = self.field_channels
 
-        if q.shape[0] == 1:
-            safe_k2 = jnp.where(k2 == 0, 1.0, k2)
-            psi_h = -qh / safe_k2[None, :, :]
-            psi_h = psi_h.at[..., 0, 0].set(0.0)
-        elif q.shape[0] == 2:
-            f1 = self.Ld**-2 / (1.0 + self.delta)
-            f2 = self.delta * f1
-            determinant = k2 * (k2 + f1 + f2)
-            safe_determinant = jnp.where(determinant == 0, 1.0, determinant)
-            psi_h = jnp.stack(
-                (
-                    (-(k2 + f2) * qh[0] - f1 * qh[1]) / safe_determinant,
-                    (-f2 * qh[0] - (k2 + f1) * qh[1]) / safe_determinant,
-                ),
-                axis=0,
-            )
-            psi_h = jnp.where(determinant[None, :, :] == 0, 0.0, psi_h)
+        # Shapes are static under JAX tracing.
+        if (
+            not isinstance(aux, MemoryState)
+            or aux.history.shape[0] != 9 * C
+            or aux.history.shape[-2:] != q.shape[-2:]
+        ):
+            history = jnp.concatenate([q] * 9, axis=0)
         else:
-            raise ValueError(f"Expected 1 or 2 PV layers, got {q.shape[0]}")
+            history = jax.lax.cond(
+                aux.initialized,
+                lambda stored_history: stored_history,
+                lambda _: jnp.concatenate([q] * 9, axis=0),
+                aux.history.astype(jnp.float32),
+            )
 
-        laplacian_qh = -k2[None, :, :] * qh
-        u_h = -1j * ky[None, :, None] * psi_h
-        v_h = 1j * kx[None, None, :] * psi_h
-        features = tuple(
-            jnp.fft.irfft2(value, s=(height, width), axes=(-2, -1))
-            for value in (psi_h, laplacian_qh, u_h, v_h)
+        # Ten snapshots: nine historical fields + current field.
+        window = jnp.concatenate((history, q), axis=0)
+        closure_increment = self.fno(window)
+
+        # Shift history and append the current field.
+        next_history = jnp.concatenate(
+            (history[C:], q), axis=0
         )
-        return jnp.concatenate((q, *features), axis=0).astype(jnp.float32)
 
-    def __call__(self, q):
-        """
-        Forward pass through FNO.
-        
-        Args:
-            q: Input field of shape (C,H,W)
-        """
-        # Lifting: project to working width
-        x = self.input_proj(self.prepare_inputs(q))
-
-        # Combine global spectral and local stencil transformations residually.
-        for spec, w in zip(self.spec_layers, self.w_layers):
-            x = x + self.activation(spec(x) + w(x))
-
-        # Projection to output space
-        x = self.proj1(x)
-        x = self.activation(x)
-        x = self.proj2(x)
-        return x + self.skip_proj(q.astype(jnp.float32))
+        return closure_increment, MemoryState(
+            history=next_history,
+            initialized=jnp.asarray(True),
+        )
 
     @property
     def model_type(self):
-        return 'fno'
+        return "fno"
+
+    @property
+    def stateful(self):
+        return True
