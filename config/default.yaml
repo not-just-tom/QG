@@ -7,7 +7,7 @@ filepaths:
 
 params: 
   seed: 42
-  nx: 32
+  nx: 64
   hr_nx: 512
   Lx: 1000000
   beta: 1e-11
@@ -30,7 +30,7 @@ plotting:
   nsteps: 2000
   dt: 2000
   spinup: 20 # in eddy turnover times
-  cadence: 1
+  cadence: 10
   validation_rollout: 150
   plot: ['ke_spectrum_movie', 'loss', 'zero']
   auto_dt: false
@@ -38,7 +38,7 @@ plotting:
 
 ml:
   enabled: true # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
-  model_type: bfno # can be a list
+  model_type: fno # can be a list
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 10
@@ -69,9 +69,9 @@ architectures:
   fno:
     learning_rate: 0.0001
     loss: mae
-    width: 10
-    ymodes: 8
-    xmodes: 8
+    width: 16
+    ymodes: 24
+    xmodes: 24
     projection_width: 32
     depth: 2
     activation: gelu
