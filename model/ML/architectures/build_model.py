@@ -28,7 +28,7 @@ importlib.reload(model.ML.architectures.biharmonic)
 from model.ML.architectures.cnn import CNN
 from model.ML.architectures.zero import ZeroModel
 from model.ML.architectures.unet import UNet
-from model.ML.architectures.fno import FNO, MemoryState
+from model.ML.architectures.fno import FNO
 from model.ML.architectures.afno import AFNO
 from model.ML.architectures.bfno import BFNO
 from model.ML.architectures.rno import RNO
@@ -38,6 +38,7 @@ from model.ML.architectures.mlp import MLP
 from model.ML.architectures.leith import LeithClosure
 from model.ML.architectures.biharmonic import BiharmonicClosure
 from model.ML.architectures.gru import GRUClosure, GRUHiddenState
+from model.ML.architectures.memory import TemporalMemory, TemporalMemoryState
 from model.ML.utils.utils import module_to_single
 import equinox as eqx
 import numpy as np
@@ -51,30 +52,48 @@ def _standardise(name):
     return str(name).strip().lower()
 
 def init_latent_state(closure):
-    if getattr(closure, "stateful", False):
-        hidden_channels = getattr(closure, "hidden_channels", None)
-        field_channels = getattr(closure, "field_channels", None)
-
-        if hidden_channels is not None: #fix: janky way to differentiate between GRU and FNO
-            def init_state(state, model, params):
-                shape = (hidden_channels,) + state.q.shape[-2:]
-                hidden = jnp.zeros(shape, dtype=state.q.dtype)
-                return GRUHiddenState(hidden_state=hidden)
-        else: # FNO case
-            def init_state(state, model, params):
-                channels = field_channels or state.q.shape[0]
-                shape = (9 * channels,) + state.q.shape[-2:]
-                hidden = jnp.zeros(shape, dtype=state.q.dtype)
-                return MemoryState(
-                    history=hidden,
-                    initialized=jnp.asarray(False),
+    if isinstance(closure, TemporalMemory):
+        def init_memory_state(state, model, params):
+            inner_state = _init_base_latent_state(closure.closure, state)
+            channels = closure.field_channels
+            if state.q.shape[0] != channels:
+                raise ValueError(
+                    "Memory field channels do not match the model input channels"
                 )
-        return init_state
+            history = jnp.zeros(
+                (closure.history_length * channels,) + state.q.shape[-2:],
+                dtype=state.q.dtype,
+            )
+            return TemporalMemoryState(
+                history=history,
+                initialized=jnp.asarray(False),
+                inner_state=inner_state,
+            )
+        return init_memory_state
+
+    if getattr(closure, "stateful", False):
+        return lambda state, model, params: _init_base_latent_state(closure, state)
 
     def init_state(state, model, params):
         return None
 
     return init_state
+
+
+def _init_base_latent_state(closure, state):
+    if not getattr(closure, "stateful", False):
+        return None
+
+    hidden_channels = getattr(closure, "hidden_channels", None)
+    if hidden_channels is None:
+        raise TypeError(
+            f"Cannot initialize latent state for {type(closure).__name__}: "
+            "stateful closures must expose hidden_channels"
+        )
+
+    shape = (hidden_channels,) + state.q.shape[-2:]
+    hidden = jnp.zeros(shape, dtype=state.q.dtype)
+    return GRUHiddenState(hidden_state=hidden)
     
     
 
@@ -104,7 +123,7 @@ class ClosureAdapter:
         return (q - self.q_mean) / (self.q_std + 1e-6)
 
     def _denormalise(self, dq):
-        return (dq * self.dq_std) + self.q_mean
+        return (dq * self.dq_std)
 
     def predict(self, state, closure_params, latent_state, model):
         closure = eqx.combine(closure_params, self.closure_static)
@@ -201,9 +220,52 @@ def build_closure(cfg=None, loaded_leaves=None):
         raise ValueError(
             f"Unknown ML closure '{arch_name}', available: {sorted(registry.keys())}"
         )
-    
+
+    ml_cfg = cfg.ml
+    memory_cfg = (
+        ml_cfg.get("memory", {})
+        if hasattr(ml_cfg, "get")
+        else getattr(ml_cfg, "memory", {})
+    ) or {}
+    memory_enabled = (
+        memory_cfg.get("enabled", False)
+        if hasattr(memory_cfg, "get")
+        else getattr(memory_cfg, "enabled", False)
+    )
+    legacy_history_enabled = False
+    if _standardise(arch_name) == "fno":
+        legacy_history_enabled = bool(arch_params_to_use.pop("use_history", False))
+    if legacy_history_enabled and not memory_enabled:
+        raise ValueError(
+            "FNO use_history has moved to ml.memory.enabled; "
+            "remove architectures.fno.use_history and enable ml.memory.enabled"
+        )
+
     logger.info("Building closure '%s' with arch params: %s", arch_name, arch_params_to_use)
     closure_template = cls(**arch_params_to_use, cfg=cfg)
+
+    if memory_enabled:
+        history_length = (
+            memory_cfg.get("history_length", 9)
+            if hasattr(memory_cfg, "get")
+            else getattr(memory_cfg, "history_length", 9)
+        )
+        if not getattr(closure_template, "ml", True):
+            raise ValueError(
+                f"Temporal memory is only supported for ML closures, not '{arch_name}'"
+            )
+        params_cfg = cfg.params
+        seed = (
+            params_cfg.get("seed", 0)
+            if hasattr(params_cfg, "get")
+            else getattr(params_cfg, "seed", 0)
+        )
+        closure_template = TemporalMemory(
+            closure=closure_template,
+            field_channels=int(cfg.params.nz),
+            history_length=history_length,
+            key=jax.random.PRNGKey(int(seed)),
+        )
     
     # If loaded parameters provided, reconstruct model with them
     if loaded_leaves is not None:

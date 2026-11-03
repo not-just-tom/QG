@@ -1497,11 +1497,29 @@ class MultiModelLossRolloutDiagnostic(Diagnostic):
                         f"Model {model_name!r} has no per-step validation loss"
                     )
                 loss_name = result.get("loss_name", "configured loss")
-                ax.plot(
+                model_line, = ax.plot(
                     np.arange(1, loss_by_step.size + 1),
                     loss_by_step,
                     label=f"{model_name} ({loss_name})",
                 )
+                zero_loss_by_step = result.get("zero_validation_loss_rollout")
+                if zero_loss_by_step is not None:
+                    zero_loss_by_step = np.asarray(zero_loss_by_step)
+                    if (
+                        zero_loss_by_step.ndim != 1
+                        or zero_loss_by_step.size != loss_by_step.size
+                    ):
+                        raise ValueError(
+                            f"Model {model_name!r} has invalid zero-model "
+                            "per-step validation loss"
+                        )
+                    ax.plot(
+                        np.arange(1, zero_loss_by_step.size + 1),
+                        zero_loss_by_step,
+                        color=model_line.get_color(),
+                        linestyle="--",
+                        label=f"zero ({model_name}; {loss_name})",
+                    )
                 plotted = True
         else:
             loss_by_step = trajs.get("loss_rollout")
@@ -1518,6 +1536,24 @@ class MultiModelLossRolloutDiagnostic(Diagnostic):
                 loss_by_step,
                 label=str(loss_name),
             )
+            zero_loss_by_step = trajs.get("zero_loss_rollout")
+            if zero_loss_by_step is not None:
+                zero_loss_by_step = np.asarray(zero_loss_by_step)
+                if (
+                    zero_loss_by_step.ndim != 1
+                    or zero_loss_by_step.size != loss_by_step.size
+                ):
+                    raise ValueError(
+                        "Zero-model per-step validation loss must match "
+                        "the model loss shape"
+                    )
+                ax.plot(
+                    np.arange(1, zero_loss_by_step.size + 1),
+                    zero_loss_by_step,
+                    label=f"zero ({loss_name})",
+                    linestyle="--",
+                    color="C2",
+                )
             plotted = True
 
         if not plotted:

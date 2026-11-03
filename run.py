@@ -89,7 +89,7 @@ def run(cfg):
     
     prefetch = cfg.ml.prefetch
     model_type = cfg.ml.model_type
-    learning_rate = learning_rate = cfg['architectures'][model_type].get('learning_rate', 0)
+    learning_rate = cfg['architectures'][model_type].get('learning_rate', 0)
     loss_fn = build_loss(cfg['architectures'][model_type].get('loss'))
     closure_scale = cfg['architectures'][model_type].get('closure_scale', 0.1)
     gc_every_batches = int(getattr(cfg.ml, 'gc_every_batches', 50))
@@ -164,16 +164,24 @@ def run(cfg):
         "spinup": cfg.plotting.spinup,
     }
 
+    training_info = {
+        "optimiser": cfg.ml.optimiser,
+        "prefetch": int(prefetch),
+        "n_train": int(n_train),
+        "n_test": int(n_test),
+        "start_curriculum": start_curriculum,
+        "steps_per_curriculum": steps_per_curriculum,
+        "model_arch": OmegaConf.to_container(cfg['architectures'][model_type], resolve=True),
+    }
+    memory_config = cfg.ml.get("memory", {})
+    if memory_config.get("enabled", False):
+        training_info["memory"] = OmegaConf.to_container(
+            memory_config,
+            resolve=True,
+        )
+
     training_metadata = {
-        "training": {
-            "optimiser": cfg.ml.optimiser,
-            "prefetch": int(prefetch),
-            "n_train": int(n_train),
-            "n_test": int(n_test),
-            "start_curriculum": start_curriculum,
-            "steps_per_curriculum": steps_per_curriculum,
-            "model_arch": OmegaConf.to_container(cfg['architectures'][model_type], resolve=True),
-        }
+        "training": training_info
     }
 
     run_dir, found = find_existing_data(DATA_DIR, params, timing_metadata)
@@ -290,6 +298,7 @@ def run(cfg):
     }
 
     start_epoch = 0
+    optimizer_step_count = 0
     loaded_leaves = None
     loaded_optim = None
     ckpt_meta = None
@@ -304,19 +313,26 @@ def run(cfg):
         if ckpt_meta is not None:
             saved_epoch = int(ckpt_meta.get('epoch', 0))
             saved_n_epochs = int(ckpt_meta.get('n_epochs', n_epochs))
+            if 'optimizer_step_count' in ckpt_meta:
+                optimizer_step_count = int(ckpt_meta['optimizer_step_count'])
+            elif saved_epoch > 0:
+                logger.warning(
+                    "Checkpoint predates cosine scheduler progress tracking; "
+                    "resuming its schedule from the initial learning rate."
+                )
             if saved_epoch >= saved_n_epochs:
                 logger.info(f"Model at {model_dir} already trained for {saved_n_epochs} epochs; skipping training loop.")
             start_epoch = saved_epoch
 
     closure = build_closure(cfg, loaded_leaves)
 
-    # Give FNO spectral weights a separate learning rate to counter their
-    # weaker gradients at higher modes.
     if cfg.ml.optimiser not in ('Adam', 'AdamW'):
         raise ValueError(f"Unsupported optimiser: {cfg.ml.optimiser}. Supported options are 'Adam' and 'AdamW'.")
     optimizer_factory = optax.adam if cfg.ml.optimiser == 'Adam' else optax.adamw
-    optimizer_transforms = {"base": optimizer_factory(learning_rate)}
+    base_optimizer = optimizer_factory(learning_rate)
     if model_type == 'fno':
+        # Give FNO spectral weights a separate rate to counter their weaker
+        # gradients at higher modes.
         spectral_lr_multiplier = float(
             cfg['architectures'][model_type].get('spectral_lr_multiplier', 5.0)
         )
@@ -328,7 +344,7 @@ def run(cfg):
                     (
                         "spectral"
                         if any(
-                            getattr(key, "name", None) == "spec_layers"
+                            getattr(key, "name", None) == "spectral"
                             for key in path
                         )
                         else "base"
@@ -339,13 +355,36 @@ def run(cfg):
                 params,
             )
 
-        optimizer_transforms["spectral"] = optimizer_factory(
-            learning_rate * spectral_lr_multiplier
+        optimizer = optax.multi_transform(
+            {
+                "base": base_optimizer,
+                "spectral": optimizer_factory(learning_rate * spectral_lr_multiplier),
+            },
+            label_parameters,
         )
-        optimizer = optax.multi_transform(optimizer_transforms, label_parameters)
     else:
-        optimizer = optimizer_transforms["base"]
+        optimizer = base_optimizer
     optim = optax.chain(optax.clip_by_global_norm(1.0), optimizer)
+
+    planned_optimizer_steps = 0
+    for curriculum in window_curriculums:
+        curriculum_batch_steps = curriculum * steps_per_curriculum
+        curriculum_samples = nsteps // curriculum_batch_steps
+        if curriculum_samples < 1:
+            break
+        curriculum_batch_size = batch_size
+        if curriculum >= 56:
+            curriculum_batch_size = max(1, batch_size // 4)
+        elif curriculum >= 28:
+            curriculum_batch_size = max(1, batch_size // 2)
+        batches_per_epoch = (
+            n_train * curriculum_samples + curriculum_batch_size - 1
+        ) // curriculum_batch_size
+        planned_optimizer_steps += n_epochs * batches_per_epoch
+    lr_schedule = optax.cosine_decay_schedule(
+        init_value=1.0,
+        decay_steps=max(1, planned_optimizer_steps),
+    )
     
     # Initialise optimiser state from template and, if available, map saved optimiser leaves into it
     template_optim_state = optim.init(eqx.filter(closure, eqx.is_array))
@@ -374,7 +413,15 @@ def run(cfg):
         optim_state = template_optim_state
 
     # Build training and test functions (JIT retraces automatically when batch_steps changes shape)
-    train_epoch = make_train_epoch(lr_model, low_res_dt, optim, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
+    train_epoch = make_train_epoch(
+        lr_model,
+        low_res_dt,
+        optim,
+        loss_fn,
+        cfl_limit=cfl_limit,
+        closure_scale=closure_scale,
+        lr_schedule=lr_schedule,
+    )
     test_epoch = make_test_epoch(lr_model, low_res_dt, loss_fn, cfl_limit=cfl_limit, closure_scale=closure_scale)
 
     # Prepare trajectory indices
@@ -463,8 +510,8 @@ def run(cfg):
             )
             continue
 
-        # Reinitialise optimiser only at fresh stage start.
-        # For mid-stage resume, keep restored optimiser state from checkpoint.
+        # Reset adaptive moments between stages, while schedule_step stays global.
+        # For mid-stage resume, keep the restored optimizer state.
         if stage_resume_epoch == 0:
             optim_state = optim.init(eqx.filter(closure, eqx.is_array))
 
@@ -504,9 +551,34 @@ def run(cfg):
                 chunk = jax.device_put(chunk)
                 train_call_start = time.perf_counter()
                 if model_type == "diffusion":
-                    closure, optim_state, losses, discard_flags, max_cfls = train_epoch(chunk, closure, optim_state, train_rng)
+                    (
+                        closure,
+                        optim_state,
+                        losses,
+                        discard_flags,
+                        max_cfls,
+                        optimizer_step_count,
+                    ) = train_epoch(
+                        chunk,
+                        closure,
+                        optim_state,
+                        train_rng,
+                        schedule_step=optimizer_step_count,
+                    )
                 else:
-                    closure, optim_state, losses, discard_flags, max_cfls = train_epoch(chunk, closure, optim_state)
+                    (
+                        closure,
+                        optim_state,
+                        losses,
+                        discard_flags,
+                        max_cfls,
+                        optimizer_step_count,
+                    ) = train_epoch(
+                        chunk,
+                        closure,
+                        optim_state,
+                        schedule_step=optimizer_step_count,
+                    )
                 jax.block_until_ready(losses)
                 current_time_to_train_seconds += time.perf_counter() - train_call_start
                 discard_flags = np.asarray(discard_flags).reshape(-1)
@@ -582,6 +654,7 @@ def run(cfg):
                     epoch=epoch_counter,
                     n_epochs=total_curriculum_epochs,
                     losses={"train": train_mean_losses, "test": test_mean_losses, "zero": zero_mean_losses},
+                    optimizer_step_count=optimizer_step_count,
                 )
                 meta = {
                     "parameters": params,
@@ -690,19 +763,24 @@ def run(cfg):
     rollout_residuals = jnp.asarray(prediction[1:n_common] - truth[1:n_common])
     if rollout_residuals.shape[0] == 0:
         raise ValueError("Validation rollout must contain at least one predicted step")
-    validation_loss_rollout = jax.device_get(
-        jax.vmap(
-            lambda residual: jnp.mean(
-                loss_fn(residual[None, None, ...], lr_model)
-            )
-        )(rollout_residuals)
-    )
-    validation_mae_rollout = jax.device_get(
-        jnp.mean(jnp.abs(rollout_residuals), axis=(1, 2, 3))
-    )
+
+    def per_step_configured_loss(residuals):
+        return jax.device_get(
+            jax.vmap(
+                lambda residual: jnp.mean(
+                    loss_fn(residual[None, None, ...], lr_model)
+                )
+            )(residuals)
+        )
+
+    validation_loss_rollout = per_step_configured_loss(rollout_residuals)
     zero_prediction = jnp.asarray(trajectories["zero"][:n_common])
     zero_rollout_residuals = zero_prediction[1:n_common] - jnp.asarray(
         truth[1:n_common]
+    )
+    zero_validation_loss_rollout = per_step_configured_loss(zero_rollout_residuals)
+    validation_mae_rollout = jax.device_get(
+        jnp.mean(jnp.abs(rollout_residuals), axis=(1, 2, 3))
     )
     zero_validation_mae_rollout = jax.device_get(
         jnp.mean(jnp.abs(zero_rollout_residuals), axis=(1, 2, 3))
@@ -713,9 +791,15 @@ def run(cfg):
         )
     )
     validation_mae = float(jnp.mean(jnp.abs(rollout_residuals)))
+    zero_validation_loss = float(
+        jax.device_get(
+            jnp.mean(loss_fn(zero_rollout_residuals[None, ...], lr_model))
+        )
+    )
     zero_validation_mae = float(jnp.mean(jnp.abs(zero_rollout_residuals)))
     loss_name = cfg["architectures"][model_type]["loss"]
     trajectories["loss_rollout"] = validation_loss_rollout
+    trajectories["zero_loss_rollout"] = zero_validation_loss_rollout
     trajectories["loss_name"] = loss_name
     comparison_result = {
         "model_type": model_type,
@@ -724,6 +808,8 @@ def run(cfg):
         "validation_mae": validation_mae,
         "validation_loss_rollout": validation_loss_rollout,
         "validation_mae_rollout": validation_mae_rollout,
+        "zero_validation_loss": zero_validation_loss,
+        "zero_validation_loss_rollout": zero_validation_loss_rollout,
         "zero_validation_mae": zero_validation_mae,
         "zero_validation_mae_rollout": zero_validation_mae_rollout,
         "zero_rollout_prediction_seconds": validation_results[

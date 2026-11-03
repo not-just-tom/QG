@@ -26,12 +26,18 @@ def nondimensionalise(params: dict) -> tuple[dict, RhinesScales]:
     lx = float(params.get("Lx", 0))
     ly = float(params.get("Ly", lx))
     beta = float(params.get("beta"))
-    if lx <= 0 or ly <= 0 or beta <= 0:
-        raise ValueError("Lx, Ly, and beta must be positive for Rhines scaling")
+    if lx <= 0 or ly <= 0:
+        raise ValueError("Lx and Ly must be positive for Rhines scaling")
 
     # n_jets is a meridional Fourier-mode count: k_R = 2*pi*n_jets/Ly.
     length = ly
-    velocity = beta * length**2 / (2.0 * math.pi * float(n_jets))**2
+    if beta > 0:
+        # Classic Rhines scaling: U = beta / k_R^2
+        k_R = (2.0 * math.pi * float(n_jets)) / ly
+        velocity = beta / k_R**2
+    else:
+        # really should have a reference velocity scale rather than pinning to 0.03
+        velocity = 0.03
     time = length / velocity
 
     scaled = dict(params)

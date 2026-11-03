@@ -68,7 +68,16 @@ def load_forced_model(
     # Return preprocessing params for diagnostics
     return forced_model, closure_params, closure_static, closure_adapter
 
-def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save: bool = False, epoch: int = None, n_epochs: int = None, losses: dict = None):
+def checkpointer(
+    closure_obj=None,
+    optim_state=None,
+    model_dir: str = None,
+    save: bool = False,
+    epoch: int = None,
+    n_epochs: int = None,
+    losses: dict = None,
+    optimizer_step_count: int = None,
+):
     '''
     Save or load a checkpoint (closure module + optimizer state) to/from `model_dir`.
 
@@ -139,6 +148,8 @@ def checkpointer(closure_obj=None, optim_state=None, model_dir: str = None, save
             meta["epoch"] = int(epoch)
         if n_epochs is not None:
             meta["n_epochs"] = int(n_epochs)
+        if optimizer_step_count is not None:
+            meta["optimizer_step_count"] = int(optimizer_step_count)
         try:
             # write metadata atomically
             meta_path = os.path.join(model_dir, "checkpoint_meta.json")

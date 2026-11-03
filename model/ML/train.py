@@ -76,7 +76,15 @@ def time_model_rollout(stepped_model, key, n_steps, **init_kwargs):
     return time.perf_counter() - start
 
 
-def make_train_epoch(lr_model, dt, optim, loss_fn, cfl_limit=1.0, closure_scale=0.1):
+def make_train_epoch(
+    lr_model,
+    dt,
+    optim,
+    loss_fn,
+    cfl_limit=1.0,
+    closure_scale=0.1,
+    lr_schedule=None,
+):
     """Factory that returns a JIT-compiled `train_epoch` function bound to
     the provided low-resolution physics model `lr_model`, a step `dt` (low_res?), and optimizer.
     
@@ -85,7 +93,7 @@ def make_train_epoch(lr_model, dt, optim, loss_fn, cfl_limit=1.0, closure_scale=
     # Prepare any template state that is static and can be captured
     template_state = lr_model.initialise(jax.random.PRNGKey(0))
 
-    def _train_epoch(train_trajs, closure, optim_state):
+    def _train_epoch(train_trajs, closure, optim_state, rng=None, schedule_step=0):
         # Use the low-resolution physics model for training 
         forced_model, closure_params, static_closure_obj, _ = load_forced_model(
             lr_model,
@@ -118,7 +126,7 @@ def make_train_epoch(lr_model, dt, optim, loss_fn, cfl_limit=1.0, closure_scale=
             return loss, max_cfl
 
         def step_fn(carry, batch):
-            closure_params, optim_state = carry
+            closure_params, optim_state, schedule_step = carry
             
             # Compute loss and CFL in one rollout with gradients
             (loss, max_cfl), grads = eqx.filter_value_and_grad(
@@ -128,21 +136,53 @@ def make_train_epoch(lr_model, dt, optim, loss_fn, cfl_limit=1.0, closure_scale=
             discard = jnp.any(max_cfl > cfl_limit)
 
             def do_update(args):
-                params, state, grads, loss, max_cfl = args
+                params, state, grads, loss, max_cfl, schedule_step = args
                 updates, new_optim_state = optim.update(grads, state, params)
+                if lr_schedule is not None:
+                    learning_rate_scale = lr_schedule(schedule_step)
+                    updates = jax.tree_util.tree_map(
+                        lambda update: update * learning_rate_scale,
+                        updates,
+                    )
                 new_closure_params = eqx.apply_updates(params, updates)
-                return (new_closure_params, new_optim_state), (loss, jnp.bool_(False), jnp.max(max_cfl))
+                return (
+                    new_closure_params,
+                    new_optim_state,
+                    schedule_step + 1,
+                ), (loss, jnp.bool_(False), jnp.max(max_cfl))
 
             def skip_update(args):
-                params, state, grads, loss, max_cfl = args
-                return (params, state), (jnp.asarray(jnp.nan, dtype=batch.dtype), jnp.bool_(True), jnp.max(max_cfl))
+                params, state, grads, loss, max_cfl, schedule_step = args
+                return (
+                    params,
+                    state,
+                    schedule_step,
+                ), (jnp.asarray(jnp.nan, dtype=batch.dtype), jnp.bool_(True), jnp.max(max_cfl))
 
-            return jax.lax.cond(discard, skip_update, do_update, (closure_params, optim_state, grads, loss, max_cfl))
+            return jax.lax.cond(
+                discard,
+                skip_update,
+                do_update,
+                (closure_params, optim_state, grads, loss, max_cfl, schedule_step),
+            )
 
-        (final_closure_params, final_optim_state), (losses, discard_flags, max_cfls) = jax.lax.scan(
-            step_fn, (closure_params, optim_state), train_trajs
+        (
+            final_closure_params,
+            final_optim_state,
+            final_schedule_step,
+        ), (losses, discard_flags, max_cfls) = jax.lax.scan(
+            step_fn,
+            (closure_params, optim_state, schedule_step),
+            train_trajs,
         )
-        return eqx.combine(final_closure_params, static_closure_obj), final_optim_state, losses, discard_flags, max_cfls
+        return (
+            eqx.combine(final_closure_params, static_closure_obj),
+            final_optim_state,
+            losses,
+            discard_flags,
+            max_cfls,
+            final_schedule_step,
+        )
 
     return eqx.filter_jit(_train_epoch)
 
