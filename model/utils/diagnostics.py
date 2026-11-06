@@ -1,5 +1,7 @@
 from __future__ import annotations
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")  # non-interactive backend for diagnostics
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
 import importlib

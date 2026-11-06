@@ -9,6 +9,16 @@ import copy
 import importlib 
 import os
 from omegaconf import OmegaConf
+import tempfile
+
+# Force JAX to write its compilation cache to your local Windows temporary folder
+local_temp_dir = tempfile.gettempdir()
+os.environ["JAX_COMPILER_CACHE_DIR"] = os.path.join(local_temp_dir, "jax_cache")
+
+# Now import JAX safely
+import jax
+import jax.numpy as jnp
+
 
 # Base repo paths
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -53,8 +63,6 @@ from model.core.steppers import SteppedModel, AB3Stepper, CNABStepper
 from model.core.model import QGM
 import logging
 import functools
-import jax
-import jax.numpy as jnp
 import os
 import json
 import time

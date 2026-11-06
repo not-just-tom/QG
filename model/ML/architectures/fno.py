@@ -67,7 +67,7 @@ class SpectralConv2d(eqx.Module):
             dtype=x_ft.dtype,
         )
 
-        ym = min(self.ymodes, (height - 1) // 2)
+        ym = min(self.ymodes, height// 2)
         xm = min(self.xmodes, width // 2 + 1)
 
         if ym > 0 and xm > 0:
@@ -110,7 +110,7 @@ class SpectralConv2d(eqx.Module):
 
 
 class FNOBlock(eqx.Module):
-    """Residual spectral + local FNO block."""
+    """Residual spectral + local 3x3 FNO block."""
 
     spectral: SpectralConv2d
     local: eqx.nn.Conv2d
@@ -142,12 +142,15 @@ class FNOBlock(eqx.Module):
             spectral_init_power=spectral_init_power,
         )
 
+        # CHANGED: kernel_size=3, padding=1, padding_mode="CIRCULAR"
+        # This keeps (Height, Width) perfectly identical to the input.
         self.local = eqx.nn.Conv2d(
             width,
             width,
-            kernel_size=1,
-            key=ks[1],
+            kernel_size=3,
+            padding=1, 
             padding_mode="CIRCULAR",
+            key=ks[1],
         )
 
         self.spectral_scale = jnp.asarray(1.0)
@@ -172,15 +175,14 @@ class FNOBlock(eqx.Module):
         spectral = self.spectral(x)
         local = self.local(x)
 
+        # Now shapes match exactly, broadcasting works seamlessly
         update = (
             self.spectral_scale * spectral
             + self.local_scale * local
         )
 
-        # Small residual update helps preserve the input representation.
         output = x + self.residual_scale * update
 
-        # Equinox LayerNorm operates on individual channel vectors.
         if not isinstance(self.norm, eqx.nn.Identity):
             output = jax.vmap(
                 jax.vmap(self.norm, in_axes=1, out_axes=1),
@@ -189,6 +191,7 @@ class FNOBlock(eqx.Module):
             )(output)
 
         return self.activation(output)
+
 
 
 class OriginalFNO2d(eqx.Module):

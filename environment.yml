@@ -1,4 +1,4 @@
-name: qg
+name: QG
 channels:
   - conda-forge
 dependencies:
