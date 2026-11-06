@@ -44,8 +44,8 @@ ml:
   n_train: 7
   n_test: 3
   start_curriculum: 1     # initial window length in steps
-  end_curriculum: 4       # final window length in steps
-  steps_per_curriculum: 10 # number of steps in a curriculum before the next round
+  end_curriculum: 1       # final window length in steps
+  steps_per_curriculum: 40 # number of steps in a curriculum before the next round
   batch_size: 10 # number of samples in a training batch per update
   patience: 20
   prefetch: 3       # prefetch a few batches to aid efficiency
@@ -72,10 +72,10 @@ architectures:
   fno:
     learning_rate: 0.001
     loss: mse
-    width: 8
-    xmodes: 16
-    ymodes: 16
-    projection_width: 64
+    width: [8, 12, 64]
+    xmodes: [8, 12, 16]
+    ymodes: [8, 12, 16]
+    projection_width: [64, 128]
     depth: 2
     spectral_init_power: 0.2
     residual_init: 0.5

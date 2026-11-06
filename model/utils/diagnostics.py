@@ -257,39 +257,57 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
 # KE Spectrum (time-averaged)
 # ============================================================
 
+
+
 class KESpectrumDiagnostic(Diagnostic):
     name = "ke_spectrum"
+
+    # Hardcoded plotting options
+    PLOT_COMPONENTS = True
 
     def run(self, trajs, out_path, cadence):
         # --- get stuff ---
         grid = trajs.get("grid")
         q_truth = _sanitize_numeric_array(trajs.get("truth"))
-        q_pred  = _sanitize_numeric_array(trajs.get("pred"))
+        q_pred = _sanitize_numeric_array(trajs.get("pred"))
         zero = _sanitize_numeric_array(trajs.get("zero"))
 
         beta, k_min, k_max, k_deformation, nz = _get_reference_wavenumbers(trajs, grid)
         k_damping = 0.65 * np.pi / grid.dx
 
-        # --- helper: compute spectrum from PV (time-averaged) ---
+        # --- helper: compute spectra ---
         def compute_avg_spectrum(q):
             if q is None:
-                return None, None
+                return None, None, None, None
+
             psi = invert_pv_to_psi(q, grid)
             u, v = velocity_from_psi(psi, grid)
-            spec = isotropic_ke_spectrum(u, v, grid)
-            k = np.asarray(spec["k"]).ravel()
-            E = np.asarray(spec["E"]).ravel()
-            return k, E
 
-        # compute averaged spectra
-        k, E_truth_avg = compute_avg_spectrum(q_truth)
-        _, E_zero_avg = compute_avg_spectrum(zero)
+            # Total KE spectrum
+            spec_total = isotropic_ke_spectrum(u, v, grid)
+
+            # Individual component spectra
+            spec_x = isotropic_ke_spectrum(u, np.zeros_like(v), grid)
+            spec_y = isotropic_ke_spectrum(np.zeros_like(u), v, grid)
+
+            k = np.asarray(spec_total["k"]).ravel()
+            E_total = np.asarray(spec_total["E"]).ravel()
+            E_x = np.asarray(spec_x["E"]).ravel()
+            E_y = np.asarray(spec_y["E"]).ravel()
+
+            return k, E_total, E_x, E_y
+
+        # --- compute averaged spectra ---
+        k, E_truth_avg, Ex_truth_avg, Ey_truth_avg = compute_avg_spectrum(q_truth)
+
+        _, E_zero_avg, _, _ = compute_avg_spectrum(zero)
+
         if q_pred is not None:
-            _, E_pred_avg = compute_avg_spectrum(q_pred)
-        else: 
-            E_pred_avg = None
+            _, E_pred_avg, Ex_pred_avg, Ey_pred_avg = compute_avg_spectrum(q_pred)
+        else:
+            E_pred_avg = Ex_pred_avg = Ey_pred_avg = None
 
-        # compute key wavelength values 
+        # --- compute Rhines wavenumber ---
         u, v = velocity_from_psi(invert_pv_to_psi(q_truth, grid), grid)
         U_rms = np.sqrt(np.mean(u**2 + v**2))
         k_Rhines = np.sqrt(beta / U_rms)
@@ -297,65 +315,184 @@ class KESpectrumDiagnostic(Diagnostic):
         # --- compute per-frame spectra ---
         def compute_frame_spectra(q):
             try:
-                frames = []
+                total_frames = []
+                x_frames = []
+                y_frames = []
+
                 for t in range(q.shape[0]):
                     q_t = _sanitize_numeric_array(q[t])
                     psi_t = invert_pv_to_psi(q_t, grid)
                     u_t, v_t = velocity_from_psi(psi_t, grid)
-                    spec_t = isotropic_ke_spectrum(u_t, v_t, grid)
-                    Et = np.asarray(spec_t["E"]).ravel()
-                    frames.append(Et)
-                return np.stack(frames, axis=0)
+
+                    total_frames.append(
+                        np.asarray(
+                            isotropic_ke_spectrum(u_t, v_t, grid)["E"]
+                        ).ravel()
+                    )
+                    x_frames.append(
+                        np.asarray(
+                            isotropic_ke_spectrum(u_t, np.zeros_like(v_t), grid)["E"]
+                        ).ravel()
+                    )
+                    y_frames.append(
+                        np.asarray(
+                            isotropic_ke_spectrum(np.zeros_like(u_t), v_t, grid)["E"]
+                        ).ravel()
+                    )
+
+                return (
+                    np.stack(total_frames),
+                    np.stack(x_frames),
+                    np.stack(y_frames),
+                )
+
             except Exception:
-                return None
+                return None, None, None
 
-        E_truth_frames = compute_frame_spectra(q_truth)
-        E_truth_std = E_truth_frames.std(axis=0)
+        E_truth_frames, Ex_truth_frames, Ey_truth_frames = compute_frame_spectra(q_truth)
+
+        E_truth_std = E_truth_frames.std(axis=0) if E_truth_frames is not None else None
+        Ex_truth_std = Ex_truth_frames.std(axis=0) if Ex_truth_frames is not None else None
+        Ey_truth_std = Ey_truth_frames.std(axis=0) if Ey_truth_frames is not None else None
+
         if q_pred is not None:
-            E_pred = compute_frame_spectra(q_pred)
-            E_pred_std = E_pred.std(axis=0)
+            E_pred_frames, Ex_pred_frames, Ey_pred_frames = compute_frame_spectra(q_pred)
 
-        # --- plot ---
-        fig, ax = plt.subplots()
-        ax.loglog(k[1:], E_truth_avg[1:], label="Truth", color="k")
+            E_pred_std = E_pred_frames.std(axis=0) if E_pred_frames is not None else None
+            Ex_pred_std = Ex_pred_frames.std(axis=0) if Ex_pred_frames is not None else None
+            Ey_pred_std = Ey_pred_frames.std(axis=0) if Ey_pred_frames is not None else None
+        else:
+            E_pred_std = Ex_pred_std = Ey_pred_std = None
+
+        # --- plotting ---
+        fig, ax = plt.subplots(figsize=(9, 6))
+
+        # Total KE: black
+        ax.loglog(
+            k[1:], E_truth_avg[1:],
+            color="k", linestyle="-",
+            label="Truth: $K_x+K_y$"
+        )
+
         if E_pred_avg is not None:
-            ax.loglog(k[1:], E_pred_avg[1:], label="Parameterisation", color="C1")
+            ax.loglog(
+                k[1:], E_pred_avg[1:],
+                color="k", linestyle="--",
+                label="Prediction: $K_x+K_y$"
+            )
+
+        # Individual components
+        if self.PLOT_COMPONENTS:
+            ax.loglog(
+                k[1:], Ex_truth_avg[1:],
+                color="red", linestyle="-",
+                label="Truth: $K_x$"
+            )
+            ax.loglog(
+                k[1:], Ey_truth_avg[1:],
+                color="blue", linestyle="-",
+                label="Truth: $K_y$"
+            )
+
+            if Ex_pred_avg is not None:
+                ax.loglog(
+                    k[1:], Ex_pred_avg[1:],
+                    color="red", linestyle="--",
+                    label="Prediction: $K_x$"
+                )
+                ax.loglog(
+                    k[1:], Ey_pred_avg[1:],
+                    color="blue", linestyle="--",
+                    label="Prediction: $K_y$"
+                )
+
+        # Zero baseline: green
         if E_zero_avg is not None:
-            ax.loglog(k[1:], E_zero_avg[1:], label="Zero", color="C2")
+            ax.loglog(
+                k[1:], E_zero_avg[1:],
+                color="green", linestyle="-",
+                label="Zero"
+            )
 
-
-        # Shade ±1σ around the mean if available
+        # --- uncertainty bands ---
         try:
             if E_truth_std is not None:
-                ax.fill_between(k[1:], (E_truth_avg - E_truth_std)[1:], (E_truth_avg + E_truth_std)[1:], color="k", alpha=0.12)
+                ax.fill_between(
+                    k[1:],
+                    (E_truth_avg - E_truth_std)[1:],
+                    (E_truth_avg + E_truth_std)[1:],
+                    color="k", alpha=0.10
+                )
+
             if E_pred_std is not None and E_pred_avg is not None:
-                ax.fill_between(k[1:], (E_pred_avg - E_pred_std)[1:], (E_pred_avg + E_pred_std)[1:], color="C1", alpha=0.08)
+                ax.fill_between(
+                    k[1:],
+                    (E_pred_avg - E_pred_std)[1:],
+                    (E_pred_avg + E_pred_std)[1:],
+                    color="k", alpha=0.06
+                )
+
+            if self.PLOT_COMPONENTS:
+                if Ex_truth_std is not None:
+                    ax.fill_between(
+                        k[1:],
+                        (Ex_truth_avg - Ex_truth_std)[1:],
+                        (Ex_truth_avg + Ex_truth_std)[1:],
+                        color="red", alpha=0.08
+                    )
+
+                if Ey_truth_std is not None:
+                    ax.fill_between(
+                        k[1:],
+                        (Ey_truth_avg - Ey_truth_std)[1:],
+                        (Ey_truth_avg + Ey_truth_std)[1:],
+                        color="blue", alpha=0.08
+                    )
+
+                if Ex_pred_std is not None:
+                    ax.fill_between(
+                        k[1:],
+                        (Ex_pred_avg - Ex_pred_std)[1:],
+                        (Ex_pred_avg + Ex_pred_std)[1:],
+                        color="red", alpha=0.04
+                    )
+
+                if Ey_pred_std is not None:
+                    ax.fill_between(
+                        k[1:],
+                        (Ey_pred_avg - Ey_pred_std)[1:],
+                        (Ey_pred_avg + Ey_pred_std)[1:],
+                        color="blue", alpha=0.04
+                    )
+
         except Exception:
             pass
-        if nz>1:
-            ax.axvline(k_deformation, ymin=0, ymax=1, color='red', linestyle="--")
-            ax.text(k_deformation,1e-3,'k_deformation',rotation=270, color='k')
-        ax.axvline(k_Rhines, ymin=0, ymax=1, color='red', linestyle="--")
-        ax.text(k_Rhines,1e-3,'k_Rhines',rotation=270, color='k')
-        ax.axvline(k_min, ymin=0, ymax=1, color='red', linestyle="--")
-        ax.text(k_min,1e-3,'k_min',rotation=270, color='k')
-        ax.axvline(k_max, ymin=0, ymax=1, color='red', linestyle="--")
-        ax.text(k_max,1e-3,'k_max',rotation=270, color='k')
+
+        # --- reference wavenumbers ---
+        if nz > 1:
+            ax.axvline(k_deformation, color="grey", linestyle="--")
+
+        ax.axvline(k_Rhines, color="grey", linestyle="--", label="$k_{Rhines}$")
+        ax.axvline(k_min, color="grey", linestyle=":")
+        ax.axvline(k_max, color="grey", linestyle=":")
+
         ax.axvline(
             k_damping,
             color="purple",
-            linestyle=":",
+            linestyle="-.",
             label="Exact-filter damping onset",
         )
-        #ax.axvline(k_nyquist, ymin=0, ymax=1, color='red', linestyle="--")
-        #ax.text(k_nyquist,1e-14,'k_nyquist',rotation=270, color='k')
+
         ax.set_xlabel("k")
         ax.set_ylabel("E(k)")
         ax.set_title("Time-averaged KE spectrum")
-        ax.grid(True, which="both")
-        ax.legend()
+        ax.grid(True, which="both", alpha=0.3)
+        ax.legend(fontsize=9)
+
+        fig.tight_layout()
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
+
 
 
 # ============================================================
