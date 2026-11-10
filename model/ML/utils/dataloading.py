@@ -172,7 +172,16 @@ def checkpointer(
                 lh_path = os.path.join(model_dir, "loss_history.json")
                 tmp_lh = lh_path + ".tmp"
                 with open(tmp_lh, "w") as f:
-                    json.dump({"train": list(losses.get("train", [])), "test": list(losses.get("test", [])), 'zero': list(losses.get('zero', []))}, f, indent=4)
+                    json.dump(
+                        {
+                            "train": list(losses.get("train", [])),
+                            "zero_train": list(losses.get("zero_train", [])),
+                            "test": list(losses.get("test", [])),
+                            "zero": list(losses.get("zero", [])),
+                        },
+                        f,
+                        indent=4,
+                    )
                 for attempt in range(3):
                     try:
                         os.replace(tmp_lh, lh_path)

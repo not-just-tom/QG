@@ -4,7 +4,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 
-from model.ML.architectures.fno import FNO as FourierOperator
+from model.ML.architectures.fno import FNO
 from model.ML.architectures.gru import GRUHiddenState
 
 
@@ -18,7 +18,7 @@ class RNO(eqx.Module):
     ml = True
     stateful = True
 
-    operator: FourierOperator
+    operator: FNO
     embed: eqx.nn.Conv2d
     reset_gate: eqx.nn.Conv2d
     update_gate: eqx.nn.Conv2d
@@ -59,7 +59,7 @@ class RNO(eqx.Module):
         keys = jax.random.split(key, 6)
 
         # Spatial neural operator producing the instantaneous dynamics update.
-        self.operator = FourierOperator(
+        self.operator = FNO(
             width=width,
             xmodes=xmodes,
             ymodes=ymodes,

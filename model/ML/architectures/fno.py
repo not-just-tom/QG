@@ -142,8 +142,6 @@ class FNOBlock(eqx.Module):
             spectral_init_power=spectral_init_power,
         )
 
-        # CHANGED: kernel_size=3, padding=1, padding_mode="CIRCULAR"
-        # This keeps (Height, Width) perfectly identical to the input.
         self.local = eqx.nn.Conv2d(
             width,
             width,

@@ -31,14 +31,14 @@ plotting:
   dt: 2000
   spinup: 20 # in eddy turnover times
   cadence: 1
-  validation_rollout: 41
-  plot: ['ke_spectrum_movie', 'loss', 'loss_rollout', 'zero']
+  validation_rollout: 50
+  plot: ['ke_spectrum', 'loss', 'loss_rollout', 'zero']
   auto_dt: false
   cfl: 0.5
 
 ml:
   enabled: true # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
-  model_type: ['fno', 'zero'] # can be a list
+  model_type: [resnet, fno, gru, rno, zero] # can be a list
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 7
@@ -72,36 +72,16 @@ architectures:
   fno:
     learning_rate: 0.001
     loss: mse
-    width: [8, 12, 64]
-    xmodes: [8, 12, 16]
-    ymodes: [8, 12, 16]
-    projection_width: [64, 128]
+    width: 32
+    xmodes: 16
+    ymodes: 16
+    projection_width: 128
     depth: 2
     spectral_init_power: 0.2
     residual_init: 0.5
-    use_layer_norm: true
+    use_layer_norm: false
     activation: gelu
     spectral_lr_multiplier: 1.0
-    closure_scale: 0.2
-  bfno:
-    learning_rate: 0.01
-    loss: mse
-    width: 10
-    modes1: 8
-    modes2: 8
-    layers: 2
-    projection_width: 128
-    closure_scale: 0.2
-  afno:
-    learning_rate: 0.001
-    loss: mse
-    width: 64
-    depth: 2
-    num_blocks: 8
-    mlp_ratio: 4.0
-    sparsity_threshold: 0.01
-    hard_thresholding_fraction: 1.0
-    double_skip: true
     closure_scale: 0.2
   diffusion:
     loss: mse
@@ -131,12 +111,12 @@ architectures:
     activation: elu #[gelu, elu]
     closure_scale: 0.2 #[0.1, 0.4, 0.8]
   rno:
-    learning_rate: 0.0025
+    learning_rate: 0.001
     loss: mse
     xmodes: 16
     ymodes: 16
     projection_width: 128
-    depth: 4
+    depth: 2
     hidden_channels: 32
     activation: gelu
     closure_scale: 0.2 

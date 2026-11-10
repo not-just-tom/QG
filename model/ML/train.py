@@ -102,6 +102,16 @@ def make_train_epoch(
             trajs=train_trajs,
             closure_scale=closure_scale,
         )
+        from model.ML.architectures.zero import ZeroModel
+
+        zero_closure = ZeroModel()
+        zero_forced_model, zero_closure_params, _, _ = load_forced_model(
+            lr_model,
+            zero_closure,
+            dt,
+            trajs=train_trajs,
+            closure_scale=closure_scale,
+        )
 
         def loss_rollout(params, batch):
             """Compute loss and CFL from rollout in one pass.
@@ -132,6 +142,21 @@ def make_train_epoch(
             (loss, max_cfl), grads = eqx.filter_value_and_grad(
                 loss_rollout, has_aux=True
             )(closure_params, batch)
+
+            # This adds a second, non-gradient rollout over each training batch.
+            forcing_key = jax.random.PRNGKey(0)
+            zero_errs, _, _, _ = jax.vmap(
+                functools.partial(
+                    rollout_traj_errors,
+                    forced_model=zero_forced_model,
+                    template_state=template_state,
+                    closure_params=zero_closure_params,
+                    lr_model=lr_model,
+                    dt=dt,
+                    forcing_key=forcing_key,
+                )
+            )(batch)
+            zero_loss = jnp.mean(loss_fn(zero_errs, lr_model))
             
             discard = jnp.any(max_cfl > cfl_limit)
 
@@ -149,7 +174,7 @@ def make_train_epoch(
                     new_closure_params,
                     new_optim_state,
                     schedule_step + 1,
-                ), (loss, jnp.bool_(False), jnp.max(max_cfl))
+                ), (loss, jnp.bool_(False), jnp.max(max_cfl), zero_loss)
 
             def skip_update(args):
                 params, state, grads, loss, max_cfl, schedule_step = args
@@ -157,7 +182,12 @@ def make_train_epoch(
                     params,
                     state,
                     schedule_step,
-                ), (jnp.asarray(jnp.nan, dtype=batch.dtype), jnp.bool_(True), jnp.max(max_cfl))
+                ), (
+                    jnp.asarray(jnp.nan, dtype=batch.dtype),
+                    jnp.bool_(True),
+                    jnp.max(max_cfl),
+                    jnp.asarray(jnp.nan, dtype=batch.dtype),
+                )
 
             return jax.lax.cond(
                 discard,
@@ -170,7 +200,7 @@ def make_train_epoch(
             final_closure_params,
             final_optim_state,
             final_schedule_step,
-        ), (losses, discard_flags, max_cfls) = jax.lax.scan(
+        ), (losses, discard_flags, max_cfls, zero_losses) = jax.lax.scan(
             step_fn,
             (closure_params, optim_state, schedule_step),
             train_trajs,
@@ -182,6 +212,7 @@ def make_train_epoch(
             discard_flags,
             max_cfls,
             final_schedule_step,
+            zero_losses,
         )
 
     return eqx.filter_jit(_train_epoch)
@@ -292,7 +323,7 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
 
         truth_traj = jnp.asarray(truth_traj)
         nsteps_cfg = int(
-            getattr(cfg.plotting, "validation_rollout", truth_traj.shape[0] - 1)
+            getattr(cfg.plotting, "validation_rollout", truth_traj.shape[0]-1)
         )
         n_intervals = min(nsteps_cfg, int(truth_traj.shape[0]) - 1)
 

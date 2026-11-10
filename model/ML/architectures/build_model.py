@@ -3,8 +3,6 @@ import model.ML.architectures.zero
 import model.ML.architectures.cnn
 import model.ML.architectures.unet
 import model.ML.architectures.fno
-import model.ML.architectures.afno
-import model.ML.architectures.bfno
 import model.ML.architectures.rno
 import model.ML.architectures.diffusion
 import model.ML.architectures.resnet
@@ -16,8 +14,6 @@ importlib.reload(model.ML.architectures.zero)
 importlib.reload(model.ML.architectures.cnn)
 importlib.reload(model.ML.architectures.unet)
 importlib.reload(model.ML.architectures.fno)
-importlib.reload(model.ML.architectures.afno)
-importlib.reload(model.ML.architectures.bfno)
 importlib.reload(model.ML.architectures.gru)
 importlib.reload(model.ML.architectures.rno)
 importlib.reload(model.ML.architectures.diffusion)
@@ -29,8 +25,6 @@ from model.ML.architectures.cnn import CNN
 from model.ML.architectures.zero import ZeroModel
 from model.ML.architectures.unet import UNet
 from model.ML.architectures.fno import FNO
-from model.ML.architectures.afno import AFNO
-from model.ML.architectures.bfno import BFNO
 from model.ML.architectures.rno import RNO
 from model.ML.architectures.diffusion import Diffusion
 from model.ML.architectures.resnet import ResNet
@@ -200,8 +194,6 @@ def build_closure(cfg=None, loaded_leaves=None):
         "cnn": CNN,
         'unet': UNet,
         'fno': FNO,
-        'afno': AFNO,
-        'bfno': BFNO, # just a test for now
         'rno': RNO,
         'diffusion': Diffusion,
         'resnet': ResNet,
@@ -232,14 +224,10 @@ def build_closure(cfg=None, loaded_leaves=None):
         if hasattr(memory_cfg, "get")
         else getattr(memory_cfg, "enabled", False)
     )
-    legacy_history_enabled = False
-    if _standardise(arch_name) == "fno":
-        legacy_history_enabled = bool(arch_params_to_use.pop("use_history", False))
-    if legacy_history_enabled and not memory_enabled:
-        raise ValueError(
-            "FNO use_history has moved to ml.memory.enabled; "
-            "remove architectures.fno.use_history and enable ml.memory.enabled"
-        )
+    if _standardise(arch_name) == "gru":
+        memory_enabled = True # gru needs memory for the hidden state to be passed through
+        memory_cfg["enabled"] = True
+        memory_cfg["history_length"] = 1 # gru only needs a single hidden state
 
     logger.info("Building closure '%s' with arch params: %s", arch_name, arch_params_to_use)
     closure_template = cls(**arch_params_to_use, cfg=cfg)

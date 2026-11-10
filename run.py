@@ -174,11 +174,6 @@ def run(cfg):
 
     training_info = {
         "optimiser": cfg.ml.optimiser,
-        "prefetch": int(prefetch),
-        "n_train": int(n_train),
-        "n_test": int(n_test),
-        "start_curriculum": start_curriculum,
-        "steps_per_curriculum": steps_per_curriculum,
         "model_arch": OmegaConf.to_container(cfg['architectures'][model_type], resolve=True),
     }
     memory_config = cfg.ml.get("memory", {})
@@ -187,10 +182,9 @@ def run(cfg):
             memory_config,
             resolve=True,
         )
-
-    training_metadata = {
-        "training": training_info
-    }
+    else: 
+        training_info["memory"] = 'disabled'
+    training_metadata = {"training": training_info}
 
     run_dir, found = find_existing_data(DATA_DIR, params, timing_metadata)
     if found == True: 
@@ -452,16 +446,19 @@ def run(cfg):
     train_mean_losses = []
     test_mean_losses = []
     zero_mean_losses = []
+    zero_train_mean_losses = []
     try:
         if 'loaded_loss_history' in locals() and loaded_loss_history is not None and ckpt_meta is not None:
             saved_epoch = int(ckpt_meta.get('epoch', 0))
             loaded_train = list(loaded_loss_history.get('train', []))
             loaded_test = list(loaded_loss_history.get('test', []))
             loaded_zero = list(loaded_loss_history.get('zero', []))
+            loaded_zero_train = list(loaded_loss_history.get('zero_train', []))
             if len(loaded_train) == saved_epoch:
                 train_mean_losses = loaded_train
                 test_mean_losses = loaded_test
                 zero_mean_losses = loaded_zero
+                zero_train_mean_losses = loaded_zero_train
                 logger.info(f"Loaded existing loss history: {len(train_mean_losses)} train entries, {len(test_mean_losses)} test entries, {len(zero_mean_losses)} zero entries")
             else:
                 logger.warning(
@@ -480,6 +477,10 @@ def run(cfg):
         test_mean_losses.extend([float('nan')] * (epoch_counter - len(test_mean_losses)))
     if len(zero_mean_losses) < epoch_counter:
         zero_mean_losses.extend([float('nan')] * (epoch_counter - len(zero_mean_losses)))
+    if len(zero_train_mean_losses) < epoch_counter:
+        zero_train_mean_losses.extend(
+            [float('nan')] * (epoch_counter - len(zero_train_mean_losses))
+        )
     rng = jax.random.PRNGKey(seed + 1)
 
     for curriculum_idx, current_curriculum in enumerate(window_curriculums):
@@ -532,9 +533,11 @@ def run(cfg):
         window_train_epoch_means = []
         window_test_epoch_means = []
         window_zero_epoch_means = []
+        window_zero_train_epoch_means = []
 
         for stage_epoch in range(stage_resume_epoch, n_epochs):
             train_losses_accum = []
+            zero_train_losses_accum = []
             test_losses_accum = []
             zero_losses_accum = []
             current_time_to_train_seconds = 0.0
@@ -566,6 +569,7 @@ def run(cfg):
                         discard_flags,
                         max_cfls,
                         optimizer_step_count,
+                        zero_train_losses,
                     ) = train_epoch(
                         chunk,
                         closure,
@@ -581,16 +585,18 @@ def run(cfg):
                         discard_flags,
                         max_cfls,
                         optimizer_step_count,
+                        zero_train_losses,
                     ) = train_epoch(
                         chunk,
                         closure,
                         optim_state,
                         schedule_step=optimizer_step_count,
                     )
-                jax.block_until_ready(losses)
+                jax.block_until_ready((losses, zero_train_losses))
                 current_time_to_train_seconds += time.perf_counter() - train_call_start
                 discard_flags = np.asarray(discard_flags).reshape(-1)
                 losses = np.asarray(losses).reshape(-1)
+                zero_train_losses = np.asarray(zero_train_losses).reshape(-1)
                 max_cfls = np.asarray(max_cfls).reshape(-1)
                 if np.any(discard_flags):
                     n_discard = int(np.sum(discard_flags))
@@ -599,6 +605,11 @@ def run(cfg):
                         n_discard, discard_flags.size, float(np.max(max_cfls)), cfl_limit,
                     )
                 train_losses_accum.extend([float(loss) for loss, discarded in zip(losses, discard_flags) if not discarded])
+                zero_train_losses_accum.extend(
+                    float(loss)
+                    for loss, discarded in zip(zero_train_losses, discard_flags)
+                    if not discarded
+                )
                 if batch_counter % gc_every_batches == 0:
                     gc.collect()
 
@@ -636,12 +647,19 @@ def run(cfg):
 
 
             train_mean = float(np.mean(train_losses_accum)) if train_losses_accum else float('nan')
+            zero_train_mean = (
+                float(np.mean(zero_train_losses_accum))
+                if zero_train_losses_accum
+                else float('nan')
+            )
             test_mean  = float(np.mean(test_losses_accum))  if test_losses_accum  else float('nan')
             zero_mean  = float(np.mean(zero_losses_accum))  if zero_losses_accum  else float('nan')
             train_mean_losses.append(train_mean)
+            zero_train_mean_losses.append(zero_train_mean)
             test_mean_losses.append(test_mean)
             zero_mean_losses.append(zero_mean)
             window_train_epoch_means.append(train_mean)
+            window_zero_train_epoch_means.append(zero_train_mean)
             window_test_epoch_means.append(test_mean)
             window_zero_epoch_means.append(zero_mean)
 
@@ -649,7 +667,7 @@ def run(cfg):
 
             logger.info(
                 "Stage %d/%d | sub-epoch %d/%d | global epoch %d/%d | "
-                "mean_train=%.4E | mean_test=%.4E | mean_zero=%.4E",
+                "mean_train=%.4E | mean_test=%.4E | mean_zero_test=%.4E",
                 curriculum_idx + 1, len(window_curriculums),
                 stage_epoch + 1, n_epochs,
                 epoch_counter, total_curriculum_epochs,
@@ -661,7 +679,12 @@ def run(cfg):
                     closure, optim_state, model_dir, save=True,
                     epoch=epoch_counter,
                     n_epochs=total_curriculum_epochs,
-                    losses={"train": train_mean_losses, "test": test_mean_losses, "zero": zero_mean_losses},
+                    losses={
+                        "train": train_mean_losses,
+                        "zero_train": zero_train_mean_losses,
+                        "test": test_mean_losses,
+                        "zero": zero_mean_losses,
+                    },
                     optimizer_step_count=optimizer_step_count,
                 )
                 meta = {
@@ -733,7 +756,7 @@ def run(cfg):
         validation_rollout,
         validation_rollout * low_res_dt * hr_physics_model.time_scale / (24.0 * 3600.0),
     )
-    if validation_rollout>end_curriculum:
+    if validation_rollout>end_curriculum*steps_per_curriculum:
         logger.warning(
         "The validation rollout (%d steps) extends past the limits of the model's training horizon (%d steps).",
         validation_rollout, end_curriculum*steps_per_curriculum)
@@ -757,6 +780,7 @@ def run(cfg):
     # Use per-epoch zero losses from training loop
     trajectories["loss_history"] = {
         "train": train_mean_losses, 
+        "zero_train": zero_train_mean_losses,
         "test": test_mean_losses,
         "zero": zero_mean_losses,  # Per-epoch zero losses with curriculum progression
         'n_epochs': n_epochs,
@@ -768,7 +792,7 @@ def run(cfg):
     prediction = np.asarray(trajectories["pred"])
     n_common = min(truth.shape[0], prediction.shape[0])
     residuals = prediction[:n_common] - truth[:n_common]
-    rollout_residuals = jnp.asarray(prediction[1:n_common] - truth[1:n_common])
+    rollout_residuals = jnp.asarray(prediction[:n_common] - truth[:n_common])
     if rollout_residuals.shape[0] == 0:
         raise ValueError("Validation rollout must contain at least one predicted step")
 
@@ -783,8 +807,8 @@ def run(cfg):
 
     validation_loss_rollout = per_step_configured_loss(rollout_residuals)
     zero_prediction = jnp.asarray(trajectories["zero"][:n_common])
-    zero_rollout_residuals = zero_prediction[1:n_common] - jnp.asarray(
-        truth[1:n_common]
+    zero_rollout_residuals = zero_prediction[:n_common] - jnp.asarray(
+        truth[:n_common]
     )
     zero_validation_loss_rollout = per_step_configured_loss(zero_rollout_residuals)
     validation_mae_rollout = jax.device_get(

@@ -96,7 +96,6 @@ class Diagnostic:
 
     def run(self, trajs: dict, out_path: str, cadence: int = 10):
         raise NotImplementedError
-    
 
 class LossDiagnostic(Diagnostic):
     name = "loss"
@@ -107,6 +106,58 @@ class LossDiagnostic(Diagnostic):
             losses = {}
 
         train = np.asarray(losses.get("train", []), dtype=float)
+        zero_train = np.asarray(losses.get("zero_train", []), dtype=float)
+        test = np.asarray(losses.get("test", []), dtype=float)
+        zero = np.asarray(losses.get("zero", []), dtype=float)
+        n_epochs = losses.get("n_epochs", 1)
+        if n_epochs is None or n_epochs <= 0:
+            n_epochs = 1
+
+        if zero_train.size != train.size:
+            zero_train = zero.copy()
+        else:
+            zero_train = np.where(np.isfinite(zero_train), zero_train, zero)
+
+        def stage_means(values):
+            means = [
+                np.nanmean(values[i:i + n_epochs])
+                for i in range(0, len(values), n_epochs)
+            ]
+            return np.repeat(means, n_epochs)[:len(values)]
+
+        # Normalize each split against its own no-closure reference trajectory.
+        train = (train - zero_train) / stage_means(zero_train)
+        test = (test - zero) / stage_means(zero)
+
+        fig, ax = plt.subplots()
+
+        if train.size:
+            ax.plot(np.arange(1, len(train) + 1), train, label="train")
+        if test.size:
+            ax.plot(np.arange(1, len(test) + 1), test, label="test")
+        
+
+        ax.set_title("Train / Test Loss")
+        ax.set_xlabel("Epoch")
+        ax.set_ylabel("Loss minus split baseline / stage mean baseline")
+        ax.grid(True)
+        if train.size or test.size:
+            ax.legend()
+
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+
+
+class RawLossDiagnostic(Diagnostic):
+    name = "rawloss"
+
+    def run(self, trajs, out_path, cadence):
+        losses = trajs.get("loss_history") or {}
+        if not isinstance(losses, dict):
+            losses = {}
+
+        train = np.asarray(losses.get("train", []), dtype=float)
+        zero_train = np.asarray(losses.get("zero_train", []), dtype=float)
         test = np.asarray(losses.get("test", []), dtype=float)
         zero = np.asarray(losses.get("zero", []), dtype=float)
         n_epochs = losses.get("n_epochs", 1)
@@ -123,7 +174,23 @@ class LossDiagnostic(Diagnostic):
             # plot average zero loss per curriculum stage
             x = np.arange(1, len(zero)+1)
             y = np.repeat([np.mean(zero[i:i+n_epochs]) for i in range(0, len(zero), n_epochs)], n_epochs)
-            ax.step(x, y, label="zero model", linestyle="--", color="C2")
+            ax.step(x, y[:len(x)], label="test zero model", linestyle="--", color="C2")
+        if zero_train.size:
+            x = np.arange(1, len(zero_train) + 1)
+            y = np.repeat(
+                [
+                    np.mean(zero_train[i:i + n_epochs])
+                    for i in range(0, len(zero_train), n_epochs)
+                ],
+                n_epochs,
+            )
+            ax.step(
+                x,
+                y[:len(x)],
+                label="train zero model",
+                linestyle=":",
+                color="C3",
+            )
 
         ax.set_title("Train / Test Loss")
         ax.set_xlabel("Epoch")
@@ -2312,6 +2379,7 @@ class SGSDiagnostic(Diagnostic):
 
 _REGISTRY = {
     "loss": LossDiagnostic,
+    "rawloss": RawLossDiagnostic,
     "ke_spectrum": KESpectrumDiagnostic,
     "ke_spectrum_movie": KESpectrumAnimationDiagnostic,
     'vorticity': VorticityDiagnostic,
