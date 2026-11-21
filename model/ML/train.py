@@ -3,8 +3,8 @@ import jax
 import functools
 import equinox as eqx
 import importlib
-import time
 import statistics
+import time
 import model.ML.architectures.build_model
 import model.ML.utils.dataloading
 importlib.reload(model.ML.architectures.build_model)
@@ -446,6 +446,7 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
             - truth_traj[:n_intervals]
             - dt * resolved_tendency
         )
+        jax.block_until_ready((teacher_forced_sgs, resolved_tendency, target_sgs))
 
         # Reconstruct trajectories in physical space
         qh0 = jnp.fft.rfftn(

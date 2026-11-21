@@ -11,7 +11,7 @@
 #SBATCH --time=24:00:00
 
 source /opt/software/manual/apps/Miniforge/etc/profile.d/conda.sh
-conda activate qg
+conda activate QG
 
 # Change to repository root
 cd $SLURM_SUBMIT_DIR

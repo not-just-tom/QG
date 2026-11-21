@@ -16,6 +16,7 @@ data/
 **/trajectories.zarr/
 **/trajectories.zarr/**
 saved_closures/
+incoming_hpc_folder/
 outputs/
 
 # Logs and local runs
