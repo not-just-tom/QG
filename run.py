@@ -847,7 +847,13 @@ def run(cfg):
         "zero_rollout_prediction_seconds": validation_results[
             "zero_rollout_prediction_seconds"
         ],
+        "zero_rollout_prediction_seconds_samples": validation_results[
+            "zero_rollout_prediction_seconds_samples"
+        ],
         "rollout_prediction_seconds": rollout_prediction_seconds,
+        "rollout_prediction_seconds_samples": validation_results[
+            "rollout_prediction_seconds_samples"
+        ],
         "loss_name": loss_name,
         "loss_history": trajectories["loss_history"],
         "residuals": residuals,

@@ -12,8 +12,8 @@ params:
   Lx: 1000000
   beta: 1e-11
   n_jets: 3 # number of jets in the regime, used for non dimensionalisation
-  nz: 1
-  Ld: 40000 # deformation radius
+  nz: 2
+  Ld: 60000 # deformation radius
   # Stochastic forcing parameters
   kmin: 5.5   # the wavelenth MODE of inner ring forcing 
   kmax: 6.0   # the wavelenth MODE of outer ring forcing 
@@ -38,7 +38,7 @@ plotting:
 
 ml:
   enabled: true # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
-  model_type: [resnet, fno, gru, rno, zero] # can be a list
+  model_type: [gru, zero] # can be a list
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 7
@@ -98,10 +98,11 @@ architectures:
   mlp:
     learning_rate: 0.0001
     loss: mse
-    nlayers: 3
-    kernel_size: 3
-    width: 64
-    activation: "tanh"
+    nlayers: 5
+    width: 50
+    activation: relu
+    smag_coeff: 5.0
+    leith_coeff: 5.0
     closure_scale: 0.2
   gru:
     learning_rate: 0.0025
@@ -133,6 +134,11 @@ architectures:
     loss: mse
   biharmonic:
     smag_coeff: 5
+    loss: mse
+  dsm:
+    learning_rate: 0
+    test_filter_ratio: 2.0
+    max_smag_coeff: 0.23
     loss: mse
   zero:
     loss: mse

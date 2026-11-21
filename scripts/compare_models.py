@@ -11,7 +11,6 @@ import json
 import numpy as np
 import jax.numpy as jnp
 import importlib
-import time
 import zarr
 from omegaconf import OmegaConf
 import model.ML.train
@@ -28,7 +27,11 @@ importlib.reload(model.core.model)
 importlib.reload(model.core.grid)
 importlib.reload(model.utils.plotting)
 importlib.reload(model.utils.config)
-from model.ML.train import rollout_traj_errors, time_model_rollout
+from model.ML.train import (
+    benchmark_jax_call,
+    rollout_traj_errors,
+    time_model_rollout,
+)
 from model.ML.architectures.build_model import build_closure
 from model.ML.utils.dataloading import checkpointer, load_forced_model
 from model.utils.plotting import Plotter
@@ -227,30 +230,32 @@ def rollout_model(model_info, validation_trajs, n_trajs=5):
     )
     
     # Rollout each trajectory
-    all_residuals = []
-    all_pred_qh = []
-    all_target_qh = []
-    max_cfls = []
-
-    rollout_start = time.perf_counter()
-    for i, traj in enumerate(eval_trajs):
-        residual_q, max_cfl, target_qh, pred_qh = rollout_traj_errors(
-            traj, forced_model, template_state, closure_params, lr_model, dt
+    def run_model_rollouts():
+        residuals = []
+        pred_qh_values = []
+        target_qh_values = []
+        cfl_values = []
+        for traj in eval_trajs:
+            residual_q, max_cfl, target_qh, pred_qh = rollout_traj_errors(
+                traj, forced_model, template_state, closure_params, lr_model, dt
+            )
+            residuals.append(residual_q)
+            pred_qh_values.append(pred_qh)
+            target_qh_values.append(target_qh)
+            cfl_values.append(max_cfl)
+        return (
+            jnp.stack(residuals, axis=0),
+            jnp.stack(pred_qh_values, axis=0),
+            jnp.stack(target_qh_values, axis=0),
+            jnp.stack(cfl_values),
         )
-        all_residuals.append(residual_q)
-        all_pred_qh.append(pred_qh)
-        all_target_qh.append(target_qh)
-        max_cfls.append(max_cfl)
-    
-    # Stack results
-    all_residuals = jnp.stack(all_residuals, axis=0)
-    all_pred_qh = jnp.stack(all_pred_qh, axis=0)
-    all_target_qh = jnp.stack(all_target_qh, axis=0)
-    max_cfls = jnp.array(max_cfls)
-    jax.block_until_ready(all_pred_qh)
-    rollout_prediction_seconds = (
-        time.perf_counter() - rollout_start
-    ) / len(eval_trajs)
+
+    (
+        rollout_elapsed,
+        (all_residuals, all_pred_qh, all_target_qh, max_cfls),
+        rollout_timing_samples,
+    ) = benchmark_jax_call(run_model_rollouts)
+    rollout_prediction_seconds = rollout_elapsed / len(eval_trajs)
     
     # Compute metrics
     mse_loss = jnp.mean(all_residuals ** 2)
@@ -270,23 +275,26 @@ def rollout_model(model_info, validation_trajs, n_trajs=5):
         trajs=eval_trajs,
         closure_scale=1.0,
     )
-    zero_residuals = []
-    zero_rollout_start = time.perf_counter()
-    for traj in eval_trajs:
-        zero_residual, _, _, _ = rollout_traj_errors(
-            traj,
-            zero_forced_model,
-            template_state,
-            zero_params,
-            lr_model,
-            dt,
-        )
-        zero_residuals.append(zero_residual)
-    zero_residuals = jnp.stack(zero_residuals, axis=0)
-    jax.block_until_ready(zero_residuals)
-    zero_rollout_prediction_seconds = (
-        time.perf_counter() - zero_rollout_start
-    ) / len(eval_trajs)
+    def run_zero_rollouts():
+        residuals = []
+        for traj in eval_trajs:
+            zero_residual, _, _, _ = rollout_traj_errors(
+                traj,
+                zero_forced_model,
+                template_state,
+                zero_params,
+                lr_model,
+                dt,
+            )
+            residuals.append(zero_residual)
+        return jnp.stack(residuals, axis=0)
+
+    (
+        zero_rollout_elapsed,
+        zero_residuals,
+        zero_rollout_timing_samples,
+    ) = benchmark_jax_call(run_zero_rollouts)
+    zero_rollout_prediction_seconds = zero_rollout_elapsed / len(eval_trajs)
     zero_per_step_mae = jnp.mean(
         jnp.abs(zero_residuals),
         axis=(0, *range(2, zero_residuals.ndim)),
@@ -324,8 +332,14 @@ def rollout_model(model_info, validation_trajs, n_trajs=5):
         "zero_validation_mae": float(jnp.mean(jnp.abs(zero_residuals))),
         "zero_validation_mae_rollout": np.asarray(zero_per_step_mae),
         "zero_rollout_prediction_seconds": zero_rollout_prediction_seconds,
+        "zero_rollout_prediction_seconds_samples": np.asarray(
+            zero_rollout_timing_samples
+        ) / len(eval_trajs),
         "loss_name": "mae",
         "rollout_prediction_seconds": rollout_prediction_seconds,
+        "rollout_prediction_seconds_samples": np.asarray(
+            rollout_timing_samples
+        ) / len(eval_trajs),
         "high_resolution_rollout_seconds": high_resolution_rollout_seconds,
         "max_cfls": np.array(max_cfls),
         "avg_cfl": float(avg_cfl),
@@ -424,6 +438,19 @@ def compare_models(folder_dir, validation_data_path, output_dir, n_trajs=5):
             "mse_loss": result["mse_loss"],
             "mae_loss": result["mae_loss"],
             "avg_cfl": result["avg_cfl"],
+            "rollout_prediction_seconds": result["rollout_prediction_seconds"],
+            "rollout_prediction_seconds_samples": result[
+                "rollout_prediction_seconds_samples"
+            ].tolist(),
+            "zero_rollout_prediction_seconds": result[
+                "zero_rollout_prediction_seconds"
+            ],
+            "zero_rollout_prediction_seconds_samples": result[
+                "zero_rollout_prediction_seconds_samples"
+            ].tolist(),
+            "high_resolution_rollout_seconds": result[
+                "high_resolution_rollout_seconds"
+            ],
         }
         for model_name, result in results.items()
     }

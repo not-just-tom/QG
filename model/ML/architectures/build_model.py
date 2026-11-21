@@ -9,6 +9,7 @@ import model.ML.architectures.resnet
 import model.ML.architectures.mlp
 import model.ML.architectures.leith
 import model.ML.architectures.biharmonic
+import model.ML.architectures.dynamic_smagorinsky
 import model.ML.architectures.gru
 importlib.reload(model.ML.architectures.zero)
 importlib.reload(model.ML.architectures.cnn)
@@ -21,6 +22,7 @@ importlib.reload(model.ML.architectures.resnet)
 importlib.reload(model.ML.architectures.mlp)
 importlib.reload(model.ML.architectures.leith)
 importlib.reload(model.ML.architectures.biharmonic)
+importlib.reload(model.ML.architectures.dynamic_smagorinsky)
 from model.ML.architectures.cnn import CNN
 from model.ML.architectures.zero import ZeroModel
 from model.ML.architectures.unet import UNet
@@ -31,6 +33,7 @@ from model.ML.architectures.resnet import ResNet
 from model.ML.architectures.mlp import MLP
 from model.ML.architectures.leith import LeithClosure
 from model.ML.architectures.biharmonic import BiharmonicClosure
+from model.ML.architectures.dynamic_smagorinsky import DynamicSmagorinskyClosure
 from model.ML.architectures.gru import GRUClosure, GRUHiddenState
 from model.ML.architectures.memory import TemporalMemory, TemporalMemoryState
 from model.ML.utils.utils import module_to_single
@@ -124,12 +127,16 @@ class ClosureAdapter:
         q = state.q
 
         if getattr(closure, "ml", True):
-            q_in = self._normalise(q).astype(jnp.float32)
-            if getattr(closure, "stateful", False):
-                dq, new_latent_state = closure(q_in, latent_state)
-            else:
-                dq = closure(q_in)
+            if getattr(closure, "requires_physics_features", False):
+                dq = closure(state, model=model)
                 new_latent_state = latent_state
+            else:
+                q_in = self._normalise(q).astype(jnp.float32)
+                if getattr(closure, "stateful", False):
+                    dq, new_latent_state = closure(q_in, latent_state)
+                else:
+                    dq = closure(q_in)
+                    new_latent_state = latent_state
             dq = self._denormalise(dq).astype(q.dtype)
             dq = dq - jnp.mean(dq, axis=(-2, -1), keepdims=True) # removes the spacial mean from the increment
         else:
@@ -200,6 +207,7 @@ def build_closure(cfg=None, loaded_leaves=None):
         'mlp': MLP,
         'leith': LeithClosure,
         'biharmonic': BiharmonicClosure,
+        'dsm': DynamicSmagorinskyClosure,
         'gru': GRUClosure,
     }
 
@@ -233,6 +241,10 @@ def build_closure(cfg=None, loaded_leaves=None):
     closure_template = cls(**arch_params_to_use, cfg=cfg)
 
     if memory_enabled:
+        if getattr(closure_template, "requires_physics_features", False):
+            raise ValueError(
+                f"Temporal memory is not supported for physics-feature closure '{arch_name}'"
+            )
         history_length = (
             memory_cfg.get("history_length", 9)
             if hasattr(memory_cfg, "get")

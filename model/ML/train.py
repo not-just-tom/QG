@@ -4,11 +4,34 @@ import functools
 import equinox as eqx
 import importlib
 import time
+import statistics
 import model.ML.architectures.build_model
 import model.ML.utils.dataloading
 importlib.reload(model.ML.architectures.build_model)
 importlib.reload(model.ML.utils.dataloading)
 from model.ML.utils.dataloading import load_forced_model
+
+
+ROLLOUT_TIMING_REPEATS = 3
+
+
+def benchmark_jax_call(call, repeats=ROLLOUT_TIMING_REPEATS):
+    """Warm up a JAX workload, then return its median synchronized runtime."""
+    if repeats <= 0:
+        raise ValueError("repeats must be positive")
+
+    result = call()
+    jax.block_until_ready(result)
+
+    samples = []
+    for _ in range(repeats):
+        start = time.perf_counter()
+        result = call()
+        jax.block_until_ready(result)
+        samples.append(time.perf_counter() - start)
+
+    return statistics.median(samples), result, tuple(samples)
+
 
 def rollout_traj_errors(
     target_traj,
@@ -60,7 +83,7 @@ def rollout_traj_errors(
 
 
 def time_model_rollout(stepped_model, key, n_steps, **init_kwargs):
-    """Measure synchronized model-stepping time for a fixed number of steps."""
+    """Measure median synchronized model-stepping time for a fixed number of steps."""
     if n_steps <= 0:
         raise ValueError("n_steps must be positive")
 
@@ -70,10 +93,12 @@ def time_model_rollout(stepped_model, key, n_steps, **init_kwargs):
         next_state = stepped_model.step_model(state)
         return next_state, None
 
-    start = time.perf_counter()
-    final_state, _ = jax.lax.scan(step, initial_state, None, length=n_steps)
-    jax.block_until_ready(final_state.state.qh)
-    return time.perf_counter() - start
+    def run_rollout():
+        final_state, _ = jax.lax.scan(step, initial_state, None, length=n_steps)
+        return final_state.state.qh
+
+    elapsed, _, _ = benchmark_jax_call(run_rollout)
+    return elapsed
 
 
 def make_train_epoch(
@@ -373,15 +398,20 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
 
             return next_state, (dqh_total, dq)
 
-        rollout_start = time.perf_counter()
-        _, (traj_dqh, sgs_increment_step) = jax.lax.scan(
-            _step,
-            init_stepper_state,
-            None,
-            length=n_intervals,
-        )
-        jax.block_until_ready(traj_dqh)
-        rollout_prediction_seconds = time.perf_counter() - rollout_start
+        def _run_rollout():
+            _, outputs = jax.lax.scan(
+                _step,
+                init_stepper_state,
+                None,
+                length=n_intervals,
+            )
+            return outputs
+
+        (
+            rollout_prediction_seconds,
+            (traj_dqh, sgs_increment_step),
+            rollout_timing_samples,
+        ) = benchmark_jax_call(_run_rollout)
 
         teacher_latent = forced_model.model.initialise_param_state(
             base_state,
@@ -470,15 +500,20 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
             )
             return next_state, dqh_total
         
-        zero_rollout_start = time.perf_counter()
-        _, zero_dqh = jax.lax.scan(
-            _zero_step,
-            init_zero_state,
-            None,
-            length=n_intervals,
-        )
-        jax.block_until_ready(zero_dqh)
-        zero_rollout_prediction_seconds = time.perf_counter() - zero_rollout_start
+        def _run_zero_rollout():
+            _, zero_dqh = jax.lax.scan(
+                _zero_step,
+                init_zero_state,
+                None,
+                length=n_intervals,
+            )
+            return zero_dqh
+
+        (
+            zero_rollout_prediction_seconds,
+            zero_dqh,
+            zero_rollout_timing_samples,
+        ) = benchmark_jax_call(_run_zero_rollout)
         
         zero_qh_traj = jnp.concatenate(
             [
@@ -503,7 +538,9 @@ def make_validation_epoch(lr_model, dt, init_key, closure_scale=0.1):
         result = {
             "pred": jax.device_get(pred),
             "rollout_prediction_seconds": rollout_prediction_seconds,
+            "rollout_prediction_seconds_samples": rollout_timing_samples,
             "zero_rollout_prediction_seconds": zero_rollout_prediction_seconds,
+            "zero_rollout_prediction_seconds_samples": zero_rollout_timing_samples,
 
             "zero": jax.device_get(zero),
 

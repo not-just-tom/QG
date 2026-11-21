@@ -286,6 +286,8 @@ class KESpectrumAnimationDiagnostic(Diagnostic):
         k_Rhines = rhines_wavenumber(q_truth[frame_indices[0]])
         rhines_line = ax.axvline(k_Rhines, ymin=0, ymax=1, color='red', linestyle="--")
         rhines_label = ax.text(k_Rhines,1e-14,'k_Rhines',rotation=270, color='k')
+
+
         ax.axvline(k_min, ymin=0, ymax=1, color='red', linestyle="--")
         ax.text(k_min,1e-14,'k_min',rotation=270, color='k')
         ax.axvline(k_max, ymin=0, ymax=1, color='red', linestyle="--")
@@ -542,6 +544,9 @@ class KESpectrumDiagnostic(Diagnostic):
         ax.axvline(k_Rhines, color="grey", linestyle="--", label="$k_{Rhines}$")
         ax.axvline(k_min, color="grey", linestyle=":")
         ax.axvline(k_max, color="grey", linestyle=":")
+        if nz > 1:
+            ax.text(k_deformation, 1e-14, "$k_{deformation}$", rotation=270, color="grey")
+            ax.axvline(k_deformation, color="grey", linestyle="--")
 
         ax.axvline(
             k_damping,
