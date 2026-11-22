@@ -27,7 +27,7 @@ params:
 
 
 plotting:
-  nsteps: 2000
+  nsteps: 200000
   dt: 2000
   spinup: 20 # in eddy turnover times
   cadence: 1
