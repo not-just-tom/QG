@@ -1197,67 +1197,51 @@ class ZonalPVDiagnostic(Diagnostic):
 
     def run(self, trajs, out_path, cadence=10):
         cadence = max(1, int(cadence))
-        trajectories = []
-        for key, label in (
-            ("truth", "Truth"),
-            ("pred", "Prediction"),
-            ("zero", "Zero model"),
-        ):
-            values = _get_traj_array(trajs, key)
-            if values is None:
-                continue
-            values = np.asarray(_sanitize_numeric_array(values))
-            if values.ndim == 2:
-                values = values[None, None, ...]
-            elif values.ndim == 3:
-                values = values[:, None, ...]
-            if values.ndim != 4:
-                raise ValueError(
-                    f"{key} must have shape (time, layer, y, x), "
-                    f"got {values.shape}"
-                )
-            if values.shape[0] == 0:
-                continue
-
-            for layer in range(values.shape[1]):
-                zonal_mean = values[:, layer].mean(axis=-1)
-                y_bins = np.array_split(
-                    np.arange(zonal_mean.shape[1]),
-                    min(10, zonal_mean.shape[1]),
-                )
-                binned = np.stack(
-                    [zonal_mean[:, indices].mean(axis=1) for indices in y_bins],
-                    axis=1,
-                )
-                trajectories.append(
-                    (f"{label}, layer {layer}", binned[::cadence], values.shape[0])
-                )
-
-        if not trajectories:
-            raise KeyError(
-                "zonal_pv requires a non-empty 'truth', 'pred', or 'zero' trajectory"
+        values = _get_traj_array(trajs, "truth")
+        if values is None:
+            raise KeyError("zonal_pv requires a 'truth' trajectory")
+        values = np.asarray(_sanitize_numeric_array(values))
+        if values.ndim == 2:
+            values = values[None, None, ...]
+        elif values.ndim == 3:
+            values = values[:, None, ...]
+        if values.ndim != 4 or values.shape[0] == 0:
+            raise ValueError(
+                f"truth must be non-empty with shape (time, layer, y, x), "
+                f"got {values.shape}"
             )
 
-        color_limit = max(
-            float(np.max(np.abs(values)))
-            for _, values, _ in trajectories
+        zonal_mean = values.mean(axis=-1)
+        y_bins = np.array_split(
+            np.arange(zonal_mean.shape[2]),
+            min(10, zonal_mean.shape[2]),
         )
+        binned = np.stack(
+            [
+                zonal_mean[:, :, indices].mean(axis=-1)
+                for indices in y_bins
+            ],
+            axis=-1,
+        )
+        frame_indices = np.arange(0, values.shape[0], cadence)
+        binned = binned[frame_indices]
+
+        color_limit = float(np.max(np.abs(binned)))
         if not np.isfinite(color_limit) or color_limit == 0:
             color_limit = 1.0
 
         fig, axes = plt.subplots(
-            len(trajectories),
+            values.shape[1],
             1,
             squeeze=False,
-            figsize=(12, max(3, 2.5 * len(trajectories))),
+            figsize=(12, max(3, 2.5 * values.shape[1])),
             sharex=True,
             sharey=True,
         )
         image = None
-        for ax, (label, values, n_steps) in zip(axes[:, 0], trajectories):
-            frame_indices = np.arange(0, n_steps, cadence)
+        for layer, ax in enumerate(axes[:, 0]):
             image = ax.imshow(
-                values.T,
+                binned[:, layer, :].T,
                 origin="lower",
                 aspect="auto",
                 interpolation="nearest",
@@ -1265,15 +1249,15 @@ class ZonalPVDiagnostic(Diagnostic):
                     frame_indices[0] - cadence / 2,
                     frame_indices[-1] + cadence / 2,
                     0,
-                    values.shape[1],
+                    binned.shape[2],
                 ),
                 cmap="RdBu_r",
                 vmin=-color_limit,
                 vmax=color_limit,
             )
-            ax.set_title(label)
+            ax.set_title(f"Truth, layer {layer}")
             ax.set_ylabel("Y bin")
-            ax.set_yticks(np.arange(values.shape[1]) + 0.5)
+            ax.set_yticks(np.arange(binned.shape[2]) + 0.5)
 
         axes[-1, 0].set_xlabel(f"Timestep (one pixel per {cadence} steps)")
         fig.colorbar(image, ax=axes[:, 0], label="X-averaged PV", shrink=0.8)
