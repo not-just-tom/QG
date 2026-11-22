@@ -17,7 +17,8 @@ conda activate QG
 cd $SLURM_SUBMIT_DIR
 
 # Run 
-OUTDIR=/scratch/$USER/qg_out_${SLURM_JOB_ID}
+OUTDIR=$SLURM_SUBMIT_DIR/outputs/${SLURM_JOB_ID}
+mkdir -p logs "${OUTDIR}"
 mkdir -p $OUTDIR
 python run.py --config config/default.yaml --outdir $OUTDIR --hpc-run True
 
