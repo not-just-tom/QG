@@ -212,21 +212,20 @@ def main(cfg):
     state = hr_model.initialise(key, **init_kwargs)
 
     # Spin up ONE trajectory
-    if spinup > 0:
-        @functools.partial(jax.jit, static_argnames=["spinup"])
-        def spinup_state(state, spinup):
-            def step(carry, _):
-                return hr_model.step_model(carry), None
+    @functools.partial(jax.jit, static_argnames=["spinup"])
+    def spinup_state(state, spinup):
+        def step(carry, _):
+            return hr_model.step_model(carry), None
 
-            state, _ = jax.lax.scan(
-                step,
-                state,
-                None,
-                length=spinup,
-            )
-            return state
+        state, _ = jax.lax.scan(
+            step,
+            state,
+            None,
+            length=spinup,
+        )
+        return state
 
-        state = spinup_state(state, spinup)
+    state = spinup_state(state, spinup)
 
     # Generate ONE trajectory
     q_traj = generate_trajectory(state, nsteps)

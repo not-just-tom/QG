@@ -1,4 +1,6 @@
 from __future__ import annotations
+import jax
+import jax.numpy as jnp
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")  # non-interactive backend for diagnostics
@@ -7,6 +9,7 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 import importlib
 import model.utils.physics_ops
 importlib.reload(model.utils.physics_ops)
+import model.core.states as states
 from model.core.model import QGM
 from model.utils.physics_ops import (
     invert_pv_to_psi,
@@ -1101,6 +1104,86 @@ class EnergyDiagnostic(Diagnostic):
         plt.close(fig)
 
 
+class ZonostrophyDiagnostic(Diagnostic):
+    name = "zonostrophy"
+
+    def run(self, trajs, out_path, cadence=10):
+        traj_q = _get_traj_array(trajs, "truth", "q")
+        if traj_q is None:
+            raise KeyError("zonostrophy requires 'truth' or 'q' in trajectories")
+        q = np.asarray(traj_q)
+        if q.ndim != 4 or q.shape[0] == 0:
+            raise ValueError(
+                "zonostrophy expects a nonempty (time, layer, y, x) trajectory"
+            )
+        if not np.all(np.isfinite(q)):
+            raise FloatingPointError("zonostrophy trajectory contains non-finite values")
+
+        grid = trajs.get("grid")
+        if trajs.get("model") is None and grid is None:
+            raise KeyError("zonostrophy requires 'model' or 'grid' in trajectories")
+        model = _get_reference_model(trajs, grid)
+        if q.shape[1:] != (model.nz, model.ny, model.nx):
+            raise ValueError(
+                "trajectory shape does not match model "
+                f"({model.nz}, {model.ny}, {model.nx})"
+            )
+
+        epsilon_nd = float(model.epsilon)
+        beta = float(model.beta)
+        const = float(trajs.get("zonostrophy_const", 1.0))
+        burn_in = int(trajs.get("zonostrophy_burn_in", 0))
+        if epsilon_nd <= 0 or beta <= 0 or const <= 0:
+            raise ValueError("epsilon, beta, and zonostrophy_const must be positive")
+        if burn_in < 0 or burn_in >= q.shape[0]:
+            raise ValueError("zonostrophy_burn_in must leave at least one frame")
+
+        shape = (model.ny, model.nx)
+        rms_speed_batches = []
+        batch_size = 64
+        for start in range(burn_in, q.shape[0], batch_size):
+            q_batch = jnp.asarray(q[start:start + batch_size])
+            qh = states._generic_rfftn(q_batch)
+            state_batch = jax.vmap(
+                lambda qh_frame: states.State(qh=qh_frame, _q_shape=shape)
+            )(qh)
+            full = jax.vmap(model.get_full_state)(state_batch)
+            rms_speed = jnp.sqrt(
+                jnp.mean(full.u**2 + full.v**2, axis=(-3, -2, -1))
+            )
+            rms_speed_batches.append(np.asarray(jax.device_get(rms_speed)))
+
+        U_t = np.concatenate(rms_speed_batches)
+        if not np.all(np.isfinite(U_t)) or np.any(U_t <= 0):
+            raise FloatingPointError(
+                "zonostrophy requires finite, positive RMS speed at every frame"
+            )
+
+        U = np.sqrt(np.mean(U_t**2))
+        L_Rh = np.sqrt(U / beta)
+        L_eps = (epsilon_nd / beta**3) ** 0.2
+        R_beta = const * L_Rh / L_eps
+        R_beta_t = const * np.sqrt(U_t / beta) / L_eps
+
+        time_steps = np.arange(burn_in, q.shape[0])
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.plot(time_steps, R_beta_t, label=r"$R_\beta(t)$")
+        ax.axhline(
+            R_beta,
+            color="C1",
+            linestyle="--",
+            label=r"$R_\beta$ from time-RMS speed",
+        )
+        ax.set_title("Zonostrophy parameter")
+        ax.set_xlabel("Time step")
+        ax.set_ylabel(r"$R_\beta$")
+        ax.grid(True, alpha=0.3)
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+
+
 class ZonalDiagnostic(Diagnostic):
     name = "zonal"
 
@@ -1188,81 +1271,6 @@ class ZonalDiagnostic(Diagnostic):
             ax_profile.grid(True, alpha=0.3)
             ax_profile.legend()
 
-        fig.savefig(out_path, dpi=150, bbox_inches="tight")
-        plt.close(fig)
-
-
-class ZonalPVDiagnostic(Diagnostic):
-    name = "zonal_pv"
-
-    def run(self, trajs, out_path, cadence=10):
-        cadence = max(1, int(cadence))
-        values = _get_traj_array(trajs, "truth")
-        if values is None:
-            raise KeyError("zonal_pv requires a 'truth' trajectory")
-        values = np.asarray(_sanitize_numeric_array(values))
-        if values.ndim == 2:
-            values = values[None, None, ...]
-        elif values.ndim == 3:
-            values = values[:, None, ...]
-        if values.ndim != 4 or values.shape[0] == 0:
-            raise ValueError(
-                f"truth must be non-empty with shape (time, layer, y, x), "
-                f"got {values.shape}"
-            )
-
-        zonal_mean = values.mean(axis=-1)
-        y_bins = np.array_split(
-            np.arange(zonal_mean.shape[2]),
-            min(10, zonal_mean.shape[2]),
-        )
-        binned = np.stack(
-            [
-                zonal_mean[:, :, indices].mean(axis=-1)
-                for indices in y_bins
-            ],
-            axis=-1,
-        )
-        frame_indices = np.arange(0, values.shape[0], cadence)
-        binned = binned[frame_indices]
-
-        color_limit = float(np.max(np.abs(binned)))
-        if not np.isfinite(color_limit) or color_limit == 0:
-            color_limit = 1.0
-
-        fig, axes = plt.subplots(
-            values.shape[1],
-            1,
-            squeeze=False,
-            figsize=(12, max(3, 2.5 * values.shape[1])),
-            sharex=True,
-            sharey=True,
-        )
-        image = None
-        for layer, ax in enumerate(axes[:, 0]):
-            image = ax.imshow(
-                binned[:, layer, :].T,
-                origin="lower",
-                aspect="auto",
-                interpolation="nearest",
-                extent=(
-                    frame_indices[0] - cadence / 2,
-                    frame_indices[-1] + cadence / 2,
-                    0,
-                    binned.shape[2],
-                ),
-                cmap="RdBu_r",
-                vmin=-color_limit,
-                vmax=color_limit,
-            )
-            ax.set_title(f"Truth, layer {layer}")
-            ax.set_ylabel("Y bin")
-            ax.set_yticks(np.arange(binned.shape[2]) + 0.5)
-
-        axes[-1, 0].set_xlabel(f"Timestep (one pixel per {cadence} steps)")
-        fig.colorbar(image, ax=axes[:, 0], label="X-averaged PV", shrink=0.8)
-        fig.suptitle("Zonal-mean PV validation rollout")
-        fig.tight_layout()
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
 
@@ -2467,8 +2475,8 @@ _REGISTRY = {
     'quad': QuadGifDiagnostic,
     'zero': ZeroComparisonDiagnostic,
     'energy': EnergyDiagnostic,
+    'zonostrophy': ZonostrophyDiagnostic,
     'zonal': ZonalDiagnostic,
-    'zonal_pv': ZonalPVDiagnostic,
     'cfl': CFLDiagnostic,
     "domain": DomainDiagnostic,
     "sgs_spectrum": SGSSpectralDiagnostic,

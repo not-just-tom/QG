@@ -27,12 +27,12 @@ params:
 
 
 plotting:
-  nsteps: 200000
+  nsteps: 200
   dt: 2000
   spinup: 20 # in eddy turnover times
-  cadence: 1
-  validation_rollout: 50
-  plot: ['zonal', 'zonal_pv', 'zero']
+  cadence: 10
+  validation_rollout: 2000
+  plot: ['zonal', 'zonostrophy']
   auto_dt: false
   cfl: 0.5
 

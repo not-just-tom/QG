@@ -128,11 +128,8 @@ def generate_train_data(cfg, params, tau_eddy, timing_metadata, hr_model, lr_mod
         
         logger.info(f"Initialised batch of {current_batch} trajectories")
 
-        # Run spinup on each initial state if requested
-        if spinup > 0:
-            init_states = hr_model.spinup(init_states, spinup)
-
-        # Generate batch: one coarsened sample per coarse step.
+        # Run spinup on each initial state if requested (can be zero)
+        init_states = hr_model.spinup(init_states, spinup)
         traj_batch = batched_traj(init_states, nsteps)
 
         logger.info(f"Generating current batch of {current_batch} trajectories, shape: {traj_batch.shape}")
