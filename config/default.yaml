@@ -5,6 +5,22 @@ filepaths:
   val_set: '../filepath'
   log_level: 'info'
 
+# Select either regime here. The parameters below remain dimensional and are
+# converted to Rhines units by the model.
+zonostrophy:
+  regime: strongly_zonostrophic
+  presets:
+    strongly_zonostrophic: # R_beta = 5; forcing is sub-grid at nx=32
+      epsilon: 1.3e-13
+      drag: 1.7e-10
+      kmin: 18
+      kmax: 20
+    weakly_zonostrophic: # R_beta = 2
+      epsilon: 1.3e-11
+      drag: 1.7e-8
+      kmin: 7
+      kmax: 8
+
 params: 
   seed: 42
   nx: 32
@@ -15,12 +31,12 @@ params:
   nz: 2
   Ld: 60000 # deformation radius
   # Stochastic forcing parameters
-  kmin: 5.5   # the wavelenth MODE of inner ring forcing 
-  kmax: 6.0   # the wavelenth MODE of outer ring forcing 
-  epsilon: 1e-15 # 0.0 for no stochastic forcing 
+  kmin: ${zonostrophy.presets.${zonostrophy.regime}.kmin} # forcing-mode bounds
+  kmax: ${zonostrophy.presets.${zonostrophy.regime}.kmax}
+  epsilon: ${zonostrophy.presets.${zonostrophy.regime}.epsilon}
   # multi-layer model parameters (only used if nz>1)
   Lz: 500 # depth of top layer. 
-  drag: 1e-10 # Ekman drag coeff
+  drag: ${zonostrophy.presets.${zonostrophy.regime}.drag} # Ekman drag coeff
   delta: 1 # ratio between top/bottom layer depth
   U1: 0.01
   U2: 0.0
