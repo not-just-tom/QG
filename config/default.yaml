@@ -8,7 +8,7 @@ filepaths:
 # Select either regime here. The parameters below remain dimensional and are
 # converted to Rhines units by the model.
 zonostrophy:
-  regime: strongly_zonostrophic
+  regime: weakly_zonostrophic
   presets:
     strongly_zonostrophic: # R_beta = 5; forcing is sub-grid at nx=32
       epsilon: 1.3e-13
@@ -43,18 +43,18 @@ params:
 
 
 plotting:
-  nsteps: 200
+  nsteps: 20000
   dt: 2000
-  spinup: 20 # in eddy turnover times
-  cadence: 10
-  validation_rollout: 2000
-  plot: ['zonal', 'zonostrophy']
+  spinup: 100 # in eddy turnover times
+  cadence: 100
+  validation_rollout: 20000
+  plot: ['zonal', 'zero', 'zonostrophy']
   auto_dt: false
   cfl: 0.5
 
 ml:
-  enabled: false # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
-  model_type: zero # can be a list
+  enabled: true # filesystem sorts into model_type anyway; better to use zero if not enabled for clarity
+  model_type: cnn # can be a list
   optimiser: AdamW
   device: 'cpu' # 'cpu' or 'gpu' <-- gotta be careful here w cuda supported jaxlib. 
   n_train: 7
