@@ -1129,7 +1129,7 @@ class ZonostrophyDiagnostic(Diagnostic):
                 f"({model.nz}, {model.ny}, {model.nx})"
             )
 
-        epsilon_nd = float(model.epsilon)
+        epsilon_nd = float(model.epsilon) / model.nz
         beta = float(model.beta)
         const = float(trajs.get("zonostrophy_const", 1.0))
         burn_in = int(trajs.get("zonostrophy_burn_in", 0))
@@ -1270,6 +1270,50 @@ class ZonalDiagnostic(Diagnostic):
             ax_profile.set_ylabel("y")
             ax_profile.grid(True, alpha=0.3)
             ax_profile.legend()
+
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+
+
+class PVStaircaseDiagnostic(Diagnostic):
+    name = "pv_staircase"
+
+    def run(self, trajs, out_path, cadence=10):
+        grid = trajs.get("grid")
+        if grid is None:
+            raise KeyError("pv_staircase requires 'grid' in trajectories")
+
+        q = _sanitize_numeric_array(_get_traj_array(trajs, "truth", "q"))
+        if q is None:
+            raise KeyError("pv_staircase requires 'truth' or 'q' in trajectories")
+        q = np.asarray(q)
+        if q.ndim == 2:
+            q = q[None, None, ...]
+        elif q.ndim == 3:
+            q = q[:, None, ...]
+        if q.ndim != 4:
+            raise ValueError("truth must have shape (time, layer, y, x)")
+        if q.shape[0] == 0:
+            raise ValueError("pv_staircase requires a nonempty trajectory")
+
+        n_steps = 1000 #min(100, q.shape[0])
+        pv_profile = q[-n_steps:].mean(axis=(0, 3))
+        nz, ny = pv_profile.shape
+        y_centers = (np.arange(ny) + 0.5) * grid.dy
+
+        fig, axes = plt.subplots(
+            nz,
+            1,
+            squeeze=False,
+            figsize=(6, 3.5 * nz),
+            constrained_layout=True,
+        )
+        for layer, (ax,) in enumerate(axes):
+            ax.step(pv_profile[layer], y_centers, where="mid")
+            ax.set_title(f"PV staircase, layer {layer} (last {n_steps} steps)")
+            ax.set_xlabel("Zonal- and time-mean PV")
+            ax.set_ylabel("y")
+            ax.grid(True, alpha=0.3)
 
         fig.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
@@ -2477,6 +2521,7 @@ _REGISTRY = {
     'energy': EnergyDiagnostic,
     'zonostrophy': ZonostrophyDiagnostic,
     'zonal': ZonalDiagnostic,
+    'pv_staircase': PVStaircaseDiagnostic,
     'cfl': CFLDiagnostic,
     "domain": DomainDiagnostic,
     "sgs_spectrum": SGSSpectralDiagnostic,

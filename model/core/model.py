@@ -196,6 +196,12 @@ class QGM(Kernel):
             qh=forcing,
             _q_shape=state._q_shape,
         )
+
+    def _forcing_energy_response(self):
+        if self.nz != 2:
+            return super()._forcing_energy_response()
+        A = self._A                                   # (i, j, nl, nk): ph_i = A_ij qh_j
+        return self._K2[None] * jnp.sum(jnp.abs(A) ** 2, axis=0)   # (j, nl, nk)
     
     @property
     def x(self):

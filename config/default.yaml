@@ -8,7 +8,7 @@ filepaths:
 # Select either regime here. The parameters below remain dimensional and are
 # converted to Rhines units by the model.
 zonostrophy:
-  regime: weakly_zonostrophic
+  regime: strongly_zonostrophic
   presets:
     strongly_zonostrophic: # R_beta = 5; forcing is sub-grid at nx=32
       epsilon: 1.3e-13
@@ -27,7 +27,7 @@ params:
   hr_nx: 512
   Lx: 1000000
   beta: 1e-11
-  n_jets: 3 # number of jets in the regime, used for non dimensionalisation
+  n_jets: 3 # number of east-west jets (not the backward moving ones too)
   nz: 2
   Ld: 60000 # deformation radius
   # Stochastic forcing parameters
@@ -38,8 +38,8 @@ params:
   Lz: 500 # depth of top layer. 
   drag: ${zonostrophy.presets.${zonostrophy.regime}.drag} # Ekman drag coeff
   delta: 1 # ratio between top/bottom layer depth
-  U1: 0.01
-  U2: 0.0
+  U1: 0.0
+  U2: 0.0 # no shear 
 
 
 plotting:
@@ -48,7 +48,7 @@ plotting:
   spinup: 100 # in eddy turnover times
   cadence: 100
   validation_rollout: 20000
-  plot: ['zonal', 'zero', 'zonostrophy']
+  plot: ['zonal', 'zero', 'pv_staircase', 'zonostrophy']
   auto_dt: false
   cfl: 0.5
 
